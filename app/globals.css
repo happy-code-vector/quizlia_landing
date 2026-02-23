@@ -1,0 +1,124 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Font Variables */
+:root {
+  --font-rethink-sans: 'Rethink Sans', system-ui, -apple-system, sans-serif;
+  --font-glancyr: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-source-serif-4: 'Source Serif 4', serif;
+}
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 214, 219, 220;
+  --background-end-rgb: 255, 255, 255;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --foreground-rgb: 255, 255, 255;
+    --background-start-rgb: 0, 0, 0;
+    --background-end-rgb: 0, 0, 0;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 36 33% 97%;
+    --foreground: 30 9% 15%;
+    --card: 36 33% 99%;
+    --card-foreground: 30 9% 15%;
+    --popover: 36 33% 99%;
+    --popover-foreground: 30 9% 15%;
+    --primary: 28 54% 33%;
+    --primary-foreground: 36 33% 97%;
+    --secondary: 32 30% 90%;
+    --secondary-foreground: 28 54% 33%;
+    --muted: 32 30% 94%;
+    --muted-foreground: 30 9% 45%;
+    --accent: 20 60% 85%;
+    --accent-foreground: 28 54% 33%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 36 33% 97%;
+    --border: 30 9% 85%;
+    --input: 30 9% 85%;
+    --ring: 28 54% 33%;
+    --chart-1: 28 54% 33%;
+    --chart-2: 15 70% 40%;
+    --chart-3: 42 60% 45%;
+    --chart-4: 5 65% 40%;
+    --chart-5: 35 65% 50%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 266 83% 62%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 266 40% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 266 83% 62%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 266 83% 62%;
+    --chart-1: 266 83% 62%;
+    --chart-2: 266 60% 50%;
+    --chart-3: 280 70% 55%;
+    --chart-4: 250 65% 50%;
+    --chart-5: 290 60% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Marquee Animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 30s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Gradient Border Animation */
+@keyframes gradient-rotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-rotate {
+  animation: gradient-rotate 3s ease infinite;
+}
