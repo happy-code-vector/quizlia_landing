@@ -30,7 +30,7 @@ export function SiteHeader() {
           <Link href="#faq" className="text-sm font-medium text-white/70 hover:text-white transition-colors font-rethink-sans">
             FAQ
           </Link>
-          <Link href="/about" className="text-sm font-medium text-white/70 hover:text-white transition-colors font-rethink-sans">
+          <Link href="#about" className="text-sm font-medium text-white/70 hover:text-white transition-colors font-rethink-sans">
             About
           </Link>
         </nav>

@@ -7,6 +7,8 @@ import { HowItWorksSection } from "@/components/how-it-works-section"
 import { FeaturesShowcaseSection } from "@/components/features-showcase-section"
 import { TestimonialsSection } from "@/components/testimonials-section"
 import { FAQSection } from "@/components/faq-section"
+import { MissionSection } from "@/components/mission-section"
+import { FounderSection } from "@/components/founder-section"
 import { CTASection } from "@/components/cta-section"
 import { SiteFooter } from "@/components/site-footer"
 
@@ -23,6 +25,8 @@ export default function Home() {
         <FeaturesShowcaseSection />
         <TestimonialsSection />
         <FAQSection />
+        <MissionSection />
+        <FounderSection />
         <CTASection />
       </main>
       <SiteFooter />
