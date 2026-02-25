@@ -99,7 +99,8 @@
 }
 
 .animate-marquee {
-  animation: marquee 30s linear infinite;
+  animation: marquee 25s linear infinite;
+  width: max-content;
 }
 
 .animate-marquee:hover {
