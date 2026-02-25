@@ -1,39 +1,37 @@
 import Image from "next/image"
-import { Upload } from "lucide-react"
 
 export function FeaturesShowcaseSection() {
   const bentoFeatures = [
     {
-      title: "Upload anything",
-      description: "Lectures • Meetings • PDFs • Documents • Videos • YouTube • Links and more",
-      image: "https://framerusercontent.com/images/HrUr6jkcwiRshv9bqe0BdHnyiWc.png?width=1024&height=1024"
+      title: "Learn from any link",
+      description: "Paste any link and instantly get notes and study materials",
+      video: "/Learn_Anything_From_a_Link_version_1.mp4"
     },
     {
-      title: "Get beautiful notes",
-      description: "Notes and transcripts, organized and instant",
-      image: "https://framerusercontent.com/images/0OT8yImioQmdfXaBou5rErL2Bw.png?width=1024&height=1024"
+      title: "YouTube Summaries",
+      description: "Get instant summaries from any YouTube video",
+      video: "/Instant_YouTube_Summaries_version_1.mp4"
     },
     {
-      title: "AI Chat",
-      description: "Ask your notes anything",
-      image: "https://framerusercontent.com/images/6E6sZpvXNMk7gfxjkAycFfDGA.png?width=512&height=512"
+      title: "Quiz Yourself",
+      description: "AI generates quizzes to test your knowledge instantly",
+      video: "/Quiz_Yourself_Instantly_version_1.mp4"
     },
-    {
-      title: "Learn in multiple languages",
-      description: "Translate and learn in multiple languages",
-      image: "https://framerusercontent.com/images/AFKMgwrfTwIKnvcJ4wShUb7H55w.png?width=512&height=512"
-    },
-    {
-      title: "Quizzes & Flashcards",
-      description: "Let AI generate study materials for you",
-      image: "https://framerusercontent.com/images/r2UBuO436CTVXH0mtCfQ8AyYmVg.png?width=512&height=512"
-    },
-    {
-      title: "Study Games",
-      description: "Make studying more fun with short games that help you learn",
-      image: "https://framerusercontent.com/images/PpaEVFbJGnqxnRZW6xiJZpEHlrc.png?width=495&height=494",
-      comingSoon: true
-    }
+    // {
+    //   title: "Upload anything",
+    //   description: "Lectures • Meetings • PDFs • Documents • Videos • Links and more",
+    //   image: "https://framerusercontent.com/images/HrUr6jkcwiRshv9bqe0BdHnyiWc.png?width=1024&height=1024"
+    // },
+    // {
+    //   title: "Get beautiful notes",
+    //   description: "Notes and transcripts, organized and instant",
+    //   image: "https://framerusercontent.com/images/0OT8yImioQmdfXaBou5rErL2Bw.png?width=1024&height=1024"
+    // },
+    // {
+    //   title: "AI Chat",
+    //   description: "Ask your notes anything",
+    //   image: "https://framerusercontent.com/images/6E6sZpvXNMk7gfxjkAycFfDGA.png?width=512&height=512"
+    // }
   ]
 
   return (
@@ -52,34 +50,36 @@ export function FeaturesShowcaseSection() {
 
       {/* Bento Grid */}
       <div className="space-y-6">
-        {/* First Row - 3 Cards */}
+        {/* First Row - 3 Cards with Videos */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {bentoFeatures.slice(0, 3).map((feature, index) => (
-            <div 
+            <div
               key={index}
-              className="bg-[#0D0D0D] rounded-[20px] border border-[#964CEE]/20 p-8 flex flex-col items-center text-center overflow-hidden relative group hover:bg-[#141414] hover:border-[#964CEE]/40 transition-all duration-500 hover:-rotate-1 hover:scale-105"
+              className="bg-[#0D0D0D] rounded-[20px] border border-[#964CEE]/20 p-6 flex flex-col overflow-hidden relative group hover:bg-[#141414] hover:border-[#964CEE]/40 transition-all duration-500"
             >
-              {index === 0 ? (
-                <div className="w-full aspect-square mb-6 rounded-[16px] flex items-center justify-center bg-gradient-to-br from-[#964CEE]/20 to-[#964CEE]/5 ring-1 ring-[#964CEE]/10">
-                  <Upload className="w-32 h-32 text-[#964CEE]" strokeWidth={1.5} />
+              {feature.video ? (
+                <div className="w-full aspect-[9/16] mb-6 rounded-[16px] overflow-hidden relative ring-1 ring-[#964CEE]/10 bg-black">
+                  <video
+                    src={feature.video}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
                 </div>
               ) : (
                 <div className="w-full aspect-square mb-6 rounded-[16px] overflow-hidden relative ring-1 ring-[#964CEE]/10">
                   <Image
-                    src={feature.image}
+                    src={feature.image || ""}
                     alt={feature.title}
                     fill
                     className="object-cover"
                   />
                 </div>
               )}
-              <h3 className="text-white font-inter text-[24px] md:text-[28px] font-medium mb-3 tracking-[-0.02em] flex items-center gap-2 flex-wrap justify-center">
+              <h3 className="text-white font-inter text-[20px] md:text-[24px] font-medium mb-2 tracking-[-0.02em]">
                 {feature.title}
-                {feature.comingSoon && (
-                  <span className="text-xs px-3 py-1 rounded-full border border-[#964CEE]/50 bg-[#964CEE]/10 text-[#964CEE]">
-                    Coming Soon
-                  </span>
-                )}
               </h3>
               <p className="text-white/50 font-rethink-sans text-[14px] md:text-[16px] leading-relaxed">
                 {feature.description}
@@ -88,28 +88,36 @@ export function FeaturesShowcaseSection() {
           ))}
         </div>
 
-        {/* Second Row - 3 Cards */}
+        {/* Second Row - 3 Cards with Images */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {bentoFeatures.slice(3, 6).map((feature, index) => (
-            <div 
+            <div
               key={index}
-              className="bg-[#0D0D0D] rounded-[20px] border border-[#964CEE]/20 p-8 flex flex-col items-center text-center overflow-hidden relative group hover:bg-[#141414] hover:border-[#964CEE]/40 transition-all duration-500 hover:-rotate-1 hover:scale-105"
+              className="bg-[#0D0D0D] rounded-[20px] border border-[#964CEE]/20 p-6 flex flex-col overflow-hidden relative group hover:bg-[#141414] hover:border-[#964CEE]/40 transition-all duration-500"
             >
-              <div className="w-full aspect-square mb-6 rounded-[16px] overflow-hidden relative ring-1 ring-[#964CEE]/10">
-                <Image
-                  src={feature.image}
-                  alt={feature.title}
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <h3 className="text-white font-inter text-[24px] md:text-[28px] font-medium mb-3 tracking-[-0.02em] flex items-center gap-2 flex-wrap justify-center">
+              {feature.video ? (
+                <div className="w-full aspect-[9/16] mb-6 rounded-[16px] overflow-hidden relative ring-1 ring-[#964CEE]/10 bg-black">
+                  <video
+                    src={feature.video}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div className="w-full aspect-square mb-6 rounded-[16px] overflow-hidden relative ring-1 ring-[#964CEE]/10">
+                  <Image
+                    src={feature.image || ""}
+                    alt={feature.title}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+              )}
+              <h3 className="text-white font-inter text-[20px] md:text-[24px] font-medium mb-2 tracking-[-0.02em]">
                 {feature.title}
-                {feature.comingSoon && (
-                  <span className="text-xs px-3 py-1 rounded-full border border-[#964CEE]/50 bg-[#964CEE]/10 text-[#964CEE]">
-                    Coming Soon
-                  </span>
-                )}
               </h3>
               <p className="text-white/50 font-rethink-sans text-[14px] md:text-[16px] leading-relaxed">
                 {feature.description}
@@ -121,4 +129,3 @@ export function FeaturesShowcaseSection() {
     </section>
   )
 }
-
