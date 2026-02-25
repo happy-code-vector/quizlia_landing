@@ -1,4 +1,7 @@
+import Image from "next/image"
 import Link from "next/link"
+
+import { Button } from "@/components/ui/button"
 
 export function HeroSection() {
   return (
@@ -36,19 +39,16 @@ export function HeroSection() {
             </span>
                 </Link>
 
-          {/* Hero Video/Image */}
+          {/* Hero Image */}
           <div className="mt-[30px] w-full md:w-[100%] lg:w-full max-w-[1000px] mx-auto px-4">
-              <div className="relative rounded-[20px] overflow-hidden bg-[#0D0D0D] ring-1 ring-white/10">
-                <video
-                  src="/Learn_Anything_From_a_Link_version_1.mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="w-full h-auto"
-                  poster="/Poster.jpg"
-                />
-              </div>
+              <Image 
+                src="/Poster.jpg" 
+              alt="QuizliAI app interface showing AI-powered study materials"
+              width={1000}
+              height={600}
+              className="w-full h-auto rounded-[20px]"
+                priority
+              />
           </div>
 
           {/* Trusted By Section */}
