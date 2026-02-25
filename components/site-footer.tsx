@@ -40,6 +40,18 @@ export function SiteFooter() {
             </ul>
           </div>
 
+          {/* Company Links */}
+          <div className="space-y-4">
+            <h3 className="font-semibold text-white font-rethink-sans">Company</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link href="/about" className="text-sm text-white/50 hover:text-white transition-colors font-rethink-sans">
+                  About
+                </Link>
+              </li>
+            </ul>
+          </div>
+
 
           {/* Legal Links */}
           <div className="space-y-4">
