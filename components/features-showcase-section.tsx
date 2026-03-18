@@ -5,17 +5,20 @@ export function FeaturesShowcaseSection() {
     {
       title: "Learn from any link",
       description: "Paste any link and instantly get notes and study materials",
-      video: "/Learn_Anything_From_a_Link_version_1.mp4"
+      video: "/Learn_Anything_From_a_Link_version_1.mp4",
+      image: undefined as string | undefined
     },
     {
       title: "YouTube Summaries",
       description: "Get instant summaries from any YouTube video",
-      video: "/Instant_YouTube_Summaries_version_1.mp4"
+      video: "/Instant_YouTube_Summaries_version_1.mp4",
+      image: undefined as string | undefined
     },
     {
       title: "Quiz Yourself",
       description: "AI generates quizzes to test your knowledge instantly",
-      video: "/Quiz_Yourself_Instantly_version_1.mp4"
+      video: "/Quiz_Yourself_Instantly_version_1.mp4",
+      image: undefined as string | undefined
     },
     // {
     //   title: "Upload anything",
