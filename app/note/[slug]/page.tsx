@@ -1,8 +1,5 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
-import { StudyGuide, getStudyGuide } from "@/lib/studyGuide";
+import { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { StudyGuideHeader } from "@/components/study-guide/StudyGuideHeader";
@@ -11,83 +8,132 @@ import { VideoEmbed } from "@/components/study-guide/VideoEmbed";
 import { CheatSheetSection } from "@/components/study-guide/CheatSheetSection";
 import { InteractiveQuiz } from "@/components/study-guide/InteractiveQuiz";
 import { CtaBanner } from "@/components/study-guide/CtaBanner";
+import { getStudyGuideServer, getAllStudyGuideSlugsServer } from "@/lib/firebase-server";
+import { StudyGuide } from "@/lib/studyGuide";
 
-export default function StudyGuidePage() {
-  const params = useParams();
-  const slug = params.slug as string;
+// Revalidate every hour (ISR)
+export const revalidate = 3600;
 
-  const [guide, setGuide] = useState<StudyGuide | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+// Generate static params for all study guides
+export async function generateStaticParams() {
+  const slugs = await getAllStudyGuideSlugsServer();
 
-  useEffect(() => {
-    async function fetchGuide() {
-      try {
-        const data = await getStudyGuide(slug);
-        if (data) {
-          setGuide(data);
-        } else {
-          setError(true);
-        }
-      } catch (err) {
-        console.error("Error fetching study guide:", err);
-        setError(true);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchGuide();
-  }, [slug]);
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black">
-        <SiteHeader />
-        <main className="pt-20">
-          <div className="max-w-4xl mx-auto px-4 py-20">
-            <div className="animate-pulse space-y-6">
-              <div className="h-8 bg-white/10 rounded w-3/4" />
-              <div className="h-4 bg-white/10 rounded w-1/2" />
-              <div className="h-64 bg-white/10 rounded-2xl" />
-              <div className="h-32 bg-white/10 rounded-2xl" />
-              <div className="h-32 bg-white/10 rounded-2xl" />
-            </div>
-          </div>
-        </main>
-        <SiteFooter />
-      </div>
-    );
+  // If no slugs from Firebase, return a placeholder for build
+  if (slugs.length === 0) {
+    return [{ slug: "french-revolution-summary" }];
   }
 
-  if (error || !guide) {
-    return (
-      <div className="min-h-screen bg-black">
-        <SiteHeader />
-        <main className="pt-20">
-          <div className="max-w-4xl mx-auto px-4 py-20 text-center">
-            <div className="text-6xl mb-6">📚</div>
-            <h1 className="text-3xl font-bold text-white mb-4 font-source-serif-4">
-              Study Guide Not Found
-            </h1>
-            <p className="text-white/60 mb-8 font-rethink-sans">
-              Sorry, we couldn&apos;t find the study guide you&apos;re looking for.
-            </p>
-            <a
-              href="/"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#964CEE] text-white rounded-xl font-medium hover:bg-[#964CEE]/90 transition-colors font-rethink-sans"
-            >
-              ← Back to Home
-            </a>
-          </div>
-        </main>
-        <SiteFooter />
-      </div>
-    );
+  return slugs.map((slug) => ({ slug }));
+}
+
+// Generate metadata for SEO
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const guide = await getStudyGuideServer(slug);
+
+  if (!guide) {
+    return {
+      title: "Study Guide Not Found | QuizliAI",
+      description: "The requested study guide could not be found.",
+    };
+  }
+
+  const title = `${guide.title} | QuizliAI Study Guide`;
+  const description = guide.tldr.join(" ");
+  const url = `https://quizliai.com/note/${guide.slug}`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "QuizliAI",
+      type: "article",
+      images: [
+        {
+          url: `https://img.youtube.com/vi/${guide.youtubeId}/maxresdefault.jpg`,
+          width: 1280,
+          height: 720,
+          alt: guide.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [`https://img.youtube.com/vi/${guide.youtubeId}/maxresdefault.jpg`],
+    },
+    alternates: {
+      canonical: url,
+    },
+    other: {
+      // JSON-LD structured data for SEO
+      "script:type": "application/ld+json",
+    },
+  };
+}
+
+// JSON-LD Structured Data Component
+function StructuredData({ guide }: { guide: StudyGuide }) {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: guide.title,
+    description: guide.tldr.join(" "),
+    author: {
+      "@type": "Organization",
+      name: "QuizliAI",
+      url: "https://quizliai.com",
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "QuizliAI",
+      logo: {
+        "@type": "ImageObject",
+        url: "https://quizliai.com/logo.png",
+      },
+    },
+    mainEntityOfPage: {
+      "@type": "WebPage",
+      "@id": `https://quizliai.com/note/${guide.slug}`,
+    },
+    video: {
+      "@type": "VideoObject",
+      embedUrl: `https://www.youtube.com/embed/${guide.youtubeId}`,
+      thumbnailUrl: `https://img.youtube.com/vi/${guide.youtubeId}/maxresdefault.jpg`,
+    },
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+    />
+  );
+}
+
+export default async function StudyGuidePage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const guide = await getStudyGuideServer(slug);
+
+  if (!guide) {
+    notFound();
   }
 
   return (
     <div className="min-h-screen bg-black">
+      <StructuredData guide={guide} />
       <SiteHeader />
       <main className="pt-20">
         <article className="max-w-4xl mx-auto px-4 py-12">
