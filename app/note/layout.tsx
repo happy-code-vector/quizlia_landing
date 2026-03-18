@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { ToastProvider } from "@/components/app/ToastContainer";
+import { ThemeProvider } from "@/components/app/ThemeProvider";
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -48,9 +49,11 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <AppLayoutContent>{children}</AppLayoutContent>
-      </ToastProvider>
+      <ThemeProvider>
+        <ToastProvider>
+          <AppLayoutContent>{children}</AppLayoutContent>
+        </ToastProvider>
+      </ThemeProvider>
     </AuthProvider>
   );
 }
