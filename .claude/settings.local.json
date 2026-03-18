@@ -11,7 +11,8 @@
       "Bash(mv app/app/quizzes app/note/)",
       "Bash(mv app/app/settings app/note/)",
       "Bash(cp -r app/app/* app/note/)",
-      "Bash(rm -rf app/app)"
+      "Bash(rm -rf app/app)",
+      "Bash(timeout 10 npm run dev)"
     ]
   }
 }

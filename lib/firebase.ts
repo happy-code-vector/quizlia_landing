@@ -1,6 +1,7 @@
 // Firebase configuration and initialization
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
+import { getAuth, Auth } from "firebase/auth";
 
 // Helper function to check if Firebase is configured
 export function isFirebaseConfigured(): boolean {
@@ -24,6 +25,7 @@ const firebaseConfig = {
 // Initialize Firebase (singleton pattern) - only if configured
 let app: FirebaseApp | undefined;
 let db: Firestore | undefined;
+let auth: Auth | undefined;
 
 if (typeof window !== "undefined" && isFirebaseConfigured()) {
   try {
@@ -35,10 +37,11 @@ if (typeof window !== "undefined" && isFirebaseConfigured()) {
     }
 
     db = getFirestore(app);
+    auth = getAuth(app);
     console.log("✅ Firebase initialized successfully");
   } catch (error) {
     console.warn("⚠️ Firebase initialization failed:", error);
   }
 }
 
-export { app, db };
+export { app, db, auth };

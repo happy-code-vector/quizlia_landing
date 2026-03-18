@@ -4,7 +4,7 @@ interface Folder {
   id: string;
   name: string;
   icon: string;
-  itemCount: number;
+  itemCount?: number;
 }
 
 interface MoveFolderModalProps {
@@ -12,7 +12,8 @@ interface MoveFolderModalProps {
   onClose: () => void;
   folders: Folder[];
   currentFolderId: string | null;
-  onMoveToFolder: (folderId: string | null) => void;
+  onMoveToFolder?: (folderId: string | null) => void;
+  onMove?: (folderId: string | null) => void;
 }
 
 export function MoveFolderModal({
@@ -21,9 +22,11 @@ export function MoveFolderModal({
   folders,
   currentFolderId,
   onMoveToFolder,
+  onMove,
 }: MoveFolderModalProps) {
+  const handleMoveCallback = onMoveToFolder || onMove;
   const handleMove = (folderId: string | null) => {
-    onMoveToFolder(folderId);
+    handleMoveCallback?.(folderId);
     onClose();
   };
 

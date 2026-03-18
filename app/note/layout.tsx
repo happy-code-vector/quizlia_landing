@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { ToastContainer } from "@/components/app/ToastContainer";
+import { ToastProvider } from "@/components/app/ToastContainer";
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -39,8 +39,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <AppLayoutContent>{children}</AppLayoutContent>
-      <ToastContainer />
+      <ToastProvider>
+        <AppLayoutContent>{children}</AppLayoutContent>
+      </ToastProvider>
     </AuthProvider>
   );
 }

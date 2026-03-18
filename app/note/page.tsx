@@ -20,7 +20,7 @@ export default function NoteListPage() {
     fetchGuides();
   }, []);
 
-  const categories = [...new Set(guides.map((g) => g.category))];
+  const categories = Array.from(new Set(guides.map((g) => g.category)));
 
   const filteredGuides = selectedCategory
     ? guides.filter((g) => g.category === selectedCategory)

@@ -24,6 +24,7 @@ interface Folder {
   id: string;
   name: string;
   icon: string;
+  itemCount?: number;
 }
 
 export default function NotesPage() {
