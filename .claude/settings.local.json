@@ -4,7 +4,14 @@
       "Bash(npm run build)",
       "Bash(npx tsc --noEmit)",
       "Bash(xargs grep:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(mv app/app/dashboard app/note/)",
+      "Bash(mv app/app/flashcards app/note/)",
+      "Bash(mv app/app/notes app/note/)",
+      "Bash(mv app/app/quizzes app/note/)",
+      "Bash(mv app/app/settings app/note/)",
+      "Bash(cp -r app/app/* app/note/)",
+      "Bash(rm -rf app/app)"
     ]
   }
 }

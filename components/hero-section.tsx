@@ -1,8 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
 
-import { Button } from "@/components/ui/button"
-
 export function HeroSection() {
   return (
     <section className="relative pt-20 md:pt-32 pb-16 overflow-hidden" style={{ backgroundColor: '#070014' }}>
