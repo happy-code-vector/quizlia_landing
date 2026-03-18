@@ -1,6 +1,6 @@
 // Study Guide types and fetch functions
 import { db } from "./firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
 
 export interface Quiz {
   question: string;
@@ -59,6 +59,52 @@ export async function getStudyGuide(slug: string): Promise<StudyGuide | null> {
   } catch (error) {
     console.error("Error fetching study guide:", error);
     return null;
+  }
+}
+
+export async function getAllStudyGuides(): Promise<StudyGuide[]> {
+  if (!db) {
+    console.warn("Firebase not initialized");
+    return [];
+  }
+
+  try {
+    const notesRef = collection(db, "notes");
+    const q = query(notesRef, orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
+
+    const guides: StudyGuide[] = [];
+    querySnapshot.forEach((doc) => {
+      guides.push(doc.data() as StudyGuide);
+    });
+
+    return guides;
+  } catch (error) {
+    console.error("Error fetching study guides:", error);
+    return [];
+  }
+}
+
+export async function getStudyGuidesByCategory(category: string): Promise<StudyGuide[]> {
+  if (!db) {
+    console.warn("Firebase not initialized");
+    return [];
+  }
+
+  try {
+    const notesRef = collection(db, "notes");
+    const q = query(notesRef, where("category", "==", category), orderBy("createdAt", "desc"));
+    const querySnapshot = await getDocs(q);
+
+    const guides: StudyGuide[] = [];
+    querySnapshot.forEach((doc) => {
+      guides.push(doc.data() as StudyGuide);
+    });
+
+    return guides;
+  } catch (error) {
+    console.error("Error fetching study guides by category:", error);
+    return [];
   }
 }
 
