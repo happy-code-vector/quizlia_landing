@@ -126,6 +126,7 @@ export default function NotesPage() {
   useEffect(() => {
     async function fetchStudyGuides() {
       const data = await getAllStudyGuides();
+      console.log("Fetched study guides:", data.length, data.map(g => ({ slug: g.slug, youtubeId: g.youtubeId })));
       setStudyGuides(data);
       setStudyGuidesLoading(false);
     }
@@ -272,14 +273,25 @@ export default function NotesPage() {
                   >
                     {/* Thumbnail */}
                     <div className="relative aspect-video bg-gray-100 dark:bg-gray-800 overflow-hidden">
-                      <img
-                        src={`https://img.youtube.com/vi/${guide.youtubeId}/maxresdefault.jpg`}
-                        alt={guide.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${guide.youtubeId}/hqdefault.jpg`;
-                        }}
-                      />
+                      {guide.youtubeId ? (
+                        <img
+                          src={`https://img.youtube.com/vi/${guide.youtubeId}/maxresdefault.jpg`}
+                          alt={guide.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            if (target.src.includes("maxresdefault")) {
+                              target.src = `https://img.youtube.com/vi/${guide.youtubeId}/hqdefault.jpg`;
+                            } else if (target.src.includes("hqdefault")) {
+                              target.src = `https://img.youtube.com/vi/${guide.youtubeId}/mqdefault.jpg`;
+                            }
+                          }}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#964CEE]/20 to-[#964CEE]/5">
+                          <span className="material-symbols-outlined text-4xl text-[#964CEE]">menu_book</span>
+                        </div>
+                      )}
                       {/* Play overlay */}
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="w-12 h-12 rounded-full bg-[#964CEE] flex items-center justify-center">
