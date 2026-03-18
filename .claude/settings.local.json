@@ -14,7 +14,11 @@
       "Bash(rm -rf app/app)",
       "Bash(timeout 10 npm run dev)",
       "Bash(ls -la \"d:/D/Projects/Arasheed/quizliai-landingpage/app/\\(app\\)/\")",
-      "Bash(cat \"d:/D/Projects/Arasheed/quizliai-landingpage/app/\\(app\\)/layout.tsx\")"
+      "Bash(cat \"d:/D/Projects/Arasheed/quizliai-landingpage/app/\\(app\\)/layout.tsx\")",
+      "Bash(find d:/D/Projects/Arasheed/QuickNote/quicknote-nextjs -name *.ts -o -name *.tsx)",
+      "Bash(ls -d d:/D/Projects/Arasheed/QuickNote/quicknote-nextjs/app/*/)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(ls -d d:/D/Projects/Arasheed/quizliai-landingpage/app/note/*/)"
     ]
   }
 }
