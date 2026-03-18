@@ -66,13 +66,13 @@ export default function PricingPage() {
       {/* Header */}
       <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-          <Link href="/note/dashboard" className="flex items-center gap-2">
+          <Link href="/note" className="flex items-center gap-2">
             <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg w-10 h-10 flex items-center justify-center">
               <span className="material-symbols-outlined">auto_stories</span>
             </div>
             <span className="text-lg font-bold text-gray-900 dark:text-white">QuickNote</span>
           </Link>
-          <Link href="/note/dashboard" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
+          <Link href="/note" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
             <span className="material-symbols-outlined">close</span>
           </Link>
         </div>

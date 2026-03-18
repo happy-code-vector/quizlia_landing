@@ -46,7 +46,7 @@ export function Sidebar({ profile }: SidebarProps) {
   };
 
   const navItems = [
-    { href: "/note/dashboard", icon: "home", label: "Dashboard", fill: true },
+    { href: "/note", icon: "home", label: "Dashboard", fill: true },
     { href: "/note/notes", icon: "description", label: "All Notes" },
     { href: "/note/flashcards", icon: "style", label: "All Flashcards" },
     { href: "/note/quizzes", icon: "quiz", label: "All Quizzes" },

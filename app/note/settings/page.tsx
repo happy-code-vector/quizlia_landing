@@ -55,7 +55,7 @@ export default function SettingsPage() {
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Settings</h1>
             <p className="text-gray-600 dark:text-gray-400">Manage your account and preferences</p>
           </div>
-          <Link href="/note/dashboard" className="btn-secondary">
+          <Link href="/note" className="btn-secondary">
             <span className="material-symbols-outlined mr-2">arrow_back</span>
             Back to Dashboard
           </Link>

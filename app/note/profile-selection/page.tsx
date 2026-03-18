@@ -38,7 +38,7 @@ export default function ProfileSelectionPage() {
   const selectProfile = (profile: Profile) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("currentProfile", JSON.stringify(profile));
-      router.push("/note/dashboard");
+      router.push("/note");
     }
   };
 
