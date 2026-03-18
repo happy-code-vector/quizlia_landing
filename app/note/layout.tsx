@@ -15,11 +15,19 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
     if (typeof window !== "undefined") {
       const currentProfile = localStorage.getItem("currentProfile");
 
-      // Pages that don't require profile
-      const publicPages = ["/note/profile-selection", "/note/create-profile", "/note/pricing", "/note/subscription/success"];
+      // Pages that don't require profile (public study guides and auth pages)
+      const publicPages = [
+        "/note/profile-selection",
+        "/note/create-profile",
+        "/note/pricing",
+        "/note/subscription/success"
+      ];
       const isPublicPage = publicPages.some(page => pathname?.startsWith(page));
 
-      if (!currentProfile && !isPublicPage && !loading) {
+      // Check if this is a public study guide page (/note or /note/[slug])
+      const isStudyGuidePage = pathname === "/note" || pathname?.match(/^\/note\/[^\/]+$/);
+
+      if (!currentProfile && !isPublicPage && !isStudyGuidePage && !loading) {
         router.push("/note/profile-selection");
       }
     }

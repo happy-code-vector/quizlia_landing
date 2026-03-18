@@ -46,10 +46,10 @@ export function Sidebar({ profile }: SidebarProps) {
   };
 
   const navItems = [
-    { href: "/dashboard", icon: "home", label: "Dashboard", fill: true },
-    { href: "/notes", icon: "description", label: "All Notes" },
-    { href: "/flashcards", icon: "style", label: "All Flashcards" },
-    { href: "/quizzes", icon: "quiz", label: "All Quizzes" },
+    { href: "/note/dashboard", icon: "home", label: "Dashboard", fill: true },
+    { href: "/note/notes", icon: "description", label: "All Notes" },
+    { href: "/note/flashcards", icon: "style", label: "All Flashcards" },
+    { href: "/note/quizzes", icon: "quiz", label: "All Quizzes" },
   ];
 
   return (
@@ -64,7 +64,7 @@ export function Sidebar({ profile }: SidebarProps) {
               {expanded && <h1 className="text-lg font-bold text-gray-900 dark:text-white">QuickNote</h1>}
             </div>
 
-            <Link href="/profile-selection" className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${expanded ? "hover:bg-gray-100 dark:hover:bg-gray-800" : "justify-center"}`} title="Switch Profile">
+            <Link href="/note/profile-selection" className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${expanded ? "hover:bg-gray-100 dark:hover:bg-gray-800" : "justify-center"}`} title="Switch Profile">
               <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarColors[profile.avatar] || "from-gray-400 to-gray-500"} shrink-0 ${!expanded ? "hover:ring-2 hover:ring-purple-400 transition-all" : ""}`} />
               {expanded && (
                 <div className="flex flex-col flex-1 min-w-0">
@@ -89,7 +89,7 @@ export function Sidebar({ profile }: SidebarProps) {
           </div>
 
           <div className="flex flex-col gap-4">
-            <Link href="/settings" className={`flex items-center gap-3 px-3 py-2 rounded-lg ${pathname === "/settings" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600" : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"}`}>
+            <Link href="/note/settings" className={`flex items-center gap-3 px-3 py-2 rounded-lg ${pathname === "/note/settings" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600" : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"}`}>
               <span className="material-symbols-outlined">settings</span>
               {expanded && <p className="text-sm font-medium">Settings</p>}
             </Link>

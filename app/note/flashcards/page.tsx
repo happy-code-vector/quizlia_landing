@@ -100,7 +100,7 @@ export default function FlashcardsPage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const currentProfile = localStorage.getItem("currentProfile");
-      if (!currentProfile) { router.push("/profile-selection"); return; }
+      if (!currentProfile) { router.push("/note/profile-selection"); return; }
       const profileData = JSON.parse(currentProfile);
       setProfile(profileData);
       const storedContent = localStorage.getItem(`content_${profileData.id}`);

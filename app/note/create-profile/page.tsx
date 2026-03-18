@@ -43,7 +43,7 @@ export default function CreateProfilePage() {
       }
 
       showToast(`Profile "${formData.name}" created successfully!`, "success");
-      setTimeout(() => router.push("/profile-selection"), 500);
+      setTimeout(() => router.push("/note/profile-selection"), 500);
     } catch (error) {
       showToast("Failed to create profile. Please try again.", "error");
     }
@@ -163,7 +163,7 @@ export default function CreateProfilePage() {
             <div className="flex gap-4 mt-8">
               <button
                 type="button"
-                onClick={() => router.push("/profile-selection")}
+                onClick={() => router.push("/note/profile-selection")}
                 className="flex-1 btn-secondary"
               >
                 Skip for Now

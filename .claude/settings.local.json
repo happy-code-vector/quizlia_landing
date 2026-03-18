@@ -12,7 +12,9 @@
       "Bash(mv app/app/settings app/note/)",
       "Bash(cp -r app/app/* app/note/)",
       "Bash(rm -rf app/app)",
-      "Bash(timeout 10 npm run dev)"
+      "Bash(timeout 10 npm run dev)",
+      "Bash(ls -la \"d:/D/Projects/Arasheed/quizliai-landingpage/app/\\(app\\)/\")",
+      "Bash(cat \"d:/D/Projects/Arasheed/quizliai-landingpage/app/\\(app\\)/layout.tsx\")"
     ]
   }
 }

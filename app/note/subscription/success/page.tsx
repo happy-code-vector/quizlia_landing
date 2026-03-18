@@ -96,7 +96,7 @@ export default function SubscriptionSuccessPage() {
         </div>
 
         <Link
-          href="/dashboard"
+          href="/note/dashboard"
           className="inline-flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
         >
           <span className="material-symbols-outlined">arrow_forward</span>

@@ -98,7 +98,7 @@ export default function NotesPage() {
     if (typeof window !== "undefined") {
       const currentProfile = localStorage.getItem("currentProfile");
       if (!currentProfile) {
-        router.push("/profile-selection");
+        router.push("/note/profile-selection");
         return;
       }
       const profileData = JSON.parse(currentProfile);

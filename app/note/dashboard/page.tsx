@@ -200,7 +200,7 @@ export default function DashboardPage() {
       if (typeof window !== "undefined") {
         const currentProfile = localStorage.getItem("currentProfile");
         if (!currentProfile) {
-          router.push("/profile-selection");
+          router.push("/note/profile-selection");
           return;
         }
         const profileData = JSON.parse(currentProfile);
@@ -699,8 +699,8 @@ export default function DashboardPage() {
                   {sidebarExpanded && <h1 className="text-lg font-bold text-gray-900 dark:text-white">QuickNote</h1>}
                 </div>
 
-                <Link 
-                  href="/profile-selection" 
+                <Link
+                  href="/note/profile-selection" 
                   className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
                     sidebarExpanded 
                       ? "hover:bg-gray-100 dark:hover:bg-gray-800" 
@@ -721,19 +721,19 @@ export default function DashboardPage() {
                 </Link>
 
                 <nav className="flex flex-col gap-1 mt-4">
-                  <Link href="/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600">
+                  <Link href="/note/dashboard" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600">
                     <span className="material-symbols-outlined fill">home</span>
                     {sidebarExpanded && <p className="text-sm font-medium">Dashboard</p>}
                   </Link>
-                  <Link href="/notes" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
+                  <Link href="/note/notes" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
                     <span className="material-symbols-outlined">description</span>
                     {sidebarExpanded && <p className="text-sm font-medium">All Notes</p>}
                   </Link>
-                  <Link href="/flashcards" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
+                  <Link href="/note/flashcards" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
                     <span className="material-symbols-outlined">style</span>
                     {sidebarExpanded && <p className="text-sm font-medium">All Flashcards</p>}
                   </Link>
-                  <Link href="/quizzes" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
+                  <Link href="/note/quizzes" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
                     <span className="material-symbols-outlined">quiz</span>
                     {sidebarExpanded && <p className="text-sm font-medium">All Quizzes</p>}
                   </Link>
@@ -744,7 +744,7 @@ export default function DashboardPage() {
                 {sidebarExpanded && profile && (
                   <UsageIndicator profileId={profile.id} onUpgradeClick={() => setIsPaywallOpen(true)} />
                 )}
-                <Link href="/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
+                <Link href="/note/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
                   <span className="material-symbols-outlined">settings</span>
                   {sidebarExpanded && <p className="text-sm font-medium">Settings</p>}
                 </Link>

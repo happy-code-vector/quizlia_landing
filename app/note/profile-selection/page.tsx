@@ -30,7 +30,7 @@ export default function ProfileSelectionPage() {
       if (storedProfiles) {
         setProfiles(JSON.parse(storedProfiles));
       } else {
-        router.push("/create-profile");
+        router.push("/note/create-profile");
       }
     }
   }, [router]);
@@ -38,7 +38,7 @@ export default function ProfileSelectionPage() {
   const selectProfile = (profile: Profile) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("currentProfile", JSON.stringify(profile));
-      router.push("/dashboard");
+      router.push("/note/dashboard");
     }
   };
 
@@ -71,7 +71,7 @@ export default function ProfileSelectionPage() {
           ))}
 
           <Link
-            href="/create-profile"
+            href="/note/create-profile"
             className="group cursor-pointer text-center transition-transform hover:scale-105"
           >
             <div className="relative w-full aspect-square mb-3">
@@ -86,7 +86,7 @@ export default function ProfileSelectionPage() {
         </div>
 
         <div className="flex justify-center">
-          <Link href="/create-profile" className="btn-secondary flex items-center gap-2">
+          <Link href="/note/create-profile" className="btn-secondary flex items-center gap-2">
             <span className="material-symbols-outlined">settings</span>
             Manage Profiles
           </Link>

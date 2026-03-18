@@ -24,7 +24,7 @@ export default function SettingsPage() {
       if (typeof window !== "undefined") {
         localStorage.removeItem("currentProfile");
       }
-      router.push("/login");
+      router.push("/note/login");
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -34,7 +34,7 @@ export default function SettingsPage() {
     if (typeof window !== "undefined") {
       const currentProfile = localStorage.getItem("currentProfile");
       if (!currentProfile) {
-        router.push("/profile-selection");
+        router.push("/note/profile-selection");
         return;
       }
       const profileData = JSON.parse(currentProfile);
@@ -55,7 +55,7 @@ export default function SettingsPage() {
             <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-2">Settings</h1>
             <p className="text-gray-600 dark:text-gray-400">Manage your account and preferences</p>
           </div>
-          <Link href="/dashboard" className="btn-secondary">
+          <Link href="/note/dashboard" className="btn-secondary">
             <span className="material-symbols-outlined mr-2">arrow_back</span>
             Back to Dashboard
           </Link>
@@ -198,7 +198,7 @@ export default function SettingsPage() {
                           <span>Active until {subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : "N/A"}</span>
                         </div>
                       ) : (
-                        <Link href="/pricing" className="block w-full bg-white text-purple-600 font-semibold py-3 rounded-lg hover:bg-purple-50 transition-colors text-center">
+                        <Link href="/note/pricing" className="block w-full bg-white text-purple-600 font-semibold py-3 rounded-lg hover:bg-purple-50 transition-colors text-center">
                           Upgrade to Pro
                         </Link>
                       )}
@@ -274,7 +274,7 @@ export default function SettingsPage() {
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">Manage Subscription</h2>
                   </div>
                   <div className="p-6 space-y-3">
-                    <Link href="/pricing" className="btn-secondary w-full flex items-center justify-center gap-2">
+                    <Link href="/note/pricing" className="btn-secondary w-full flex items-center justify-center gap-2">
                       <span className="material-symbols-outlined">compare</span>
                       View All Plans
                     </Link>
@@ -378,11 +378,11 @@ export default function SettingsPage() {
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profile Actions</h2>
                   </div>
                   <div className="p-6 space-y-3">
-                    <Link href="/profile-selection" className="btn-secondary w-full flex items-center justify-center gap-2">
+                    <Link href="/note/profile-selection" className="btn-secondary w-full flex items-center justify-center gap-2">
                       <span className="material-symbols-outlined">swap_horiz</span>
                       Switch Profile
                     </Link>
-                    <Link href="/create-profile" className="btn-secondary w-full flex items-center justify-center gap-2">
+                    <Link href="/note/create-profile" className="btn-secondary w-full flex items-center justify-center gap-2">
                       <span className="material-symbols-outlined">add</span>
                       Create New Profile
                     </Link>
