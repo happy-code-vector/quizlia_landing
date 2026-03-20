@@ -7,6 +7,7 @@ import { useToast } from "@/components/app/ToastContainer";
 import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
 import { QuizStudyMode } from "@/components/app/QuizStudyMode";
 import { Topic, getYouTubeThumbnail, getSourceIcon } from "@/lib/types";
+import { Sidebar } from "@/components/app/Sidebar";
 
 type TabType = "note" | "flashcards" | "quiz";
 

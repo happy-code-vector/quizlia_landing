@@ -7,19 +7,10 @@ import { ProcessingModal } from "@/components/app/ProcessingModal";
 import { useToast } from "@/components/app/ToastContainer";
 import { Tooltip } from "@/components/app/Tooltip";
 import { PaywallModal } from "@/components/app/PaywallModal";
-import { UsageIndicator } from "@/components/app/UsageIndicator";
+import { Sidebar } from "@/components/app/Sidebar";
 import { canGenerate, incrementUsage } from "@/lib/subscription";
 import { syncSubscriptionFromFirebase, createOrUpdateFirebaseUser } from "@/lib/firebaseSubscription";
 import { Topic, getYouTubeThumbnail, getSourceIcon, migrateContentToTopics } from "@/lib/types";
-
-const avatarColors: Record<string, string> = {
-  "avatar-1": "from-blue-400 to-purple-400",
-  "avatar-2": "from-green-400 to-teal-400",
-  "avatar-3": "from-orange-400 to-red-400",
-  "avatar-4": "from-pink-400 to-rose-400",
-  "avatar-5": "from-yellow-400 to-orange-400",
-  "avatar-6": "from-indigo-400 to-blue-400",
-};
 
 interface Profile {
   id: number;
@@ -47,21 +38,12 @@ export default function NotePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [content, setContent] = useState<ContentItem[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
-  const [sidebarExpanded, setSidebarExpanded] = useState(true);
   const [contentType, setContentType] = useState("url");
   const [contentInput, setContentInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPaywallOpen, setIsPaywallOpen] = useState(false);
   const [remainingGenerations, setRemainingGenerations] = useState(3);
-
-  const toggleSidebar = () => {
-    const newState = !sidebarExpanded;
-    setSidebarExpanded(newState);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("sidebarExpanded", String(newState));
-    }
-  };
 
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -88,12 +70,6 @@ export default function NotePage() {
           const parsedContent = JSON.parse(storedContent);
           setContent(parsedContent);
           setTopics(migrateContentToTopics(parsedContent));
-        }
-
-        // Load sidebar state
-        const storedSidebarState = localStorage.getItem("sidebarExpanded");
-        if (storedSidebarState !== null) {
-          setSidebarExpanded(storedSidebarState === "true");
         }
       }
     };
@@ -339,69 +315,7 @@ export default function NotePage() {
       />
 
       <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
-        {/* Sidebar */}
-        <div className="relative hidden md:flex flex-shrink-0">
-          <aside className={`${sidebarExpanded ? "w-64" : "w-20"} bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col transition-all duration-300`}>
-            <div className="flex h-full flex-col justify-between p-4">
-              <div className="flex flex-col gap-4">
-                <div className="flex gap-3 items-center">
-                  <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center rounded-lg w-10 h-10">
-                    <span className="material-symbols-outlined">auto_stories</span>
-                  </div>
-                  {sidebarExpanded && <h1 className="text-lg font-bold text-gray-900 dark:text-white">QuickNote</h1>}
-                </div>
-
-                <Link
-                  href="/note/profile-selection"
-                  className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${
-                    sidebarExpanded ? "hover:bg-gray-100 dark:hover:bg-gray-800" : "justify-center"
-                  }`}
-                  title="Switch Profile"
-                >
-                  <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${avatarColors[profile.avatar]} shrink-0`} />
-                  {sidebarExpanded && (
-                    <div className="flex flex-col flex-1 min-w-0">
-                      <h1 className="text-sm font-medium text-gray-900 dark:text-white truncate">{profile.name}</h1>
-                      <p className="text-xs text-gray-600 dark:text-gray-400 capitalize">{profile.type}</p>
-                    </div>
-                  )}
-                  {sidebarExpanded && <span className="material-symbols-outlined text-gray-400 text-sm">swap_horiz</span>}
-                </Link>
-
-                <nav className="flex flex-col gap-1 mt-4">
-                  <Link href="/note" className="flex items-center gap-3 px-3 py-2 rounded-lg bg-blue-100 dark:bg-blue-900/30 text-blue-600">
-                    <span className="material-symbols-outlined fill">home</span>
-                    {sidebarExpanded && <p className="text-sm font-medium">Dashboard</p>}
-                  </Link>
-                  <Link href="/note/notes" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
-                    <span className="material-symbols-outlined">description</span>
-                    {sidebarExpanded && <p className="text-sm font-medium">All Notes</p>}
-                  </Link>
-                  <Link href="/note/settings" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400">
-                    <span className="material-symbols-outlined">settings</span>
-                    {sidebarExpanded && <p className="text-sm font-medium">Settings</p>}
-                  </Link>
-                </nav>
-              </div>
-
-              <div className="flex flex-col gap-4">
-                {sidebarExpanded && profile && (
-                  <UsageIndicator profileId={profile.id} onUpgradeClick={() => setIsPaywallOpen(true)} />
-                )}
-              </div>
-            </div>
-          </aside>
-
-          <button
-            onClick={toggleSidebar}
-            className="absolute top-1/2 -translate-y-1/2 -right-3 z-10 w-6 h-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full shadow-sm flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
-            title={sidebarExpanded ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            <span className="material-symbols-outlined text-sm text-gray-500">
-              {sidebarExpanded ? "chevron_left" : "chevron_right"}
-            </span>
-          </button>
-        </div>
+        <Sidebar profile={profile} />
 
         {/* Main Content */}
         <main className="flex-1 overflow-y-auto">
@@ -511,12 +425,6 @@ export default function NotePage() {
                   const thumbnail = topic.sourceType === "youtube" && topic.sourceUrl
                     ? getYouTubeThumbnail(topic.sourceUrl)
                     : null;
-
-                  const materialCount = [
-                    topic.note ? 1 : 0,
-                    topic.flashcards ? 1 : 0,
-                    topic.quiz ? 1 : 0,
-                  ].reduce((a, b) => a + b, 0);
 
                   return (
                     <div

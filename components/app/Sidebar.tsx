@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { UsageIndicator } from "./UsageIndicator";
 
 const avatarColors: Record<string, string> = {
   "avatar-1": "from-blue-400 to-purple-400",
@@ -87,6 +88,9 @@ export function Sidebar({ profile }: SidebarProps) {
           </div>
 
           <div className="flex flex-col gap-4">
+            {expanded && (
+              <UsageIndicator profileId={profile.id} />
+            )}
             <Link href="/note/settings" className={`flex items-center gap-3 px-3 py-2 rounded-lg ${pathname === "/note/settings" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600" : "hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400"}`}>
               <span className="material-symbols-outlined">settings</span>
               {expanded && <p className="text-sm font-medium">Settings</p>}
