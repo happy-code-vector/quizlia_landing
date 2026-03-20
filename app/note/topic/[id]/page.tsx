@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useToast } from "@/components/app/ToastContainer";
 import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
 import { QuizStudyMode } from "@/components/app/QuizStudyMode";
-import { Topic, getYouTubeThumbnail, getSourceIcon } from "@/lib/types";
+import { Topic, getYouTubeThumbnail, getSourceIcon, getYouTubeEmbedUrl } from "@/lib/types";
 import { Sidebar } from "@/components/app/Sidebar";
 
 type TabType = "note" | "flashcards" | "quiz";
@@ -284,8 +284,8 @@ export default function TopicDetailPage() {
     );
   }
 
-  const youtubeThumbnail = topic.sourceType === "youtube" && topic.sourceUrl
-    ? getYouTubeThumbnail(topic.sourceUrl)
+  const youtubeEmbedUrl = topic.sourceType === "youtube" && topic.sourceUrl
+    ? getYouTubeEmbedUrl(topic.sourceUrl)
     : null;
 
   const tabs: { id: TabType; label: string; icon: string; available: boolean; count?: number }[] = [
@@ -338,14 +338,18 @@ export default function TopicDetailPage() {
                 </button>
               </div>
 
-              {/* YouTube Thumbnail */}
-              {youtubeThumbnail && (
+              {/* YouTube Video Player */}
+              {youtubeEmbedUrl && (
                 <div className="mt-4 ml-14">
-                  <img
-                    src={youtubeThumbnail}
-                    alt="Video thumbnail"
-                    className="rounded-lg max-w-xs border border-gray-200 dark:border-gray-700"
-                  />
+                  <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 max-w-md">
+                    <iframe
+                      src={youtubeEmbedUrl}
+                      title="YouTube video player"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full aspect-video"
+                    />
+                  </div>
                 </div>
               )}
             </div>

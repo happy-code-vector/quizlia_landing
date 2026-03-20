@@ -32,8 +32,8 @@ export interface QuizQuestion {
   explanation: string;
 }
 
-// Helper to get YouTube thumbnail
-export function getYouTubeThumbnail(url: string): string | null {
+// Helper to get YouTube video ID
+export function getYouTubeVideoId(url: string): string | null {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
     /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/
@@ -42,10 +42,22 @@ export function getYouTubeThumbnail(url: string): string | null {
   for (const pattern of patterns) {
     const match = url.match(pattern);
     if (match) {
-      return `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg`;
+      return match[1];
     }
   }
   return null;
+}
+
+// Helper to get YouTube thumbnail
+export function getYouTubeThumbnail(url: string): string | null {
+  const videoId = getYouTubeVideoId(url);
+  return videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : null;
+}
+
+// Helper to get YouTube embed URL
+export function getYouTubeEmbedUrl(url: string): string | null {
+  const videoId = getYouTubeVideoId(url);
+  return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
 }
 
 // Helper to get source icon
