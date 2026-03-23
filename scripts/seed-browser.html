@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Seed Study Guides to Firebase</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #0a0a0a;
+      color: #fff;
+    }
+    h1 { color: #964CEE; }
+    .status { margin: 10px 0; padding: 10px; border-radius: 8px; }
+    .success { background: #166534; }
+    .error { background: #991b1b; }
+    button {
+      background: linear-gradient(to right, #964CEE, #f15bb5);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .config { background: #1a1a1a; padding: 20px; border-radius: 8px; margin: 20px 0; }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+      border: 1px solid #333;
+      background: #0a0a0a;
+      color: #fff;
+      box-sizing: border-box;
+    }
+    label { display: block; margin-top: 10px; color: #888; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>🌱 Seed Study Guides to Firebase</h1>
+
+  <div class="config">
+    <h3>Firebase Config</h3>
+    <p style="color: #888; font-size: 14px;">Enter your Firebase config (from .env.local)</p>
+
+    <label>API Key</label>
+    <input type="text" id="apiKey" placeholder="AIza...">
+
+    <label>Auth Domain</label>
+    <input type="text" id="authDomain" placeholder="your-project.firebaseapp.com">
+
+    <label>Project ID</label>
+    <input type="text" id="projectId" placeholder="your-project-id">
+
+    <label>Storage Bucket</label>
+    <input type="text" id="storageBucket" placeholder="your-project.appspot.com">
+
+    <button onclick="saveConfig()">Save Config</button>
+    <button onclick="loadFromEnv()">Load from .env format</button>
+  </div>
+
+  <div id="actions" style="display: none;">
+    <h3>Study Guides to Add</h3>
+    <button onclick="seedAll()">🌱 Seed All Guides</button>
+    <button onclick="seedFrench()">🇫🇷 Add French Revolution Only</button>
+    <button onclick="clearAll()">🗑️ Clear All Guides</button>
+
+    <div id="output" style="margin-top: 20px;"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, doc, setDoc, deleteDoc, getDocs, collection } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    let db;
+
+    window.saveConfig = function() {
+      const config = {
+        apiKey: document.getElementById('apiKey').value,
+        authDomain: document.getElementById('authDomain').value,
+        projectId: document.getElementById('projectId').value,
+        storageBucket: document.getElementById('storageBucket').value,
+      };
+
+      if (!config.apiKey || !config.projectId) {
+        alert('Please enter at least API Key and Project ID');
+        return;
+      }
+
+      localStorage.setItem('firebaseConfig', JSON.stringify(config));
+      initFirebase(config);
+    };
+
+    window.loadFromEnv = function() {
+      const envText = prompt('Paste your .env.local content:');
+      if (!envText) return;
+
+      const lines = envText.split('\n');
+      const config = {};
+
+      lines.forEach(line => {
+        const [key, value] = line.split('=');
+        if (key && value) {
+          const cleanKey = key.replace('NEXT_PUBLIC_FIREBASE_', '').toLowerCase();
+          if (cleanKey === 'api_key') config.apiKey = value;
+          if (cleanKey === 'auth_domain') config.authDomain = value;
+          if (cleanKey === 'project_id') config.projectId = value;
+          if (cleanKey === 'storage_bucket') config.storageBucket = value;
+        }
+      });
+
+      if (config.apiKey) document.getElementById('apiKey').value = config.apiKey;
+      if (config.authDomain) document.getElementById('authDomain').value = config.authDomain;
+      if (config.projectId) document.getElementById('projectId').value = config.projectId;
+      if (config.storageBucket) document.getElementById('storageBucket').value = config.storageBucket;
+    };
+
+    function initFirebase(config) {
+      try {
+        const app = initializeApp(config);
+        db = getFirestore(app);
+        document.getElementById('actions').style.display = 'block';
+        log('✅ Firebase connected successfully!', 'success');
+      } catch (error) {
+        log('❌ Firebase error: ' + error.message, 'error');
+      }
+    }
+
+    function log(message, type = '') {
+      const output = document.getElementById('output');
+      output.innerHTML += `<div class="status ${type}">${message}</div>`;
+    }
+
+    // French Revolution Study Guide Data
+    const frenchRevolutionGuide = {
+      slug: "french-revolution-summary",
+      title: "The French Revolution Study Guide",
+      category: "history",
+      difficulty: "medium",
+      sourceChannel: "OverSimplified",
+      youtubeId: "l5IygD9UaJE",
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      tldr: [
+        "The Cause: France was broke due to helping the American Revolution and suffering from bad harvests (hailstorms destroyed crops)",
+        "The Conflict: The Third Estate (98% of people) paid all taxes but had 0 power. They got mad and demanded representation",
+        "The Result: The Storming of the Bastille, the execution of Louis XVI, the Reign of Terror, and the Rise of Napoleon"
+      ],
+      sections: [
+        {
+          title: "The Three Estates (Social Class System)",
+          content: "France was divided into three unequal groups called Estates:\n\nFirst Estate (Clergy): Priests and the Church. They owned 10% of the land in France but paid 0% in taxes.\n\nSecond Estate (Nobility): Rich aristocrats with swords and titles. They owned 20% of the land and also paid 0% in taxes.\n\nThird Estate (Everyone Else): Peasants, merchants, workers, and regular people. This group made up 98% of the population and paid 100% of the taxes.",
+          keyTerms: ["First Estate", "Second Estate", "Third Estate", "Estates General"]
+        },
+        {
+          title: "The Economic Crisis",
+          content: "King Louis XVI and Marie Antoinette spent heavily on luxury and wars:\n\nPalace of Versailles: The royal family lived in extreme luxury while the people starved.\n\nSeven Years War: France fought Britain and lost, draining the treasury.\n\nAmerican Revolution: France funded the American colonists just to spite Britain. This bankrupted France completely.\n\nBad Harvests: Hailstorms destroyed crops, causing bread prices to skyrocket.",
+          keyTerms: ["Louis XVI", "Marie Antoinette", "Versailles", "Seven Years War"]
+        },
+        {
+          title: "The Estates General & Tennis Court Oath",
+          content: "Desperate for money, King Louis XVI called a meeting of the Estates General - a representative assembly that hadn't met in 175 years.\n\nEach Estate got one vote, meaning the First and Second Estates (2% of people) could always outvote the Third Estate (98%).\n\nThe Third Estate was locked out of the meeting hall. In protest, they met at a nearby indoor tennis court and swore the Tennis Court Oath - promising not to leave until France had a new Constitution.",
+          keyTerms: ["Estates General", "Tennis Court Oath", "Constitution"]
+        },
+        {
+          title: "Storming of the Bastille",
+          content: "On July 14, 1789, angry Parisians stormed the Bastille - a prison and fortress in Paris.\n\nThey were looking for gunpowder and weapons to defend themselves against the King's troops.\n\nThe Bastille became a symbol of the uprising. The King's control over Paris was broken.\n\nThis day is now celebrated as France's national holiday (Bastille Day).",
+          keyTerms: ["Bastille", "July 14, 1789", "Bastille Day"]
+        },
+        {
+          title: "The Reign of Terror",
+          content: "After the Revolution, Maximilien Robespierre and the Committee of Public Safety took control.\n\nDuring the Reign of Terror (1793-1794), anyone suspected of being against the revolution was executed by guillotine.\n\nAn estimated 17,000-40,000 people were killed, including King Louis XVI and Marie Antoinette.\n\nEventually, Robespierre himself was arrested and executed, ending the Terror.",
+          keyTerms: ["Robespierre", "Reign of Terror", "Guillotine", "Committee of Public Safety"]
+        }
+      ],
+      quiz: [
+        {
+          question: "Which Estate paid the majority of taxes in pre-revolution France?",
+          options: ["First Estate (Clergy)", "Second Estate (Nobility)", "Third Estate (Commoners)", "Split evenly among all three"],
+          correct_answer: "Third Estate (Commoners)",
+          explanation: "Only the commoners (Third Estate) paid taxes. The clergy and nobility were exempt despite owning 30% of the land combined."
+        },
+        {
+          question: "Why was France in so much debt before the Revolution?",
+          options: ["Building too many hospitals", "Funding the American Revolution and bad harvests", "Paying off German war reparations", "A stock market crash"],
+          correct_answer: "Funding the American Revolution and bad harvests",
+          explanation: "France spent heavily to help America fight Britain (to spite their rival), combined with crop failures that reduced tax revenue."
+        },
+        {
+          question: "What was the Tennis Court Oath?",
+          options: ["A sports tournament for nobles", "A promise to create a new French Constitution", "A declaration of war against Austria", "A loyalty oath to King Louis XVI"],
+          correct_answer: "A promise to create a new French Constitution",
+          explanation: "After being locked out of the Estates General, the Third Estate met at a tennis court and swore not to disband until France had a constitution."
+        },
+        {
+          question: "What event is celebrated as France's national holiday (Bastille Day)?",
+          options: ["The execution of Louis XVI", "The Storming of the Bastille", "The Tennis Court Oath", "The coronation of Napoleon"],
+          correct_answer: "The Storming of the Bastille",
+          explanation: "On July 14, 1789, revolutionaries stormed the Bastille prison. This event symbolizes the fall of royal authority."
+        },
+        {
+          question: "Who led the Reign of Terror?",
+          options: ["King Louis XVI", "Napoleon Bonaparte", "Maximilien Robespierre", "Marie Antoinette"],
+          correct_answer: "Maximilien Robespierre",
+          explanation: "Robespierre led the Committee of Public Safety and orchestrated the Reign of Terror, executing thousands before being executed himself."
+        }
+      ],
+      flashcards: [
+        { question: "What percentage of the population was the Third Estate?", answer: "98%" },
+        { question: "Who were the king and queen during the French Revolution?", answer: "King Louis XVI and Marie Antoinette" },
+        { question: "What date is Bastille Day?", answer: "July 14, 1789" },
+        { question: "What weapon became the symbol of the Reign of Terror?", answer: "The guillotine" }
+      ],
+      cta: {
+        headline: "Master History on Your Phone",
+        features: ["Flashcards for every date in the French Revolution", "AI Tutor to explain complex events", "Practice quizzes for your AP History exam"]
+      }
+    };
+
+    window.seedFrench = async function() {
+      if (!db) return log('❌ Firebase not connected', 'error');
+
+      log('🌱 Adding French Revolution study guide...');
+
+      try {
+        await setDoc(doc(db, 'notes', frenchRevolutionGuide.slug), frenchRevolutionGuide);
+        log('✅ French Revolution guide added successfully!', 'success');
+        log(`📍 View at: /note/${frenchRevolutionGuide.slug}`);
+      } catch (error) {
+        log('❌ Error: ' + error.message, 'error');
+      }
+    };
+
+    window.seedAll = async function() {
+      await window.seedFrench();
+      // Add more guides here as you create them
+      log('📝 Tip: Edit this HTML file to add more study guides');
+    };
+
+    window.clearAll = async function() {
+      if (!db) return log('❌ Firebase not connected', 'error');
+
+      if (!confirm('Are you sure you want to delete ALL study guides?')) return;
+
+      try {
+        const snapshot = await getDocs(collection(db, 'notes'));
+        for (const docSnap of snapshot.docs) {
+          await deleteDoc(doc(db, 'notes', docSnap.id));
+          log(`🗑️ Deleted: ${docSnap.id}`);
+        }
+        log('✅ All guides cleared', 'success');
+      } catch (error) {
+        log('❌ Error: ' + error.message, 'error');
+      }
+    };
+
+    // Load saved config on page load
+    const savedConfig = localStorage.getItem('firebaseConfig');
+    if (savedConfig) {
+      const config = JSON.parse(savedConfig);
+      document.getElementById('apiKey').value = config.apiKey || '';
+      document.getElementById('authDomain').value = config.authDomain || '';
+      document.getElementById('projectId').value = config.projectId || '';
+      document.getElementById('storageBucket').value = config.storageBucket || '';
+      initFirebase(config);
+    }
+  </script>
+</body>
+</html>

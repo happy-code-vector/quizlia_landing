@@ -2,7 +2,25 @@
   "permissions": {
     "allow": [
       "Bash(npm run build)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(xargs grep:*)",
+      "Bash(npm install:*)",
+      "Bash(mv app/app/dashboard app/note/)",
+      "Bash(mv app/app/flashcards app/note/)",
+      "Bash(mv app/app/notes app/note/)",
+      "Bash(mv app/app/quizzes app/note/)",
+      "Bash(mv app/app/settings app/note/)",
+      "Bash(cp -r app/app/* app/note/)",
+      "Bash(rm -rf app/app)",
+      "Bash(timeout 10 npm run dev)",
+      "Bash(ls -la \"d:/D/Projects/Arasheed/quizliai-landingpage/app/\\(app\\)/\")",
+      "Bash(cat \"d:/D/Projects/Arasheed/quizliai-landingpage/app/\\(app\\)/layout.tsx\")",
+      "Bash(find d:/D/Projects/Arasheed/QuickNote/quicknote-nextjs -name *.ts -o -name *.tsx)",
+      "Bash(ls -d d:/D/Projects/Arasheed/QuickNote/quicknote-nextjs/app/*/)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(ls -d d:/D/Projects/Arasheed/quizliai-landingpage/app/note/*/)",
+      "Bash(rm -rf .next)",
+      "Bash(rm -rf node_modules/.cache)"
     ]
   }
 }

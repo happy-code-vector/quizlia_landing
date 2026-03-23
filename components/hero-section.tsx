@@ -1,8 +1,6 @@
 import Image from "next/image"
 import Link from "next/link"
 
-import { Button } from "@/components/ui/button"
-
 export function HeroSection() {
   return (
     <section className="relative pt-20 md:pt-32 pb-16 overflow-hidden" style={{ backgroundColor: '#070014' }}>
@@ -18,26 +16,40 @@ export function HeroSection() {
             QuizliAI is your smartest study assistant. Get instant notes, transcripts, and study materials from anything.
           </p>
 
-          {/* Download Button */}
-          <Link 
-            href="https://apps.apple.com/us/app/quizliai/id6751740981" 
-            target="_blank"
-            rel="noopener noreferrer"
-            className="relative flex justify-center items-center w-[192px] h-[50px] px-[15px] py-[2px] gap-[10px] mx-auto mt-8 rounded-[200px] transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(150,76,238,0.5)]"
-          >
-            {/* Static inner border */}
-            <span className="absolute inset-0 rounded-[200px] border border-white/10"></span>
-            
-            {/* Animated gradient border */}
-            <span className="absolute inset-0 rounded-[200px] overflow-hidden">
-              <span className="absolute inset-[-2px] rounded-[200px] bg-gradient-to-r from-[#964CEE] via-[#C77DFF] to-[#964CEE] bg-[length:200%_100%] animate-gradient-rotate opacity-50"></span>
-            </span>
-            
-            {/* Button content */}
-            <span className="absolute inset-[2px] rounded-[200px] bg-gradient-to-r from-[#0B0B0B] to-[#191919] flex items-center justify-center z-10">
-              <span className="text-white font-rethink-sans">Download QuizliAI</span>
-            </span>
-                </Link>
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+            {/* Download Button */}
+            <Link
+              href="https://apps.apple.com/us/app/quizliai/id6751740981"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="relative flex justify-center items-center w-[192px] h-[50px] px-[15px] py-[2px] gap-[10px] rounded-[200px] transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(150,76,238,0.5)]"
+            >
+              {/* Static inner border */}
+              <span className="absolute inset-0 rounded-[200px] border border-white/10"></span>
+
+              {/* Animated gradient border */}
+              <span className="absolute inset-0 rounded-[200px] overflow-hidden">
+                <span className="absolute inset-[-2px] rounded-[200px] bg-gradient-to-r from-[#964CEE] via-[#C77DFF] to-[#964CEE] bg-[length:200%_100%] animate-gradient-rotate opacity-50"></span>
+              </span>
+
+              {/* Button content */}
+              <span className="absolute inset-[2px] rounded-[200px] bg-gradient-to-r from-[#0B0B0B] to-[#191919] flex items-center justify-center z-10">
+                <span className="text-white font-rethink-sans">Download QuizliAI</span>
+              </span>
+            </Link>
+
+            {/* Continue on Web Button */}
+            <Link
+              href="/note"
+              className="flex justify-center items-center w-[192px] h-[50px] px-[15px] py-[2px] gap-[8px] rounded-[200px] border border-white/20 bg-white/5 text-white font-rethink-sans transition-all duration-300 ease-out hover:bg-white/10 hover:border-white/30 hover:scale-[1.02]"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+              </svg>
+              Continue on Web
+            </Link>
+          </div>
 
           {/* Hero Image */}
           <div className="mt-[30px] w-full md:w-[100%] lg:w-full max-w-[1000px] mx-auto px-4">

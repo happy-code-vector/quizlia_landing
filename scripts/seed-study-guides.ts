@@ -1,0 +1,136 @@
+// Seed script to add study guides to Firebase Firestore
+// Run with: npx ts-node scripts/seed-study-guides.ts
+
+import { initializeApp, cert } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+
+// You need to download your Firebase service account key from:
+// Firebase Console > Project Settings > Service Accounts > Generate Private Key
+// Save it as 'service-account.json' in the scripts folder
+
+const serviceAccount = require("./service-account.json");
+
+initializeApp({
+  credential: cert(serviceAccount),
+});
+
+const db = getFirestore();
+
+// Sample study guides data
+const studyGuides = [
+  {
+    slug: "french-revolution-summary",
+    title: "The French Revolution Study Guide",
+    category: "history",
+    difficulty: "medium",
+    sourceChannel: "OverSimplified",
+    youtubeId: "l5IygD9UaJE",
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    tldr: [
+      "The Cause: France was broke due to helping the American Revolution and suffering from bad harvests (hailstorms destroyed crops)",
+      "The Conflict: The Third Estate (98% of people) paid all taxes but had 0 power. They got mad and demanded representation",
+      "The Result: The Storming of the Bastille, the execution of Louis XVI, the Reign of Terror, and the Rise of Napoleon"
+    ],
+    sections: [
+      {
+        title: "The Three Estates (Social Class System)",
+        content: "France was divided into three unequal groups called Estates:\n\nFirst Estate (Clergy): Priests and the Church. They owned 10% of the land in France but paid 0% in taxes.\n\nSecond Estate (Nobility): Rich aristocrats with swords and titles. They owned 20% of the land and also paid 0% in taxes.\n\nThird Estate (Everyone Else): Peasants, merchants, workers, and regular people. This group made up 98% of the population and paid 100% of the taxes.",
+        keyTerms: ["First Estate", "Second Estate", "Third Estate", "Estates General"]
+      },
+      {
+        title: "The Economic Crisis",
+        content: "King Louis XVI and Marie Antoinette spent heavily on luxury and wars:\n\nPalace of Versailles: The royal family lived in extreme luxury while the people starved.\n\nSeven Years War: France fought Britain and lost, draining the treasury.\n\nAmerican Revolution: France funded the American colonists just to spite Britain. This bankrupted France completely.\n\nBad Harvests: Hailstorms destroyed crops, causing bread prices to skyrocket.",
+        keyTerms: ["Louis XVI", "Marie Antoinette", "Versailles", "Seven Years War"]
+      },
+      {
+        title: "The Estates General & Tennis Court Oath",
+        content: "Desperate for money, King Louis XVI called a meeting of the Estates General - a representative assembly that hadn't met in 175 years.\n\nEach Estate got one vote, meaning the First and Second Estates (2% of people) could always outvote the Third Estate (98%).\n\nThe Third Estate was locked out of the meeting hall. In protest, they met at a nearby indoor tennis court and swore the Tennis Court Oath - promising not to leave until France had a new Constitution.",
+        keyTerms: ["Estates General", "Tennis Court Oath", "Constitution"]
+      },
+      {
+        title: "Storming of the Bastille",
+        content: "On July 14, 1789, angry Parisians stormed the Bastille - a prison and fortress in Paris.\n\nThey were looking for gunpowder and weapons to defend themselves against the King's troops.\n\nThe Bastille became a symbol of the uprising. The King's control over Paris was broken.\n\nThis day is now celebrated as France's national holiday (Bastille Day).",
+        keyTerms: ["Bastille", "July 14, 1789", "Bastille Day"]
+      },
+      {
+        title: "The Reign of Terror",
+        content: "After the Revolution, Maximilien Robespierre and the Committee of Public Safety took control.\n\nDuring the Reign of Terror (1793-1794), anyone suspected of being against the revolution was executed by guillotine.\n\nAn estimated 17,000-40,000 people were killed, including King Louis XVI and Marie Antoinette.\n\nEventually, Robespierre himself was arrested and executed, ending the Terror.",
+        keyTerms: ["Robespierre", "Reign of Terror", "Guillotine", "Committee of Public Safety"]
+      }
+    ],
+    quiz: [
+      {
+        question: "Which Estate paid the majority of taxes in pre-revolution France?",
+        options: ["First Estate (Clergy)", "Second Estate (Nobility)", "Third Estate (Commoners)", "Split evenly among all three"],
+        correct_answer: "Third Estate (Commoners)",
+        explanation: "Only the commoners (Third Estate) paid taxes. The clergy and nobility were exempt despite owning 30% of the land combined."
+      },
+      {
+        question: "Why was France in so much debt before the Revolution?",
+        options: ["Building too many hospitals", "Funding the American Revolution and bad harvests", "Paying off German war reparations", "A stock market crash"],
+        correct_answer: "Funding the American Revolution and bad harvests",
+        explanation: "France spent heavily to help America fight Britain (to spite their rival), combined with crop failures that reduced tax revenue."
+      },
+      {
+        question: "What was the Tennis Court Oath?",
+        options: ["A sports tournament for nobles", "A promise to create a new French Constitution", "A declaration of war against Austria", "A loyalty oath to King Louis XVI"],
+        correct_answer: "A promise to create a new French Constitution",
+        explanation: "After being locked out of the Estates General, the Third Estate met at a tennis court and swore not to disband until France had a constitution."
+      },
+      {
+        question: "What event is celebrated as France's national holiday (Bastille Day)?",
+        options: ["The execution of Louis XVI", "The Storming of the Bastille", "The Tennis Court Oath", "The coronation of Napoleon"],
+        correct_answer: "The Storming of the Bastille",
+        explanation: "On July 14, 1789, revolutionaries stormed the Bastille prison. This event symbolizes the fall of royal authority."
+      },
+      {
+        question: "Who led the Reign of Terror?",
+        options: ["King Louis XVI", "Napoleon Bonaparte", "Maximilien Robespierre", "Marie Antoinette"],
+        correct_answer: "Maximilien Robespierre",
+        explanation: "Robespierre led the Committee of Public Safety and orchestrated the Reign of Terror, executing thousands before being executed himself."
+      }
+    ],
+    flashcards: [
+      {
+        question: "What percentage of the population was the Third Estate?",
+        answer: "98%"
+      },
+      {
+        question: "Who were the king and queen during the French Revolution?",
+        answer: "King Louis XVI and Marie Antoinette"
+      },
+      {
+        question: "What date is Bastille Day?",
+        answer: "July 14, 1789"
+      },
+      {
+        question: "What weapon became the symbol of the Reign of Terror?",
+        answer: "The guillotine"
+      }
+    ],
+    cta: {
+      headline: "Master History on Your Phone",
+      features: ["Flashcards for every date in the French Revolution", "AI Tutor to explain complex events", "Practice quizzes for your AP History exam"]
+    }
+  },
+  // Add more study guides here...
+];
+
+async function seedDatabase() {
+  console.log("🌱 Seeding study guides to Firebase...\n");
+
+  for (const guide of studyGuides) {
+    try {
+      await db.collection("notes").doc(guide.slug).set(guide);
+      console.log(`✅ Added: ${guide.slug}`);
+    } catch (error) {
+      console.error(`❌ Error adding ${guide.slug}:`, error);
+    }
+  }
+
+  console.log("\n✨ Seeding complete!");
+  process.exit(0);
+}
+
+seedDatabase();
