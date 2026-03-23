@@ -18,7 +18,9 @@
       "Bash(find d:/D/Projects/Arasheed/QuickNote/quicknote-nextjs -name *.ts -o -name *.tsx)",
       "Bash(ls -d d:/D/Projects/Arasheed/QuickNote/quicknote-nextjs/app/*/)",
       "Bash(xargs -I{} basename {})",
-      "Bash(ls -d d:/D/Projects/Arasheed/quizliai-landingpage/app/note/*/)"
+      "Bash(ls -d d:/D/Projects/Arasheed/quizliai-landingpage/app/note/*/)",
+      "Bash(rm -rf .next)",
+      "Bash(rm -rf node_modules/.cache)"
     ]
   }
 }

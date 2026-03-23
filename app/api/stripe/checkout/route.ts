@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+export const dynamic = 'force-dynamic';
+
 // Stripe checkout session creation
 export async function POST(request: NextRequest) {
   try {
