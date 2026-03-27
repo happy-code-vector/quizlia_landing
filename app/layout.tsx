@@ -3,24 +3,30 @@ import type { Metadata } from 'next';
 import { Inter, Manrope, Shadows_Into_Light } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 
-// Google Fonts
-const inter = Inter({ 
+// Google Fonts with fallbacks
+const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
   display: 'swap',
+  fallback: ['system-ui', 'sans-serif'],
+  adjustFontFallback: true,
 });
 
-const manrope = Manrope({ 
+const manrope = Manrope({
   subsets: ['latin'],
   variable: '--font-manrope',
   display: 'swap',
+  fallback: ['system-ui', 'sans-serif'],
+  adjustFontFallback: true,
 });
 
-const shadows = Shadows_Into_Light({ 
+const shadows = Shadows_Into_Light({
   weight: '400',
   subsets: ['latin'],
   variable: '--font-shadows',
   display: 'swap',
+  fallback: ['cursive'],
+  adjustFontFallback: true,
 });
 
 export const metadata: Metadata = {
