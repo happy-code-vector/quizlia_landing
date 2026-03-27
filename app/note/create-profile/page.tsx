@@ -47,18 +47,33 @@ export default function CreateProfilePage() {
     }
   }, [user?.email]);
 
-  // Check if user is already authenticated
+  // Check if user is already authenticated and has profiles
   useEffect(() => {
-    if (!authLoading && user) {
-      setStep("profile");
+    async function checkExistingProfiles() {
+      if (!authLoading && user?.email) {
+        // Sync profiles from Firebase
+        const firebaseProfiles = await syncProfilesFromFirebase(user.email);
+
+        if (firebaseProfiles.length > 0) {
+          // User has profiles - redirect to profile selection
+          router.push("/note/profile-selection");
+          return;
+        }
+
+        // No profiles - show profile creation form
+        setStep("profile");
+      }
     }
-  }, [user, authLoading]);
+
+    checkExistingProfiles();
+  }, [user?.email, authLoading, router]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
       await signInWithGoogle();
-      // Auth state change will trigger step change
+      // Auth state change will trigger the useEffect above
+      // which will check for existing profiles and redirect accordingly
     } catch (error: any) {
       showToast(error.message || "Failed to sign in with Google", "error");
     } finally {
