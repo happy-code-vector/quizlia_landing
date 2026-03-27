@@ -8,7 +8,7 @@ import { useToast } from "@/components/app/ToastContainer";
 import { Tooltip } from "@/components/app/Tooltip";
 import { PaywallModal } from "@/components/app/PaywallModal";
 import { Sidebar } from "@/components/app/Sidebar";
-import { canGenerate, incrementUsage } from "@/lib/subscription";
+import { canGenerate, incrementUsage, getSubscription, UserSubscription } from "@/lib/subscription";
 import { syncSubscriptionFromFirebase, createOrUpdateFirebaseUser } from "@/lib/firebaseSubscription";
 import {
   syncTopicsFromFirebase,
@@ -45,6 +45,7 @@ export default function NotePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [content, setContent] = useState<ContentItem[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [contentType, setContentType] = useState("url");
   const [contentInput, setContentInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -373,6 +374,34 @@ export default function NotePage() {
                 Generate notes, flashcards, and quizzes from any content
               </p>
             </div>
+
+            {/* Pro Upgrade Banner - shows for non-Pro users */}
+            {subscription?.planId === "free" && (
+              <div className="mb-6 bg-gradient-to-r from-purple-500/10 to-pink-500/10 dark:from-purple-500/20 dark:to-pink-500/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4">
+                <div className="flex items-center justify-between flex-wrap gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
+                      <span className="material-symbols-outlined text-white">cloud_sync</span>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        Sync your notes across all devices
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        Upgrade to Pro for cloud sync, unlimited generations, and more
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/note/pricing"
+                    className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-5 py-2.5 rounded-lg transition-all flex items-center gap-2"
+                  >
+                    <span className="material-symbols-outlined text-lg">workspace_premium</span>
+                    Upgrade to Pro
+                  </Link>
+                </div>
+              </div>
+            )}
 
             {/* Input Section */}
             <div className="bg-white dark:bg-gray-900 rounded-xl p-6 mb-8 border border-gray-200 dark:border-gray-800">
