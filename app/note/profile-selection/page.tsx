@@ -21,6 +21,7 @@ interface Profile {
   type: string;
   avatar: string;
   gradeLevel?: string;
+  parentEmail?: string;
 }
 
 export default function ProfileSelectionPage() {

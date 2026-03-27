@@ -31,6 +31,21 @@ export default function CreateProfilePage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
+  const [studentCount, setStudentCount] = useState(0);
+
+  // Check existing student count for parent
+  useEffect(() => {
+    if (user?.email && typeof window !== "undefined") {
+      const storedProfiles = localStorage.getItem("profiles");
+      if (storedProfiles) {
+        const profiles = JSON.parse(storedProfiles);
+        const count = profiles.filter(
+          (p: any) => p.type === "student" && p.parentEmail === user.email
+        ).length;
+        setStudentCount(count);
+      }
+    }
+  }, [user?.email]);
 
   // Check if user is already authenticated
   useEffect(() => {
@@ -89,15 +104,29 @@ export default function CreateProfilePage() {
       // Simulate slight delay for UX
       await new Promise((resolve) => setTimeout(resolve, 300));
 
+      // Get existing profiles
+      const storedProfiles = localStorage.getItem("profiles");
+      const profiles = storedProfiles ? JSON.parse(storedProfiles) : [];
+
+      // Check student limit for parent profiles
+      if (formData.type === "student" && user?.email) {
+        const existingStudents = profiles.filter(
+          (p: any) => p.type === "student" && p.parentEmail === user.email
+        );
+        if (existingStudents.length >= 3) {
+          showToast("Maximum of 3 student profiles allowed per parent account", "error");
+          setIsLoading(false);
+          return;
+        }
+      }
+
       const newProfile = {
         id: Date.now(),
         ...formData,
         createdAt: new Date().toISOString(),
+        // Link student profiles to parent email
+        parentEmail: formData.type === "student" ? user?.email : undefined,
       };
-
-      // Get existing profiles
-      const storedProfiles = localStorage.getItem("profiles");
-      const profiles = storedProfiles ? JSON.parse(storedProfiles) : [];
 
       // Add new profile
       profiles.push(newProfile);
@@ -344,6 +373,16 @@ export default function CreateProfilePage() {
                     </div>
                   </label>
                 </div>
+                {studentCount >= 3 && formData.type === "student" && (
+                  <p className="mt-2 text-sm text-red-500 dark:text-red-400">
+                    Maximum of 3 student profiles reached. Delete an existing student profile to add a new one.
+                  </p>
+                )}
+                {studentCount < 3 && formData.type === "student" && (
+                  <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                    {3 - studentCount} of 3 student slots remaining
+                  </p>
+                )}
               </div>
 
               <div>
@@ -371,7 +410,7 @@ export default function CreateProfilePage() {
               >
                 Cancel
               </button>
-              <button type="submit" disabled={isLoading} className="flex-1 btn-primary flex items-center justify-center gap-2">
+              <button type="submit" disabled={isLoading || (studentCount >= 3 && formData.type === "student")} className="flex-1 btn-primary flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                 {isLoading ? (
                   <>
                     <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
