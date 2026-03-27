@@ -10,6 +10,13 @@ import { PaywallModal } from "@/components/app/PaywallModal";
 import { Sidebar } from "@/components/app/Sidebar";
 import { canGenerate, incrementUsage } from "@/lib/subscription";
 import { syncSubscriptionFromFirebase, createOrUpdateFirebaseUser } from "@/lib/firebaseSubscription";
+import {
+  syncTopicsFromFirebase,
+  saveTopicToFirebase,
+  deleteTopicFromFirebase,
+  saveTopicsToLocalStorage,
+  getTopicsFromLocalStorage,
+} from "@/lib/firebaseTopics";
 import { Topic, getYouTubeThumbnail, getSourceIcon, migrateContentToTopics } from "@/lib/types";
 
 interface Profile {
@@ -56,20 +63,51 @@ export default function NotePage() {
         const profileData = JSON.parse(currentProfile);
         setProfile(profileData);
 
-        // Sync subscription from Firebase
-        const email = profileData.email || "demo@example.com";
+        // Get email from Firebase auth or profile
+        const storedUser = localStorage.getItem("firebaseUser");
+        const firebaseUser = storedUser ? JSON.parse(storedUser) : null;
+        const email = firebaseUser?.email || profileData.email || "demo@example.com";
+
         try {
           await createOrUpdateFirebaseUser(email);
           await syncSubscriptionFromFirebase(email, profileData.id);
+
+          // Sync topics from Firebase (full data: notes, flashcards, quizzes)
+          const firebaseTopics = await syncTopicsFromFirebase(email, profileData.id);
+          if (firebaseTopics.length > 0) {
+            setTopics(firebaseTopics);
+          } else {
+            // Fall back to local topics
+            const localTopics = getTopicsFromLocalStorage(profileData.id);
+            if (localTopics.length > 0) {
+              setTopics(localTopics);
+            } else {
+              // Try legacy content migration
+              const storedContent = localStorage.getItem(`content_${profileData.id}`);
+              if (storedContent) {
+                const parsedContent = JSON.parse(storedContent);
+                setContent(parsedContent);
+                const migratedTopics = migrateContentToTopics(parsedContent);
+                setTopics(migratedTopics);
+                // Save migrated topics
+                saveTopicsToLocalStorage(profileData.id, migratedTopics);
+              }
+            }
+          }
         } catch (error) {
           console.log("Firebase sync skipped:", error);
-        }
-
-        const storedContent = localStorage.getItem(`content_${profileData.id}`);
-        if (storedContent) {
-          const parsedContent = JSON.parse(storedContent);
-          setContent(parsedContent);
-          setTopics(migrateContentToTopics(parsedContent));
+          // Fall back to local
+          const localTopics = getTopicsFromLocalStorage(profileData.id);
+          if (localTopics.length > 0) {
+            setTopics(localTopics);
+          } else {
+            const storedContent = localStorage.getItem(`content_${profileData.id}`);
+            if (storedContent) {
+              const parsedContent = JSON.parse(storedContent);
+              setContent(parsedContent);
+              setTopics(migrateContentToTopics(parsedContent));
+            }
+          }
         }
       }
     };
@@ -295,14 +333,20 @@ export default function NotePage() {
     return date.toLocaleDateString();
   };
 
-  const handleDeleteTopic = (topicId: string) => {
+  const handleDeleteTopic = async (topicId: string) => {
     if (!profile || typeof window === "undefined") return;
 
-    const updatedContent = content.filter((item) => item.sourceId !== topicId);
-    setContent(updatedContent);
-    setTopics(migrateContentToTopics(updatedContent));
-    localStorage.setItem(`content_${profile.id}`, JSON.stringify(updatedContent));
+    const updatedTopics = topics.filter((t) => t.id !== topicId);
+    setTopics(updatedTopics);
+    saveTopicsToLocalStorage(profile.id, updatedTopics);
     showToast("Topic deleted", "success");
+
+    // Delete from Firebase
+    const storedUser = localStorage.getItem("firebaseUser");
+    const firebaseUser = storedUser ? JSON.parse(storedUser) : null;
+    if (firebaseUser?.email) {
+      await deleteTopicFromFirebase(firebaseUser.email, profile.id, topicId);
+    }
   };
 
   if (!profile) return null;
