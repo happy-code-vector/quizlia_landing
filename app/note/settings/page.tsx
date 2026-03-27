@@ -4,30 +4,87 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "@/components/app/ThemeProvider";
+import { useToast } from "@/components/app/ToastContainer";
 import { getSubscription, getPlanById, SUBSCRIPTION_PLANS, getTodayUsage, UserSubscription } from "@/lib/subscription";
 import { PromoCodeInput } from "@/components/app/PromoCodeInput";
 import { useAuth } from "@/lib/auth";
+import { deleteProfileFromFirebase, syncProfilesToFirebase } from "@/lib/firebaseProfiles";
+
+const avatarColors: Record<string, string> = {
+  "avatar-1": "from-blue-400 to-purple-400",
+  "avatar-2": "from-green-400 to-teal-400",
+  "avatar-3": "from-orange-400 to-red-400",
+  "avatar-4": "from-pink-400 to-rose-400",
+  "avatar-5": "from-yellow-400 to-orange-400",
+  "avatar-6": "from-indigo-400 to-blue-400",
+};
 
 export default function SettingsPage() {
   const router = useRouter();
   const { theme, toggleTheme } = useTheme();
+  const { showToast } = useToast();
   const { user, signOut, getUserEmail, getUserName, isConfigured } = useAuth();
   const [profile, setProfile] = useState<any>(null);
+  const [profiles, setProfiles] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<"general" | "billing" | "notifications" | "account">("general");
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const [todayUsage, setTodayUsage] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
       await signOut();
       // Clear local storage
       if (typeof window !== "undefined") {
         localStorage.removeItem("currentProfile");
+        localStorage.removeItem("profiles");
       }
-      router.push("/note/login");
-    } catch (error) {
+      showToast("Logged out successfully", "success");
+      router.push("/");
+    } catch (error: any) {
       console.error("Logout error:", error);
+      showToast(error.message || "Failed to log out", "error");
+    } finally {
+      setIsLoggingOut(false);
     }
+  };
+
+  const handleDeleteProfile = async () => {
+    if (!profile || !user?.email) return;
+
+    try {
+      // Remove from profiles list
+      const updatedProfiles = profiles.filter((p) => p.id !== profile.id);
+      localStorage.setItem("profiles", JSON.stringify(updatedProfiles));
+
+      // Delete from Firebase
+      await deleteProfileFromFirebase(user.email, profile.id);
+
+      // Clear current profile
+      localStorage.removeItem("currentProfile");
+
+      showToast("Profile deleted successfully", "success");
+
+      // Redirect to profile selection or create profile
+      if (updatedProfiles.length > 0) {
+        router.push("/note/profile-selection");
+      } else {
+        router.push("/note/create-profile");
+      }
+    } catch (error) {
+      console.error("Delete error:", error);
+      showToast("Failed to delete profile", "error");
+    }
+  };
+
+  const selectProfile = (selectedProfile: any) => {
+    localStorage.setItem("currentProfile", JSON.stringify(selectedProfile));
+    setProfile(selectedProfile);
+    setSubscription(getSubscription(selectedProfile.id));
+    setTodayUsage(getTodayUsage(selectedProfile.id));
+    showToast(`Switched to ${selectedProfile.name}`, "success");
   };
 
   useEffect(() => {
@@ -41,6 +98,12 @@ export default function SettingsPage() {
       setProfile(profileData);
       setSubscription(getSubscription(profileData.id));
       setTodayUsage(getTodayUsage(profileData.id));
+
+      // Load all profiles
+      const storedProfiles = localStorage.getItem("profiles");
+      if (storedProfiles) {
+        setProfiles(JSON.parse(storedProfiles));
+      }
     }
   }, [router]);
 
@@ -324,7 +387,7 @@ export default function SettingsPage() {
                 {user && (
                   <div className="bg-blue-50 dark:bg-blue-950/20 rounded-xl border border-blue-200 dark:border-blue-900/50 overflow-hidden">
                     <div className="p-6 border-b border-blue-200 dark:border-blue-900/50">
-                      <h2 className="text-xl font-bold text-blue-900 dark:text-blue-400">Firebase Account</h2>
+                      <h2 className="text-xl font-bold text-blue-900 dark:text-blue-400">Account</h2>
                       <p className="text-sm text-blue-700 dark:text-blue-400 mt-1">Signed in with Firebase</p>
                     </div>
                     <div className="p-6 space-y-4">
@@ -345,47 +408,61 @@ export default function SettingsPage() {
                   </div>
                 )}
 
-                {/* Profile Information */}
+                {/* All Profiles */}
                 <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-                  <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profile Information</h2>
-                  </div>
-                  <div className="p-6 space-y-4">
+                  <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Name</label>
-                      <input
-                        type="text"
-                        value={profile.name}
-                        readOnly
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white"
-                      />
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white">All Profiles</h2>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Switch between your profiles</p>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Profile Type</label>
-                      <input
-                        type="text"
-                        value={profile.type}
-                        readOnly
-                        className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-gray-900 dark:text-white capitalize"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Profile Actions */}
-                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
-                  <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">Profile Actions</h2>
-                  </div>
-                  <div className="p-6 space-y-3">
-                    <Link href="/note/profile-selection" className="btn-secondary w-full flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined">swap_horiz</span>
-                      Switch Profile
+                    <Link
+                      href="/note/create-profile"
+                      className="btn-primary flex items-center gap-2 text-sm px-4 py-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">add</span>
+                      Add
                     </Link>
-                    <Link href="/note/create-profile" className="btn-secondary w-full flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined">add</span>
-                      Create New Profile
-                    </Link>
+                  </div>
+                  <div className="p-4 space-y-2">
+                    {profiles.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => selectProfile(p)}
+                        className={`w-full flex items-center gap-4 p-3 rounded-xl transition-all ${
+                          p.id === profile.id
+                            ? "bg-purple-100 dark:bg-purple-900/30 border-2 border-purple-500"
+                            : "bg-gray-50 dark:bg-gray-800 border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-700"
+                        }`}
+                      >
+                        <div
+                          className={`w-12 h-12 rounded-full bg-gradient-to-br ${
+                            avatarColors[p.avatar] || "from-gray-400 to-gray-500"
+                          }`}
+                        />
+                        <div className="flex-1 text-left">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-900 dark:text-white">{p.name}</p>
+                            {p.id === profile.id && (
+                              <span className="px-2 py-0.5 text-xs bg-purple-500 text-white rounded-full">
+                                Active
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                            <span className="capitalize">{p.type}</span>
+                            {p.gradeLevel && (
+                              <>
+                                <span>•</span>
+                                <span className="capitalize">{p.gradeLevel}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {p.id !== profile.id && (
+                          <span className="material-symbols-outlined text-gray-400">chevron_right</span>
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
@@ -398,10 +475,20 @@ export default function SettingsPage() {
                   <div className="p-6">
                     <button
                       onClick={handleLogout}
-                      className="w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                      disabled={isLoggingOut}
+                      className="w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <span className="material-symbols-outlined">logout</span>
-                      Log Out
+                      {isLoggingOut ? (
+                        <>
+                          <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                          Logging out...
+                        </>
+                      ) : (
+                        <>
+                          <span className="material-symbols-outlined">logout</span>
+                          Log Out
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -413,10 +500,36 @@ export default function SettingsPage() {
                     <p className="text-sm text-red-700 dark:text-red-400 mt-1">Irreversible actions</p>
                   </div>
                   <div className="p-6">
-                    <button className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined">delete_forever</span>
-                      Delete Profile
-                    </button>
+                    {!deleteConfirm ? (
+                      <button
+                        onClick={() => setDeleteConfirm(true)}
+                        className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                      >
+                        <span className="material-symbols-outlined">delete_forever</span>
+                        Delete Current Profile
+                      </button>
+                    ) : (
+                      <div className="space-y-4">
+                        <p className="text-sm text-red-700 dark:text-red-300 text-center">
+                          Are you sure? This will delete <strong>{profile.name}</strong> and all associated data. This cannot be undone.
+                        </p>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => setDeleteConfirm(false)}
+                            className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-3 rounded-lg transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleDeleteProfile}
+                            className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                          >
+                            <span className="material-symbols-outlined">delete_forever</span>
+                            Confirm Delete
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </>
