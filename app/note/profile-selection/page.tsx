@@ -144,7 +144,7 @@ export default function ProfileSelectionPage() {
         </div>
 
         <div className="flex justify-center gap-4">
-          <Link href="/note/create-profile" className="btn-secondary flex items-center gap-2">
+          <Link href="/note/manage-profiles" className="btn-secondary flex items-center gap-2">
             <span className="material-symbols-outlined">settings</span>
             Manage Profiles
           </Link>
