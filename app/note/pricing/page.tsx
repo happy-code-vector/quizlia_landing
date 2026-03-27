@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { SUBSCRIPTION_PLANS, getSubscription, SubscriptionPlan } from "@/lib/subscription";
+import { SUBSCRIPTION_PLANS, getSubscription, saveSubscription, SubscriptionPlan, UserSubscription } from "@/lib/subscription";
+import { updateFirebaseSubscription } from "@/lib/firebaseSubscription";
 
 export default function PricingPage() {
   const router = useRouter();
@@ -48,6 +49,67 @@ export default function PricingPage() {
       }
     } catch (error) {
       console.error("Checkout error:", error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
+
+  const handleDowngrade = async () => {
+    if (!profileId) return;
+
+    setIsLoading("free");
+    try {
+      const storedUser = localStorage.getItem("firebaseUser");
+      const firebaseUser = storedUser ? JSON.parse(storedUser) : null;
+
+      // Update local subscription to free FIRST
+      const freeSubscription: UserSubscription = {
+        planId: "free",
+        status: "active",
+        currentPeriodEnd: null,
+        stripeCustomerId: null,
+        stripeSubscriptionId: null,
+      };
+
+      saveSubscription(profileId, freeSubscription);
+
+      // Update Firebase to free (cancel all subscription types)
+      if (firebaseUser?.email) {
+        const { updateFirebaseSubscription } = await import("@/lib/firebaseSubscription");
+
+        // Cancel all subscription types in Firebase
+        await updateFirebaseSubscription(firebaseUser.email, "monthly", false, null);
+        await updateFirebaseSubscription(firebaseUser.email, "yearly", false, null);
+        await updateFirebaseSubscription(firebaseUser.email, "yearlyOffer", false, null);
+
+        console.log("✅ Firebase subscription canceled");
+      }
+
+      // Call Stripe cancel endpoint (if applicable)
+      if (firebaseUser?.email) {
+        try {
+          await fetch("/api/stripe/cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: firebaseUser.email,
+              profileId,
+            }),
+          });
+        } catch (stripeError) {
+          console.log("Stripe cancel skipped:", stripeError);
+        }
+      }
+
+      // Update UI state
+      setCurrentPlan("free");
+
+      // Show success message and redirect
+      alert("Successfully downgraded to Free plan");
+      router.push("/note");
+    } catch (error) {
+      console.error("Downgrade error:", error);
+      alert("Failed to downgrade. Please try again or contact support.");
     } finally {
       setIsLoading(null);
     }
@@ -141,14 +203,32 @@ export default function PricingPage() {
             </ul>
 
             <button
-              disabled={currentPlan === "free"}
-              className={`w-full py-3 rounded-xl font-semibold transition-all ${
+              onClick={handleDowngrade}
+              disabled={currentPlan === "free" || isLoading === "free"}
+              className={`w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
                 currentPlan === "free"
                   ? "bg-gray-100 dark:bg-gray-800 text-gray-500 cursor-not-allowed"
+                  : isLoading === "free"
+                  ? "bg-gray-200 dark:bg-gray-800 text-gray-400"
                   : "bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-300 dark:hover:bg-gray-700"
               }`}
             >
-              {currentPlan === "free" ? "Current Plan" : "Downgrade"}
+              {isLoading === "free" ? (
+                <>
+                  <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                  Processing...
+                </>
+              ) : currentPlan === "free" ? (
+                <>
+                  <span className="material-symbols-outlined text-lg">check_circle</span>
+                  Current Plan
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-lg">arrow_downward</span>
+                  Downgrade
+                </>
+              )}
             </button>
           </div>
 

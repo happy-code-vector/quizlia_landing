@@ -71,7 +71,11 @@ export default function NotePage() {
 
         try {
           await createOrUpdateFirebaseUser(email);
-          await syncSubscriptionFromFirebase(email, profileData.id);
+          const syncedSubscription = await syncSubscriptionFromFirebase(email, profileData.id);
+          // Update subscription state with synced data
+          if (syncedSubscription) {
+            setSubscription(syncedSubscription);
+          }
 
           // Sync topics from Firebase (full data: notes, flashcards, quizzes)
           const firebaseTopics = await syncTopicsFromFirebase(email, profileData.id);
@@ -115,6 +119,14 @@ export default function NotePage() {
 
     initializeDashboard();
   }, [router]);
+
+  // Update subscription state when profile changes
+  useEffect(() => {
+    if (profile) {
+      const sub = getSubscription(profile.id);
+      setSubscription(sub);
+    }
+  }, [profile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
