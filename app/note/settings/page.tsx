@@ -36,10 +36,10 @@ export default function SettingsPage() {
     setIsLoggingOut(true);
     try {
       await signOut();
-      // Clear local storage
+      // Only clear the current profile session (keep profiles in localStorage)
+      // Profiles will be re-synced from Firebase when user logs back in
       if (typeof window !== "undefined") {
         localStorage.removeItem("currentProfile");
-        localStorage.removeItem("profiles");
       }
       showToast("Logged out successfully", "success");
       router.push("/");
