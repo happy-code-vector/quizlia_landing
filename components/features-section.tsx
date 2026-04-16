@@ -36,7 +36,7 @@ export function FeaturesSection() {
   ]
 
   return (
-    <section id="features" className="py-20 md:pt-[160px] md:pb-20 mt-[120px] md:mt-[180px]">
+    <section id="features" className="md:pb-20 mt-[120px] md:mt-[180px]">
       <div className="container px-4 md:px-6 max-w-[1200px] mx-auto">
         {/* Section Header */}
         <div className="text-center mb-16">

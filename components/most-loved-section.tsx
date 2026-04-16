@@ -22,7 +22,9 @@ export function MostLovedSection() {
             />
             {/* 5.0 Rating Overlay */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <span className="text-white font-bold text-[48px] md:text-[56px] font-rethink-sans drop-shadow-lg">
+              <span
+                className="text-white font-bold text-[72px] md:text-[90px] font-rethink-sans animate-rating-pulse"
+              >
                 5.0
               </span>
             </div>

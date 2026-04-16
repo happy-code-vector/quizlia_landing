@@ -161,3 +161,25 @@
   border-radius: 2px;
   animation: confetti-fall 3s ease-out forwards;
 }
+
+/* Rating Pulse Animation */
+@keyframes ratingPulse {
+  0%, 100% {
+    text-shadow:
+      0 0 10px rgba(150,76,238,0.4),
+      0 0 25px rgba(150,76,238,0.2);
+    transform: translateY(0);
+  }
+  50% {
+    text-shadow:
+      0 0 20px rgba(150,76,238,0.7),
+      0 0 45px rgba(150,76,238,0.4),
+      0 0 70px rgba(150,76,238,0.2);
+    transform: translateY(-3px);
+  }
+}
+
+.animate-rating-pulse {
+  animation: ratingPulse 3s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  will-change: transform, text-shadow;
+}
