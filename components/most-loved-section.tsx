@@ -10,20 +10,20 @@ export function MostLovedSection() {
         </h1>
 
         {/* Review Card Image */}
-        <div className="max-w-[280px] md:max-w-[320px] mx-auto">
+        <div className="max-w-[380px] md:max-w-[480px] mx-auto">
           <div className="relative rounded-[20px] overflow-hidden border border-[#964CEE]/20 hover:border-[#964CEE]/40 transition-all duration-300 shadow-lg hover:shadow-[#964CEE]/20">
             <Image
               src="https://framerusercontent.com/images/AmoV7s57QZK2IY6s5gFkmbwpRDk.png?scale-down-to=512&width=1876&height=1204"
               alt="User Review - 6 stars if I could"
-              width={320}
-              height={205}
+              width={480}
+              height={308}
               className="w-full h-auto"
               priority
             />
             {/* 5.0 Rating Overlay */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span
-                className="text-white font-bold text-[72px] md:text-[90px] font-rethink-sans animate-rating-pulse"
+                className="text-white font-bold text-[100px] md:text-[130px] font-rethink-sans animate-rating-pulse"
               >
                 5.0
               </span>
