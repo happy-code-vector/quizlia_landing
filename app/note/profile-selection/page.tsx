@@ -65,6 +65,14 @@ export default function ProfileSelectionPage() {
     }
   }, [router, user, authLoading]);
 
+  // Redirect when loading finished with no profiles.
+  // router.push must not run during render, so it lives here in an effect.
+  useEffect(() => {
+    if (!authLoading && !isLoading && profiles.length === 0) {
+      router.push("/note/create-profile");
+    }
+  }, [authLoading, isLoading, profiles.length, router]);
+
   const selectProfile = (profile: Profile) => {
     if (typeof window !== "undefined") {
       localStorage.setItem("currentProfile", JSON.stringify(profile));
@@ -83,9 +91,8 @@ export default function ProfileSelectionPage() {
     );
   }
 
-  // If no profiles, redirect to create profile
+  // If no profiles, the effect above redirects to create profile
   if (profiles.length === 0) {
-    router.push("/note/create-profile");
     return null;
   }
 
