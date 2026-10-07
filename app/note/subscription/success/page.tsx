@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPlanById } from "@/lib/subscription";
 import { saveSubscriptionToFirebase } from "@/lib/firebaseSubscription";
 import Link from "next/link";
 
-export default function SubscriptionSuccessPage() {
+function SuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(true);
@@ -104,5 +104,21 @@ export default function SubscriptionSuccessPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function SubscriptionSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+          <span className="material-symbols-outlined text-5xl text-purple-600 animate-spin">
+            progress_activity
+          </span>
+        </div>
+      }
+    >
+      <SuccessContent />
+    </Suspense>
   );
 }

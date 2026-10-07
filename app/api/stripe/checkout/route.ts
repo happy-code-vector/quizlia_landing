@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 
 export const dynamic = 'force-dynamic';
 
@@ -17,8 +18,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Initialize Stripe (dynamic import to avoid issues if not installed)
-    const stripe = require("stripe")(stripeSecretKey);
+    // Initialize Stripe
+    const stripe = new Stripe(stripeSecretKey);
 
     // Get the origin for redirect URLs
     const origin = request.headers.get("origin") || "http://localhost:3000";
@@ -26,7 +27,6 @@ export async function POST(request: NextRequest) {
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      payment_method_types: ["card"],
       line_items: [
         {
           price: priceId,

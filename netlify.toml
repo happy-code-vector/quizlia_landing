@@ -1,0 +1,7 @@
+# Firebase web config is public by design (access is controlled by Firebase
+# Security Rules, not by hiding these values). Next.js inlines NEXT_PUBLIC_*
+# vars into the client bundle at build time, so Netlify's secrets scanner
+# flags them in the build output. Omit these keys from the scan — all other
+# secrets are still scanned.
+[build.environment]
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_FIREBASE_API_KEY,NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,NEXT_PUBLIC_FIREBASE_PROJECT_ID,NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,NEXT_PUBLIC_FIREBASE_APP_ID"

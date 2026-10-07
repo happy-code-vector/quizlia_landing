@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 
 export const dynamic = 'force-dynamic';
 
@@ -13,9 +14,12 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const stripe = require("stripe")(stripeSecretKey);
+    const stripe = new Stripe(stripeSecretKey);
     const body = await request.text();
     const signature = request.headers.get("stripe-signature");
+    if (!signature) {
+      return NextResponse.json({ error: "Missing signature" }, { status: 400 });
+    }
 
     let event;
     try {
