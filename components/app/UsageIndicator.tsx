@@ -73,7 +73,7 @@ export function UsageIndicator({ profileId, onUpgradeClick }: UsageIndicatorProp
         </button>
       ) : (
         <Link
-          href="/pricing"
+          href="/note/pricing"
           className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 whitespace-nowrap"
         >
           Upgrade

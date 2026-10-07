@@ -141,7 +141,7 @@ export default function CreateProfilePage() {
             <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
               <span className="material-symbols-outlined text-3xl">auto_stories</span>
             </div>
-            <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Welcome to QuickNote</h1>
+            <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Welcome to QuizliAI</h1>
             <p className="text-gray-600 dark:text-gray-400">
               Sign in to sync your data across all devices
             </p>

@@ -60,7 +60,7 @@ export function Sidebar({ profile }: SidebarProps) {
               <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 flex items-center justify-center rounded-lg w-10 h-10">
                 <span className="material-symbols-outlined">auto_stories</span>
               </div>
-              {expanded && <h1 className="text-lg font-bold text-gray-900 dark:text-white">QuickNote</h1>}
+              {expanded && <h1 className="text-lg font-bold text-gray-900 dark:text-white">QuizliAI</h1>}
             </div>
 
             <Link href="/note/profile-selection" className={`flex items-center gap-3 p-2 rounded-lg transition-colors ${expanded ? "hover:bg-gray-100 dark:hover:bg-gray-800" : "justify-center"}`} title="Switch Profile">

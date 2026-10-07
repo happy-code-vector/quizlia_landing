@@ -121,7 +121,7 @@ export default function SettingsPage() {
                 <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
                   <div className="p-6 border-b border-gray-200 dark:border-gray-800">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">Appearance</h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Customize how QuickNote looks</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Customize how QuizliAI looks</p>
                   </div>
                   <div className="p-6">
                     <div className="flex items-center justify-between">
@@ -300,7 +300,7 @@ export default function SettingsPage() {
                     { title: "Email Notifications", desc: "Receive updates via email" },
                     { title: "Content Generation Complete", desc: "Notify when AI finishes processing" },
                     { title: "Weekly Summary", desc: "Get a weekly report of your activity" },
-                    { title: "Tips & Tricks", desc: "Learn new ways to use QuickNote" },
+                    { title: "Tips & Tricks", desc: "Learn new ways to use QuizliAI" },
                   ].map((item, index) => (
                     <div key={index} className="flex items-center justify-between py-3 border-b border-gray-100 dark:border-gray-800 last:border-0">
                       <div>

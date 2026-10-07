@@ -70,7 +70,7 @@ export default function PricingPage() {
             <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg w-10 h-10 flex items-center justify-center">
               <span className="material-symbols-outlined">auto_stories</span>
             </div>
-            <span className="text-lg font-bold text-gray-900 dark:text-white">QuickNote</span>
+            <span className="text-lg font-bold text-gray-900 dark:text-white">QuizliAI</span>
           </Link>
           <Link href="/note" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
             <span className="material-symbols-outlined">close</span>
@@ -85,7 +85,7 @@ export default function PricingPage() {
             Choose Your Plan
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-            Unlock your full learning potential with QuickNote Pro
+            Unlock your full learning potential with QuizliAI Pro
           </p>
         </div>
 

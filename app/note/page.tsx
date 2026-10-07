@@ -11,12 +11,14 @@ import { Sidebar } from "@/components/app/Sidebar";
 import { canGenerate, incrementUsage } from "@/lib/subscription";
 import { syncSubscriptionFromFirebase, createOrUpdateFirebaseUser } from "@/lib/firebaseSubscription";
 import { Topic, getYouTubeThumbnail, getSourceIcon, migrateContentToTopics } from "@/lib/types";
+import { useAuth } from "@/lib/auth";
 
 interface Profile {
   id: number;
   name: string;
   type: string;
   avatar: string;
+  email?: string;
 }
 
 // Legacy content item for backward compatibility
@@ -35,6 +37,7 @@ interface ContentItem {
 export default function NotePage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [content, setContent] = useState<ContentItem[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
@@ -56,15 +59,6 @@ export default function NotePage() {
         const profileData = JSON.parse(currentProfile);
         setProfile(profileData);
 
-        // Sync subscription from Firebase
-        const email = profileData.email || "demo@example.com";
-        try {
-          await createOrUpdateFirebaseUser(email);
-          await syncSubscriptionFromFirebase(email, profileData.id);
-        } catch (error) {
-          console.log("Firebase sync skipped:", error);
-        }
-
         const storedContent = localStorage.getItem(`content_${profileData.id}`);
         if (storedContent) {
           const parsedContent = JSON.parse(storedContent);
@@ -76,6 +70,18 @@ export default function NotePage() {
 
     initializeDashboard();
   }, [router]);
+
+  // Sync subscription from Firebase only for signed-in users.
+  // Signed-out visitors stay on localStorage and skip Firestore entirely,
+  // which avoids permission-denied errors from the security rules.
+  useEffect(() => {
+    if (!user?.email || !profile) return;
+
+    const email = profile.email || user.email;
+    createOrUpdateFirebaseUser(email)
+      .then(() => syncSubscriptionFromFirebase(email, profile.id))
+      .catch((error) => console.log("Firebase sync skipped:", error));
+  }, [user, profile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
