@@ -13,7 +13,7 @@ export function HeroSection() {
           
           {/* Subtitle */}
           <p className="flex flex-col justify-center max-w-[364px] w-[90%] mx-auto text-center font-rethink-sans text-[18px] font-medium leading-[1.2] md:leading-[22.4px] tracking-[0.32px] text-white/50 [@media(max-width:768px)]:text-[16px] [@media(max-width:768px)]:max-w-[300px]">
-            QuizliAI is your smartest study assistant. Get instant notes, transcripts, and study materials from anything.
+            QuizliAI is your smart study assistant. Get instant notes, transcripts, and study materials from anything.
           </p>
 
           {/* CTA Buttons */}

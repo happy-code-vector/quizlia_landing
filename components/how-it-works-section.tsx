@@ -5,7 +5,7 @@ export function HowItWorksSection() {
     {
       number: "1",
       title: "Upload",
-      description: "Use anything — links, videos, documents, websites, YouTube videos, PDFs.",
+      description: "Use anything: links, videos, documents, websites, YouTube videos, PDFs.",
       icon: Upload
     },
     {

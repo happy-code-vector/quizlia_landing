@@ -29,7 +29,7 @@ export function CtaBanner({ headline, features }: CtaBannerProps) {
           </div>
 
           <p className="text-white/60 mb-6 font-rethink-sans max-w-xl">
-            Don&apos;t just read the notes — master the material with spaced repetition flashcards, AI-powered explanations, and practice quizzes.
+            Don&apos;t just read the notes. Master the material with spaced repetition flashcards, AI-powered explanations, and practice quizzes.
           </p>
 
           <ul className="grid md:grid-cols-3 gap-4 mb-8">

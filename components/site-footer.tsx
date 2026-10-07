@@ -19,7 +19,7 @@ export function SiteFooter() {
               <span className="text-xl font-semibold text-white font-rethink-sans">QuizliAI</span>
             </Link>
             <p className="text-sm text-white/50 font-rethink-sans">
-              Your smartest assistant for notes, transcripts, and AI-powered learning.
+              Your smart assistant for notes, transcripts, and AI-powered learning.
             </p>
           </div>
 

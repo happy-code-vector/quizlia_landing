@@ -15,13 +15,13 @@ export function MissionSection() {
               Our Mission
             </span>
             <p className="text-2xl md:text-3xl text-white leading-relaxed mb-8 font-source-serif-4">
-              To build mobile experiences that are genuinely useful — thoughtful tools that help people learn more deeply, connect more meaningfully, and live more intentionally.
+              To build mobile experiences that are genuinely useful: thoughtful tools that help people learn more deeply, connect more meaningfully, and live more intentionally.
             </p>
             <p className="text-white/60 leading-relaxed">
-              At QuizliAI, we start with a simple question: <em>does this actually help someone?</em> Not help in a superficial, engagement-bait kind of way — but real, lasting help. The kind that makes a student feel more confident before an exam, or helps a couple feel a little closer at the end of a long day. Every feature we ship, every design decision we make, and every line of code we write is filtered through that question.
+              At QuizliAI, we start with a simple question: <em>does this actually help someone?</em> Not help in a superficial, engagement-bait kind of way, but real, lasting help. The kind that makes a student feel more confident before an exam, or helps a couple feel a little closer at the end of a long day. Every feature we ship, every design decision we make, and every line of code we write is filtered through that question.
             </p>
             <p className="text-white/60 leading-relaxed mt-4">
-              We are a small, independent studio. That means we move carefully, we listen closely, and we take full responsibility for what we put into the world. We don&apos;t answer to outside investors or quarterly growth targets — we answer to the people who use our apps.
+              We are a small, independent studio. That means we move carefully, we listen closely, and we take full responsibility for what we put into the world. We don&apos;t answer to outside investors or quarterly growth targets; we answer to the people who use our apps.
             </p>
 
             {/* Mission Pillars */}
