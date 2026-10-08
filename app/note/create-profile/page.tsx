@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/app/ToastContainer";
 import { saveProfileToFirebase, syncProfilesFromFirebase } from "@/lib/firebaseProfiles";
+import { getMaxProfiles } from "@/lib/subscription";
 
 const avatarColors = [
   "from-blue-400 to-purple-400",
@@ -98,6 +99,27 @@ export default function CreateProfilePage() {
       // Get existing profiles
       const storedProfiles = localStorage.getItem("profiles");
       const profiles = storedProfiles ? JSON.parse(storedProfiles) : [];
+
+      // Plan-based profile cap (mirrors the iOS app): free/individual
+      // plans include 1 learner profile — adding another is a Family
+      // upsell; family/legacy plans allow up to 6.
+      const currentProfile = localStorage.getItem("currentProfile");
+      const governingProfileId = currentProfile
+        ? JSON.parse(currentProfile).id
+        : newProfile.id;
+      const maxProfiles = getMaxProfiles(governingProfileId);
+      if (profiles.length >= maxProfiles) {
+        if (maxProfiles <= 1) {
+          showToast(
+            "Your plan includes 1 learner profile. Upgrade to Family Annual for up to 6.",
+            "error"
+          );
+        } else {
+          showToast(`Family plans include up to ${maxProfiles} profiles.`, "error");
+        }
+        setTimeout(() => router.push("/note/pricing"), 1000);
+        return;
+      }
 
       // Add new profile
       profiles.push(newProfile);

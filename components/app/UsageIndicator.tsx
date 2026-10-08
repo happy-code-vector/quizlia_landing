@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { canGenerate, getSubscription, isPaidSubscription, FREE_GENERATIONS_PER_DAY } from "@/lib/subscription";
+import { canGenerate, getSubscription, isPaidSubscription } from "@/lib/subscription";
 
 interface UsageIndicatorProps {
   profileId: number;
@@ -10,7 +10,7 @@ interface UsageIndicatorProps {
 }
 
 export function UsageIndicator({ profileId, onUpgradeClick }: UsageIndicatorProps) {
-  const [usage, setUsage] = useState({ allowed: true, remaining: FREE_GENERATIONS_PER_DAY, limit: FREE_GENERATIONS_PER_DAY });
+  const [usage, setUsage] = useState({ allowed: true, remaining: 1, limit: 1 });
   const [isPro, setIsPro] = useState(false);
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export function UsageIndicator({ profileId, onUpgradeClick }: UsageIndicatorProp
         <div className="flex items-center justify-between mb-1">
           <span className={`text-xs font-medium ${isEmpty ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"}`}>
 
-         {isEmpty ? "No generations left" : `${usage.remaining}/${usage.limit} left today`}
+         {isEmpty ? "No generations left" : `${usage.remaining}/${usage.limit} ${usage.limit === 1 ? "free note left" : "left today"}`}
           </span>
         </div>
         <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">

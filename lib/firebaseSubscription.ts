@@ -15,7 +15,10 @@ export function emailToDocId(email: string): string {
   return email.replace(/@/g, "_").replace(/\./g, "_");
 }
 
-// User document structure (matches iOS Firestore schema)
+// User document structure. The subscriptions map carries whichever plan
+// types have been sold (legacy monthly/yearly/yearlyOffer from the old web
+// lineup, plus weekly/individual_yearly/family_yearly matching the iOS
+// Release B lineup).
 export interface FirebaseUserDoc {
   email: string;
   promoApplied: string | null;
@@ -24,20 +27,10 @@ export interface FirebaseUserDoc {
   isLocked: boolean;
   createdAt: Date;
   lastLoginAt: Date;
-  subscriptions: {
-    monthly: {
-      active: boolean;
-      renewalDate: Date | null;
-    };
-    yearly: {
-      active: boolean;
-      renewalDate: Date | null;
-    };
-    yearlyOffer: {
-      active: boolean;
-      renewalDate: Date | null;
-    };
-  };
+  subscriptions: Record<
+    string,
+    { active: boolean; renewalDate: Date | null } | undefined
+  >;
   freePlanActive?: boolean;
   freePlanExpiresAt?: Date | null;
 }
@@ -128,32 +121,27 @@ export async function getFirebaseSubscription(email: string): Promise<UserSubscr
       }
     }
 
-    // Check subscriptions
-    if (data.subscriptions.yearly.active) {
-      const renewalDate = data.subscriptions.yearly.renewalDate instanceof Timestamp
-        ? data.subscriptions.yearly.renewalDate.toDate()
-        : data.subscriptions.yearly.renewalDate
-          ? new Date(data.subscriptions.yearly.renewalDate)
+    // Check subscriptions — new lineup first, then legacy plan fields
+    const planFieldToPlanId: Record<string, string> = {
+      family_yearly: "family_yearly",
+      individual_yearly: "individual_yearly",
+      weekly: "weekly",
+      yearly: "pro_yearly",   // legacy
+      monthly: "pro_monthly", // legacy
+    };
+
+    for (const [field, planId] of Object.entries(planFieldToPlanId)) {
+      const sub = data.subscriptions?.[field];
+      if (!sub?.active) continue;
+
+      const renewalDate = sub.renewalDate instanceof Timestamp
+        ? sub.renewalDate.toDate()
+        : sub.renewalDate
+          ? new Date(sub.renewalDate)
           : null;
 
       return {
-        planId: "pro_yearly",
-        status: "active",
-        currentPeriodEnd: renewalDate?.toISOString() || null,
-        stripeCustomerId: null,
-        stripeSubscriptionId: null,
-      };
-    }
-
-    if (data.subscriptions.monthly.active) {
-      const renewalDate = data.subscriptions.monthly.renewalDate instanceof Timestamp
-        ? data.subscriptions.monthly.renewalDate.toDate()
-        : data.subscriptions.monthly.renewalDate
-          ? new Date(data.subscriptions.monthly.renewalDate)
-          : null;
-
-      return {
-        planId: "pro_monthly",
+        planId,
         status: "active",
         currentPeriodEnd: renewalDate?.toISOString() || null,
         stripeCustomerId: null,
@@ -175,10 +163,10 @@ export async function getFirebaseSubscription(email: string): Promise<UserSubscr
   }
 }
 
-// Update subscription in Firestore (matches iOS updateSubscription)
+// Update subscription in Firestore
 export async function updateFirebaseSubscription(
   email: string,
-  type: "monthly" | "yearly" | "yearlyOffer",
+  type: "monthly" | "yearly" | "yearlyOffer" | "weekly" | "individual_yearly" | "family_yearly",
   active: boolean,
   renewalDate: Date | null
 ): Promise<void> {
@@ -283,12 +271,19 @@ export async function saveSubscriptionToFirebase(
   // Sync to Firebase if configured
   if (isFirebaseConfigured() && db && subscription.status === "active") {
     try {
-      const type = subscription.planId === "pro_yearly" ? "yearly" : "monthly";
+      const planFieldByPlanId: Record<string, string> = {
+        family_yearly: "family_yearly",
+        individual_yearly: "individual_yearly",
+        weekly: "weekly",
+        pro_yearly: "yearly",   // legacy
+        pro_monthly: "monthly", // legacy
+      };
+      const type = planFieldByPlanId[subscription.planId] || "monthly";
       const renewalDate = subscription.currentPeriodEnd
         ? new Date(subscription.currentPeriodEnd)
         : null;
 
-      await updateFirebaseSubscription(email, type, true, renewalDate);
+      await updateFirebaseSubscription(email, type as any, true, renewalDate);
     } catch (error) {
       console.warn("Failed to sync to Firebase, saved locally only:", error);
     }

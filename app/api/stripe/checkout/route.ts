@@ -8,9 +8,16 @@ export async function POST(request: NextRequest) {
   try {
     const { priceId, profileId, planId } = await request.json();
 
-    // Check if Stripe secret key is configured
+    // Trial length by plan, mirroring the iOS intro offers (7-day trial
+    // on both annual plans, none on weekly).
+    const trialDaysByPlan: Record<string, number> = {
+      individual_yearly: 7,
+      family_yearly: 7,
+    };
+
+    // Check if Stripe secret key is configured and a real price ID was set
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecretKey) {
+    if (!stripeSecretKey || !priceId) {
       // Demo mode - simulate successful checkout
       return NextResponse.json({
         url: `/note/subscription/success?session_id=demo_${Date.now()}&profile_id=${profileId}&plan_id=${planId}`,
@@ -33,6 +40,9 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
+      subscription_data: trialDaysByPlan[planId]
+        ? { trial_period_days: trialDaysByPlan[planId] }
+        : undefined,
       success_url: `${origin}/note/subscription/success?session_id={CHECKOUT_SESSION_ID}&profile_id=${profileId}`,
       cancel_url: `${origin}/note?canceled=true`,
       metadata: {

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { getPlanById } from "@/lib/subscription";
+import { getPlanById, resolveEffectivePlan } from "@/lib/subscription";
 import { saveSubscriptionToFirebase } from "@/lib/firebaseSubscription";
 import Link from "next/link";
 
@@ -22,13 +22,13 @@ function SuccessContent() {
         const profile = localStorage.getItem("currentProfile");
         const email = profile ? JSON.parse(profile).email || "demo@example.com" : "demo@example.com";
 
-        // Calculate renewal date
-        const plan = getPlanById(planId || "pro_monthly");
-        const daysToAdd = planId === "pro_yearly" ? 365 : 30;
+        // Calculate renewal date from the plan's billing interval
+        const plan = getPlanById(planId || "") || resolveEffectivePlan(planId || "free");
+        const daysToAdd = plan.interval === "week" ? 7 : plan.interval === "year" ? 365 : 30;
         const renewalDate = new Date(Date.now() + daysToAdd * 24 * 60 * 60 * 1000);
 
         const subscription = {
-          planId: planId || "pro_monthly",
+          planId: planId || "free",
           status: "active" as const,
           currentPeriodEnd: renewalDate.toISOString(),
           stripeCustomerId: sessionId?.startsWith("demo_") ? null : `cus_${sessionId}`,
@@ -67,10 +67,10 @@ function SuccessContent() {
         </div>
 
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Welcome to Pro!
+          Welcome to QuizliAI Premium!
         </h1>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Your subscription is now active. Enjoy unlimited generations and premium features!
+          Your subscription is now active. Your plan: {getPlanById(searchParams.get("plan_id") || "")?.name ?? "Premium"}.
         </p>
 
         <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 mb-6">
@@ -78,7 +78,7 @@ function SuccessContent() {
           <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 text-left">
             <li className="flex items-center gap-2">
               <span className="material-symbols-outlined text-green-500 text-sm">check</span>
-              Unlimited generations
+              Notes, quizzes, flashcards &amp; AI chat
             </li>
             <li className="flex items-center gap-2">
               <span className="material-symbols-outlined text-green-500 text-sm">check</span>
