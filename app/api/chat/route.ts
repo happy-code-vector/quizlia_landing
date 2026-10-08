@@ -58,7 +58,7 @@ Instructions:
       const error = await response.text();
       console.error("Gemini API error:", error);
       return NextResponse.json(
-        { error: "Failed to generate response" },
+        { error: "Failed to generate response", debug: error.slice(0, 300) },
         { status: 500 }
       );
     }

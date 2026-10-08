@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
       const error = await response.text();
       console.error("Gemini API error:", error);
       return NextResponse.json(
-        { error: "Failed to generate content" },
+        { error: "Failed to generate content", debug: error.slice(0, 300) },
         { status: 500 }
       );
     }
