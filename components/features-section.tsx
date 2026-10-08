@@ -41,7 +41,7 @@ export function FeaturesSection() {
         {/* Section Header */}
         <div className="text-center mb-16">
           <h2 className="text-white font-rethink-sans text-[26px] md:text-[32px] font-bold leading-[46.8px] mb-4">
-            Capture, organize, and learn 10x faster
+            Capture, organize, and learn faster
             </h2>
           <p className="mx-auto px-4 md:px-0 max-w-[280px] md:max-w-[500px] text-center font-rethink-sans text-[16px] md:text-[18px] font-medium leading-[1.3] md:leading-[22.4px] tracking-[0.32px] text-white/50">
             Everything you need to turn any content into organized notes and study materials

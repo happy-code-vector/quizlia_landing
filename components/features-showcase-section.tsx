@@ -47,7 +47,7 @@ export function FeaturesShowcaseSection() {
           </span>
         </div>
         <h2 className="text-[32px] md:text-[64px] font-medium text-white font-inter tracking-[-0.06em] leading-[120%]">
-          Capture, organize, and learn 10x faster
+          Capture, organize, and learn faster
         </h2>
       </div>
 

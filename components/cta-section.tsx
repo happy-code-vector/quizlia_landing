@@ -6,7 +6,7 @@ export function CTASection() {
       <div className="w-full rounded-[30px] border border-white/10 bg-gradient-to-b from-[#0B0B0B] to-[#150B1D] p-12 md:p-16 text-center relative overflow-hidden">
         {/* Content */}
         <h2 className="text-[24px] md:text-[26px] font-bold text-white mb-4 font-rethink-sans">
-          Ready to learn 10x faster?
+          Ready to study smarter?
             </h2>
         <p className="text-white/60 text-base md:text-lg mb-8 max-w-[500px] mx-auto font-rethink-sans">
           Join thousands of students and professionals who are already using QuizliAI to supercharge their learning.
