@@ -1,5 +1,5 @@
 // Firebase subscription management (matches iOS implementation)
-import { db, isFirebaseConfigured } from "./firebase";
+import { db, auth, isFirebaseConfigured } from "./firebase";
 import {
   doc,
   getDoc,
@@ -13,6 +13,15 @@ import { UserSubscription } from "./subscription";
 // Convert email to Firestore-safe document ID (matches iOS)
 export function emailToDocId(email: string): string {
   return email.replace(/@/g, "_").replace(/\./g, "_");
+}
+
+// Shared user doc key: UID-keyed for signed-in users (the schema shared
+// with the iOS app), falling back to the legacy email-derived key when
+// there is no auth session (pre-migration docs).
+export function currentUserDocId(email: string): string {
+  const uid = auth?.currentUser?.uid;
+  if (uid) return uid;
+  return emailToDocId(email);
 }
 
 // User document structure. The subscriptions map carries whichever plan
@@ -43,7 +52,7 @@ export async function createOrUpdateFirebaseUser(email: string): Promise<void> {
   }
 
   try {
-    const docId = emailToDocId(email);
+    const docId = currentUserDocId(email);
     const userRef = doc(db, "users", docId);
     const snapshot = await getDoc(userRef);
 
@@ -94,7 +103,7 @@ export async function getFirebaseSubscription(email: string): Promise<UserSubscr
   }
 
   try {
-    const docId = emailToDocId(email);
+    const docId = currentUserDocId(email);
     const userRef = doc(db, "users", docId);
     const snapshot = await getDoc(userRef);
 
@@ -176,7 +185,7 @@ export async function updateFirebaseSubscription(
   }
 
   try {
-    const docId = emailToDocId(email);
+    const docId = currentUserDocId(email);
     const userRef = doc(db, "users", docId);
 
     const updates: any = {};
@@ -201,7 +210,7 @@ export async function applyPromoCode(
   }
 
   try {
-    const docId = emailToDocId(email);
+    const docId = currentUserDocId(email);
     const userRef = doc(db, "users", docId);
 
     const now = new Date();

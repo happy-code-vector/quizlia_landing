@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Sidebar } from "@/components/app/Sidebar";
 import { useToast } from "@/components/app/ToastContainer";
 import { getAllStudyGuides, categoryColors, difficultyColors, StudyGuide } from "@/lib/studyGuide";
+import { persistProfileContent, loadProfileContent } from "@/lib/notesSync";
 import { Topic, getYouTubeThumbnail, getSourceIcon } from "@/lib/types";
 
 export default function NotesPage() {
@@ -29,6 +30,13 @@ export default function NotesPage() {
 
       // Load content and convert to topics
       const storedContent = localStorage.getItem(`content_${profileData.id}`);
+      if (!storedContent) {
+        // First visit on this device: pull content synced from other
+        // devices / the iOS app, cache it, and reload once to display.
+        loadProfileContent(profileData).then((cloud) => {
+          if (cloud) window.location.reload();
+        });
+      }
       if (storedContent) {
         const content = JSON.parse(storedContent);
         const topicMap = new Map<string, Topic>();
@@ -86,7 +94,7 @@ export default function NotesPage() {
     if (storedContent) {
       const content = JSON.parse(storedContent);
       const updatedContent = content.filter((item: any) => item.sourceId !== topicId);
-      localStorage.setItem(`content_${profile.id}`, JSON.stringify(updatedContent));
+      persistProfileContent(profile, updatedContent);
 
       // Update topics
       setTopics(topics.filter(t => t.id !== topicId));

@@ -10,15 +10,26 @@ service cloud.firestore {
       allow write: if false;
     }
 
-    // User account docs, keyed by email-derived ID (matches the iOS app's client-side schema).
-    // Signed-in clients (web + iOS) read and write their subscription/profile data here.
+    // User data is UID-keyed and readable/writable only by its owner
+    // (web + iOS share this schema). The migration script (Admin SDK)
+    // moves the old email-keyed docs into these paths.
     match /users/{userId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null && request.auth.uid == userId;
 
-      // Per-user profiles
       match /profiles/{profileId} {
-        allow read, write: if request.auth != null;
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+
+        match /notes/{noteId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
       }
+    }
+
+    // Promo codes: readable by signed-in clients (redemption checks),
+    // written only via the Admin SDK (generation + import).
+    match /promoCodes/{code} {
+      allow read: if request.auth != null;
+      allow write: if false;
     }
   }
 }

@@ -7,6 +7,7 @@ import { useToast } from "@/components/app/ToastContainer";
 import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
 import { QuizStudyMode } from "@/components/app/QuizStudyMode";
 import { Topic, getYouTubeThumbnail, getSourceIcon, getYouTubeEmbedUrl } from "@/lib/types";
+import { persistProfileContent, loadProfileContent } from "@/lib/notesSync";
 import { Sidebar } from "@/components/app/Sidebar";
 
 type TabType = "note" | "flashcards" | "quiz";
@@ -63,6 +64,13 @@ export default function TopicDetailPage() {
       setProfile(profileData);
 
       const storedContent = localStorage.getItem(`content_${profileData.id}`);
+      if (!storedContent) {
+        // First visit on this device: pull content synced from other
+        // devices / the iOS app, cache it, and reload once to display.
+        loadProfileContent(profileData).then((cloud) => {
+          if (cloud) window.location.reload();
+        });
+      }
 
       if (storedContent) {
         const content = JSON.parse(storedContent);
@@ -116,7 +124,7 @@ export default function TopicDetailPage() {
     if (storedContent) {
       const content = JSON.parse(storedContent);
       const updatedContent = content.filter((item: any) => item.sourceId !== topicId);
-      localStorage.setItem(`content_${profile.id}`, JSON.stringify(updatedContent));
+      persistProfileContent(profile, updatedContent);
     }
 
     showToast("Topic deleted successfully", "success");

@@ -9,6 +9,7 @@ import { Tooltip } from "@/components/app/Tooltip";
 import { PaywallModal } from "@/components/app/PaywallModal";
 import { Sidebar } from "@/components/app/Sidebar";
 import { canGenerate, incrementUsage } from "@/lib/subscription";
+import { persistProfileContent, loadProfileContent } from "@/lib/notesSync";
 import { syncSubscriptionFromFirebase, createOrUpdateFirebaseUser } from "@/lib/firebaseSubscription";
 import { Topic, getYouTubeThumbnail, getSourceIcon, migrateContentToTopics } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
@@ -60,6 +61,13 @@ export default function NotePage() {
         setProfile(profileData);
 
         const storedContent = localStorage.getItem(`content_${profileData.id}`);
+        if (!storedContent) {
+          // First visit on this device: pull content synced from other
+          // devices / the iOS app, cache it, and reload once to display.
+          loadProfileContent(profileData).then((cloud) => {
+            if (cloud) window.location.reload();
+          });
+        }
         if (storedContent) {
           const parsedContent = JSON.parse(storedContent);
           setContent(parsedContent);
@@ -260,7 +268,7 @@ export default function NotePage() {
       setTopics(migrateContentToTopics(updatedContent));
 
       if (profile && typeof window !== "undefined") {
-        localStorage.setItem(`content_${profile.id}`, JSON.stringify(updatedContent));
+        persistProfileContent(profile, updatedContent);
       }
 
       // Increment usage

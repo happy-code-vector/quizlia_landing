@@ -13,7 +13,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
-import { emailToDocId } from "./firebaseSubscription";
+import { emailToDocId, currentUserDocId } from "./firebaseSubscription";
 
 export interface SyncedProfile {
   id: string; // Firebase doc ID
@@ -44,7 +44,7 @@ export async function saveProfileToFirebase(
   }
 
   try {
-    const userDocId = emailToDocId(email);
+    const userDocId = currentUserDocId(email);
     const profileRef = doc(db, "users", userDocId, "profiles", profile.id.toString());
 
     const profileData = {
@@ -73,7 +73,7 @@ export async function getProfilesFromFirebase(email: string): Promise<any[]> {
   }
 
   try {
-    const userDocId = emailToDocId(email);
+    const userDocId = currentUserDocId(email);
     const profilesRef = collection(db, "users", userDocId, "profiles");
     const snapshot = await getDocs(profilesRef);
 
@@ -111,7 +111,7 @@ export async function deleteProfileFromFirebase(
   }
 
   try {
-    const userDocId = emailToDocId(email);
+    const userDocId = currentUserDocId(email);
     const profileRef = doc(db, "users", userDocId, "profiles", profileId.toString());
     await deleteDoc(profileRef);
     console.log("✅ Profile deleted from Firebase");
