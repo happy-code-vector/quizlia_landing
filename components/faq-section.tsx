@@ -27,7 +27,7 @@ export function FAQSection() {
     },
     {
       question: "Is QuizliAI free?",
-      answer: "Yes, you can download and use QuizliAI for free to get started. For best results, we recommend upgrading to Unlimited Pass for unlimited notes, priority support, and added features."
+      answer: "Yes, you can download and use QuizliAI for free to get started. For unlimited notes and study materials, you can upgrade to a QuizliAI premium plan at any time."
     }
   ]
 
