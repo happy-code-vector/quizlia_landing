@@ -6,6 +6,7 @@ export interface Topic {
   sourceType: "url" | "pdf" | "youtube" | "image";
   sourceUrl?: string;
   createdAt: string;
+  folderId?: string | number;
 
   // Embedded materials (all generated from same source)
   note?: NoteData;

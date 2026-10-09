@@ -11,6 +11,7 @@ interface Quiz {
 
 interface QuizStudyModeProps {
   quizzes: Quiz[];
+  topicTitle?: string;
   onClose: () => void;
 }
 
@@ -21,7 +22,7 @@ interface Answer {
   isCorrect: boolean;
 }
 
-export function QuizStudyMode({ quizzes, onClose }: QuizStudyModeProps) {
+export function QuizStudyMode({ quizzes, topicTitle, onClose }: QuizStudyModeProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
@@ -71,6 +72,23 @@ export function QuizStudyMode({ quizzes, onClose }: QuizStudyModeProps) {
   const correctCount = answers.filter((a) => a.isCorrect).length;
   const scorePercentage = Math.round((correctCount / quizzes.length) * 100);
 
+  const handleShareResult = async () => {
+    const text = `I scored ${scorePercentage}% (${correctCount}/${quizzes.length}) on ${topicTitle ? `"${topicTitle}"` : "a QuizliAI quiz"}! 🎯`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ text });
+        return;
+      } catch {
+        // share sheet cancelled
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch {
+      // clipboard unavailable
+    }
+  };
+
   if (isCompleted) {
     return (
       <div className="fixed inset-0 z-50 flex flex-col bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 overflow-hidden">
@@ -104,6 +122,10 @@ export function QuizStudyMode({ quizzes, onClose }: QuizStudyModeProps) {
             <div className="flex flex-col gap-2 sm:gap-3">
               <button onClick={handleTryAgain} className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg sm:rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all">
                 Try Again
+              </button>
+              <button onClick={handleShareResult} className="w-full py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg sm:rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-lg">share</span>
+                Share Result
               </button>
               <button onClick={onClose} className="w-full py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg sm:rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
                 Exit Quiz

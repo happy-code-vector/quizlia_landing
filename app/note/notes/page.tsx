@@ -7,6 +7,8 @@ import { Sidebar } from "@/components/app/Sidebar";
 import { useToast } from "@/components/app/ToastContainer";
 import { getAllStudyGuides, categoryColors, difficultyColors, StudyGuide } from "@/lib/studyGuide";
 import { persistProfileContent, loadProfileContent } from "@/lib/notesSync";
+import { CreateFolderModal } from "@/components/app/CreateFolderModal";
+import { RenameModal } from "@/components/app/RenameModal";
 import { Topic, getYouTubeThumbnail, getSourceIcon } from "@/lib/types";
 
 export default function NotesPage() {
@@ -27,6 +29,7 @@ export default function NotesPage() {
       }
       const profileData = JSON.parse(currentProfile);
       setProfile(profileData);
+      setFolders(JSON.parse(localStorage.getItem(`folders_${profileData.id}`) || "[]"));
 
       // Load content and convert to topics
       const storedContent = localStorage.getItem(`content_${profileData.id}`);
@@ -51,6 +54,7 @@ export default function NotesPage() {
               sourceType: item.sourceType || "url",
               sourceUrl: item.sourceType === "youtube" || item.sourceType === "url" ? item.sourceName : undefined,
               createdAt: item.createdAt,
+              folderId: item.folderId,
             });
           }
 
@@ -87,6 +91,71 @@ export default function NotesPage() {
     fetchStudyGuides();
   }, []);
 
+  interface Folder {
+    id: string;
+    name: string;
+    icon: string;
+    createdAt: string;
+  }
+
+  // Folders (parity with the iOS app's folder organization)
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [selectedFolder, setSelectedFolder] = useState<string>("all");
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
+  const [renameFolderTarget, setRenameFolderTarget] = useState<Folder | null>(null);
+
+  const persistFolders = (next: Folder[]) => {
+    setFolders(next);
+    if (profile && typeof window !== "undefined") {
+      localStorage.setItem(`folders_${profile.id}`, JSON.stringify(next));
+    }
+  };
+
+  const handleCreateFolder = (name: string, icon: string) => {
+    persistFolders([...folders, { id: String(Date.now()), name, icon, createdAt: new Date().toISOString() }]);
+    showToast(`Folder "${name}" created`, "success");
+  };
+
+  const handleRenameFolder = (newName: string) => {
+    if (!renameFolderTarget) return;
+    persistFolders(folders.map((f) => (f.id === renameFolderTarget.id ? { ...f, name: newName } : f)));
+    setRenameFolderTarget(null);
+  };
+
+  const handleDeleteFolder = (folderId: string) => {
+    if (!profile || typeof window === "undefined") return;
+    if (!window.confirm("Delete this folder? Its topics move back to Unsorted.")) return;
+
+    persistFolders(folders.filter((f) => f.id !== folderId));
+    if (selectedFolder === folderId) setSelectedFolder("all");
+
+    const storedContent = localStorage.getItem(`content_${profile.id}`);
+    if (storedContent) {
+      const content = JSON.parse(storedContent).map((item: any) =>
+        item.folderId === folderId ? { ...item, folderId: undefined } : item
+      );
+      persistProfileContent(profile, content);
+    }
+    setTopics((prev) => prev.map((t) => (t.folderId === folderId ? { ...t, folderId: undefined } : t)));
+  };
+
+  const handleMoveTopic = (topicId: string, folderId: string) => {
+    if (!profile || typeof window === "undefined") return;
+
+    const storedContent = localStorage.getItem(`content_${profile.id}`);
+    if (storedContent) {
+      const content = JSON.parse(storedContent).map((item: any) =>
+        item.sourceId === topicId || `legacy_${item.id}` === topicId
+          ? { ...item, folderId: folderId === "" ? undefined : folderId }
+          : item
+      );
+      persistProfileContent(profile, content);
+    }
+    setTopics((prev) =>
+      prev.map((t) => (t.id === topicId ? { ...t, folderId: folderId === "" ? undefined : folderId } : t))
+    );
+  };
+
   const handleDeleteTopic = (topicId: string) => {
     if (!profile || typeof window === "undefined") return;
 
@@ -118,6 +187,13 @@ export default function NotesPage() {
     return date.toLocaleDateString();
   };
 
+  const visibleTopics =
+    selectedFolder === "all"
+      ? topics
+      : selectedFolder === "none"
+        ? topics.filter((t) => !t.folderId)
+        : topics.filter((t) => String(t.folderId) === selectedFolder);
+
   if (!profile) return null;
 
   return (
@@ -134,6 +210,67 @@ export default function NotesPage() {
               </p>
             </div>
 
+            {/* Folder bar */}
+            <div className="flex flex-wrap items-center gap-2 mb-6">
+              {[
+                { id: "all", label: "All", icon: "library_books" },
+                { id: "none", label: "Unsorted", icon: "inbox" },
+                ...folders.map((f) => ({ id: f.id, label: f.name, icon: undefined, emoji: f.icon })),
+              ].map((f: any) => (
+                <span key={f.id} className="inline-flex items-center">
+                  <button
+                    onClick={() => setSelectedFolder(f.id)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors flex items-center gap-1.5 ${
+                      selectedFolder === f.id
+                        ? "bg-purple-600 text-white"
+                        : "bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-800 hover:border-purple-400"
+                    }`}
+                  >
+                    {f.emoji ? <span>{f.emoji}</span> : <span className="material-symbols-outlined text-sm">{f.icon}</span>}
+                    {f.label}
+                  </button>
+                  {f.id !== "all" && f.id !== "none" && (
+                    <>
+                      <button
+                        onClick={() => setRenameFolderTarget(folders.find((x) => x.id === f.id) || null)}
+                        className="ml-0.5 text-gray-400 hover:text-blue-500 text-xs px-1"
+                        title="Rename folder"
+                      >
+                        <span className="material-symbols-outlined text-sm">edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteFolder(f.id)}
+                        className="text-gray-400 hover:text-red-500 text-xs px-0.5"
+                        title="Delete folder"
+                      >
+                        <span className="material-symbols-outlined text-sm">close</span>
+                      </button>
+                    </>
+                  )}
+                </span>
+              ))}
+              <button
+                onClick={() => setCreateFolderOpen(true)}
+                className="px-3 py-1.5 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-sm">create_new_folder</span>
+                New Folder
+              </button>
+            </div>
+
+            <CreateFolderModal
+              isOpen={createFolderOpen}
+              onClose={() => setCreateFolderOpen(false)}
+              onCreateFolder={handleCreateFolder}
+            />
+            <RenameModal
+              isOpen={!!renameFolderTarget}
+              onClose={() => setRenameFolderTarget(null)}
+              onRename={handleRenameFolder}
+              currentTitle={renameFolderTarget?.name || ""}
+              itemType="folder"
+            />
+
             {topics.length === 0 ? (
               <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800">
                 <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">description</span>
@@ -146,7 +283,7 @@ export default function NotesPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {topics.map((topic) => {
+                {visibleTopics.map((topic) => {
                   const thumbnail = topic.sourceType === "youtube" && topic.sourceUrl
                     ? getYouTubeThumbnail(topic.sourceUrl)
                     : null;
@@ -220,6 +357,27 @@ export default function NotesPage() {
                           </span>
                         </div>
                       </Link>
+
+                      <div className="border-t border-gray-200 dark:border-gray-800 px-5 py-2 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm text-gray-400">folder</span>
+                        <select
+                          value={topic.folderId ? String(topic.folderId) : ""}
+                          onChange={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleMoveTopic(topic.id, e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs text-gray-600 dark:text-gray-400 bg-transparent border-none focus:outline-none cursor-pointer"
+                        >
+                          <option value="">No folder</option>
+                          {folders.map((f) => (
+                            <option key={f.id} value={f.id}>
+                              {f.icon} {f.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   );
                 })}

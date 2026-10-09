@@ -9,6 +9,7 @@ import { QuizStudyMode } from "@/components/app/QuizStudyMode";
 import { Topic, getYouTubeThumbnail, getSourceIcon, getYouTubeEmbedUrl } from "@/lib/types";
 import { persistProfileContent, loadProfileContent } from "@/lib/notesSync";
 import { Sidebar } from "@/components/app/Sidebar";
+import { RenameModal } from "@/components/app/RenameModal";
 
 type TabType = "note" | "flashcards" | "quiz";
 
@@ -30,6 +31,7 @@ export default function TopicDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("note");
   const [studyMode, setStudyMode] = useState<"flashcards" | "quiz" | null>(null);
+  const [renameOpen, setRenameOpen] = useState(false);
 
   // Chat state
   const [messages, setMessages] = useState<Array<{
@@ -51,6 +53,15 @@ export default function TopicDetailPage() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Persist chat history once there is a real conversation (skips the
+  // placeholder greeting and in-flight typing indicators).
+  useEffect(() => {
+    if (!profile || !topicId) return;
+    if (!messages.some((m) => m.sender === "user")) return;
+    const persistable = messages.filter((m) => m.sender === "user" || m.sender === "ai");
+    localStorage.setItem(`chat_${profile.id}_${topicId}`, JSON.stringify(persistable));
+  }, [messages, profile, topicId]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -103,6 +114,19 @@ export default function TopicDetailPage() {
 
           setTopic(constructedTopic);
 
+          // Restore this topic's chat history (persisted per profile).
+          const storedChat = localStorage.getItem(`chat_${profileData.id}_${topicId}`);
+          if (storedChat) {
+            try {
+              const parsedChat = JSON.parse(storedChat);
+              if (Array.isArray(parsedChat) && parsedChat.length > 0) {
+                setMessages(parsedChat);
+              }
+            } catch {
+              // keep the default greeting
+            }
+          }
+
           if (constructedTopic.note) {
             setActiveTab("note");
           } else if (constructedTopic.flashcards) {
@@ -129,6 +153,42 @@ export default function TopicDetailPage() {
 
     showToast("Topic deleted successfully", "success");
     router.push("/note");
+  };
+
+  const handleRenameTopic = (newTitle: string) => {
+    if (!profile || !topic || typeof window === "undefined") return;
+
+    const storedContent = localStorage.getItem(`content_${profile.id}`);
+    if (storedContent) {
+      const content = JSON.parse(storedContent);
+      const updatedContent = content.map((item: any) =>
+        item.sourceId === topicId
+          ? { ...item, title: newTitle, data: item.data ? { ...item.data, title: newTitle } : item.data }
+          : item
+      );
+      persistProfileContent(profile, updatedContent);
+    }
+    setTopic({ ...topic, title: newTitle });
+    showToast("Topic renamed", "success");
+  };
+
+  const handleShareTopic = async () => {
+    if (!topic) return;
+    const text = `${topic.title}\n\n${topic.note?.quick_summary ?? "My study notes on QuizliAI"}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: topic.title, text });
+        return;
+      } catch {
+        // user cancelled the share sheet
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("Copied to clipboard", "success");
+    } catch {
+      showToast("Couldn't share this topic", "error");
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -287,6 +347,7 @@ export default function TopicDetailPage() {
     return (
       <QuizStudyMode
         quizzes={topic.quiz}
+        topicTitle={topic.title}
         onClose={() => setStudyMode(null)}
       />
     );
@@ -337,6 +398,20 @@ export default function TopicDetailPage() {
                     </p>
                   </div>
                 </div>
+                <button
+                  onClick={handleShareTopic}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
+                  title="Share topic"
+                >
+                  <span className="material-symbols-outlined">share</span>
+                </button>
+                <button
+                  onClick={() => setRenameOpen(true)}
+                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
+                  title="Rename topic"
+                >
+                  <span className="material-symbols-outlined">edit</span>
+                </button>
                 <button
                   onClick={handleDeleteTopic}
                   className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 rounded-lg transition-colors"
@@ -618,6 +693,14 @@ export default function TopicDetailPage() {
             </p>
           </div>
         </div>
+
+        <RenameModal
+          isOpen={renameOpen}
+          onClose={() => setRenameOpen(false)}
+          onRename={handleRenameTopic}
+          currentTitle={topic.title || "Topic"}
+          itemType="topic"
+        />
       </main>
     </div>
   );
