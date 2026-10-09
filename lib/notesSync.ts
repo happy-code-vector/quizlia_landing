@@ -7,7 +7,7 @@
 // per-document rows into sibling docs under the same `notes` collection.
 // Public study guides (top-level `notes` collection) are unrelated.
 import { db, auth, isFirebaseConfigured } from "./firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { currentUserDocId } from "./firebaseSubscription";
 
 export function localContentKey(profileId: number | string): string {
@@ -40,7 +40,8 @@ export async function persistProfileContent(
 }
 
 // localStorage first; if empty, pull the profile's cloud doc (e.g. data
-// created on another device or on iOS). Returns null when nothing exists.
+// created on another device or on iOS), then merge any iOS-written
+// per-document notes. Returns null when nothing exists.
 export async function loadProfileContent(
   profile: { id: number | string; email?: string }
 ): Promise<any | null> {
@@ -61,17 +62,106 @@ export async function loadProfileContent(
     const uid = auth.currentUser.uid;
     const ref = doc(db, "users", uid, "profiles", String(profile.id), "notes", "userContent");
     const snap = await getDoc(ref);
-    if (!snap.exists()) return null;
-
-    const raw = snap.data().content;
-    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
-    if (parsed && typeof window !== "undefined") {
-      localStorage.setItem(localContentKey(profile.id), JSON.stringify(parsed));
+    let parsed: any = null;
+    if (snap.exists()) {
+      const raw = snap.data().content;
+      parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+      if (parsed && typeof window !== "undefined") {
+        localStorage.setItem(localContentKey(profile.id), JSON.stringify(parsed));
+      }
     }
+
+    // Merge notes synced from the iOS app (ios_* docs).
+    const merged = await mergeIOSNotesIntoContent(profile);
+    if (merged) {
+      const stored = localStorage.getItem(localContentKey(profile.id));
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch {
+          // return parsed below
+        }
+      }
+    }
+
     return parsed ?? null;
   } catch (error) {
     console.warn("Cloud sync read failed:", error);
     return null;
+  }
+}
+
+// Phase 2 pull: merge notes written by the iOS app (per-document docs
+// named ios_{id}) into the web content model. Returns true when new items
+// were merged (caller may reload). Idempotent: items already present (by
+// sourceId) are skipped.
+export async function mergeIOSNotesIntoContent(
+  profile: { id: number | string; email?: string }
+): Promise<boolean> {
+  if (typeof window === "undefined") return false;
+  if (!isFirebaseConfigured() || !db || !auth?.currentUser) return false;
+
+  try {
+    const uid = auth.currentUser.uid;
+    const notesCol = collection(db, "users", uid, "profiles", String(profile.id), "notes");
+    const snap = await getDocs(notesCol);
+
+    const key = localContentKey(profile.id);
+    const existing = JSON.parse(localStorage.getItem(key) || "[]");
+    const known = new Set(existing.map((i: any) => i.sourceId));
+    let added = false;
+
+    const mapType = (raw: unknown): string => {
+      const t = String(raw || "").toLowerCase();
+      if (t.includes("youtube")) return "youtube";
+      if (t.includes("pdf")) return "pdf";
+      if (t.includes("image") || t.includes("photo")) return "image";
+      return "url";
+    };
+    const tryParse = (raw: unknown): any => {
+      if (typeof raw !== "string" || !raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    };
+
+    for (const noteDoc of snap.docs) {
+      if (!noteDoc.id.startsWith("ios_")) continue;
+      if (known.has(noteDoc.id)) continue;
+
+      const d = noteDoc.data() as Record<string, unknown>;
+      const note = tryParse(d.note);
+      const flashcards = tryParse(d.flashcard);
+      const quiz = tryParse(d.quiz);
+      const base = {
+        sourceId: noteDoc.id,
+        sourceName: d.title,
+        sourceType: mapType(d.contentType),
+        title: d.title,
+        createdAt: d.createdAt || new Date().toISOString(),
+      };
+
+      let hasAny = false;
+      if (note && typeof note === "object") {
+        existing.push({ id: `${noteDoc.id}_note`, ...base, type: "notes", data: note });
+        hasAny = true;
+      }
+      if (Array.isArray(flashcards) && flashcards.length > 0) {
+        existing.push({ id: `${noteDoc.id}_flash`, ...base, type: "flashcards", data: { flashcards } });
+        hasAny = true;
+      }
+      if (Array.isArray(quiz) && quiz.length > 0) {
+        existing.push({ id: `${noteDoc.id}_quiz`, ...base, type: "quiz", data: { quizzes: quiz } });
+        hasAny = true;
+      }
+      if (hasAny) added = true;
+    }
+
+    if (added) {
+      localStorage.setItem(key, JSON.stringify(existing));
+    }
+    return added;
+  } catch (error) {
+    console.warn("iOS notes merge failed:", error);
+    return false;
   }
 }
 
