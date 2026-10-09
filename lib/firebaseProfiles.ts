@@ -113,6 +113,17 @@ export async function deleteProfileFromFirebase(
   try {
     const userDocId = currentUserDocId(email);
     const profileRef = doc(db, "users", userDocId, "profiles", profileId.toString());
+
+    // Firestore deletes don't cascade — remove the profile's notes first
+    // so no orphaned note docs survive under the deleted profile.
+    // (Public study guides live in the top-level "notes" collection and
+    // are never touched by user/profile deletion.)
+    const notesRef = collection(db, "users", userDocId, "profiles", profileId.toString(), "notes");
+    const notesSnap = await getDocs(notesRef);
+    for (const noteDoc of notesSnap.docs) {
+      await deleteDoc(noteDoc.ref);
+    }
+
     await deleteDoc(profileRef);
     console.log("✅ Profile deleted from Firebase");
   } catch (error) {
