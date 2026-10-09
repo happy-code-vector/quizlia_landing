@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "@/components/app/ThemeProvider";
-import { getSubscription, getPlanById, SUBSCRIPTION_PLANS, getTodayUsage, UserSubscription } from "@/lib/subscription";
+import { getSubscription, getPlanById, SUBSCRIPTION_PLANS, UserSubscription, canGenerate, resolveEffectivePlan } from "@/lib/subscription";
 import { PromoCodeInput } from "@/components/app/PromoCodeInput";
+import { deleteProfileFromFirebase } from "@/lib/firebaseProfiles";
 import { useAuth } from "@/lib/auth";
 
 export default function SettingsPage() {
@@ -15,7 +16,28 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"general" | "billing" | "notifications" | "account">("general");
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
-  const [todayUsage, setTodayUsage] = useState(0);
+
+  const handleDeleteProfile = async () => {
+    if (!profile) return;
+    if (!window.confirm(`Delete profile "${profile.name}"? Its notes on this device will be removed. This cannot be undone.`)) return;
+
+    // Remove cloud copy (signed-in users)
+    const email = profile.email || "unknown@local";
+    await deleteProfileFromFirebase(email, profile.id);
+
+    // Remove local profile + its cached notes
+    const stored = localStorage.getItem("profiles");
+    const profiles = stored ? JSON.parse(stored) : [];
+    localStorage.setItem(
+      "profiles",
+      JSON.stringify(profiles.filter((p: any) => p.id !== profile.id))
+    );
+    localStorage.removeItem(`content_${profile.id}`);
+    localStorage.removeItem(`subscription_${profile.id}`);
+    localStorage.removeItem("currentProfile");
+
+    router.push("/note/profile-selection");
+  };
 
   const handleLogout = async () => {
     try {
@@ -40,7 +62,6 @@ export default function SettingsPage() {
       const profileData = JSON.parse(currentProfile);
       setProfile(profileData);
       setSubscription(getSubscription(profileData.id));
-      setTodayUsage(getTodayUsage(profileData.id));
     }
   }, [router]);
 
@@ -212,26 +233,36 @@ export default function SettingsPage() {
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">Today's Usage</h2>
                   </div>
                   <div className="p-6">
-                    {subscription?.planId !== "free" && subscription?.status === "active" ? (
-                      <div className="flex items-center gap-3 text-green-600">
-                        <span className="material-symbols-outlined">all_inclusive</span>
-                        <span className="font-medium">Unlimited generations</span>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="flex justify-between mb-2">
-                          <span className="text-gray-600 dark:text-gray-400">Generations used today</span>
-                          <span className="font-semibold text-gray-900 dark:text-white">{todayUsage} / 3</span>
+                    {(() => {
+                      const usage = canGenerate(profile.id);
+                      const plan = resolveEffectivePlan(subscription?.planId || "free");
+                      if (plan.id === "free") {
+                        return (
+                          <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
+                            <span className="material-symbols-outlined">note_stack</span>
+                            <span className="font-medium">
+                              {usage.allowed ? "1 free note remaining" : "Free note used — upgrade to keep generating"}
+                            </span>
+                          </div>
+                        );
+                      }
+                      const used = plan.generationsPerDay - usage.remaining;
+                      return (
+                        <div>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-gray-600 dark:text-gray-400">Generations used today</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">{used} / {plan.generationsPerDay}</span>
+                          </div>
+                          <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${used >= plan.generationsPerDay ? "bg-red-500" : usage.remaining <= 1 ? "bg-amber-500" : "bg-green-500"}`}
+                              style={{ width: `${Math.min((used / plan.generationsPerDay) * 100, 100)}%` }}
+                            />
+                          </div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Resets daily at midnight</p>
                         </div>
-                        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${todayUsage >= 3 ? "bg-red-500" : todayUsage >= 2 ? "bg-amber-500" : "bg-green-500"}`}
-                            style={{ width: `${Math.min((todayUsage / 3) * 100, 100)}%` }}
-                          />
-                        </div>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Resets daily at midnight</p>
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -413,7 +444,10 @@ export default function SettingsPage() {
                     <p className="text-sm text-red-700 dark:text-red-400 mt-1">Irreversible actions</p>
                   </div>
                   <div className="p-6">
-                    <button className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2">
+                    <button
+                      onClick={handleDeleteProfile}
+                      className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
                       <span className="material-symbols-outlined">delete_forever</span>
                       Delete Profile
                     </button>
