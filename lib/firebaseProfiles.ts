@@ -51,10 +51,16 @@ export async function saveProfileToFirebase(
       localId: profile.id,
       name: profile.name,
       type: profile.type,
+      // Shared cross-platform schema: kind is the canonical field
+      // ("adult"/"child"); avatarWeb/avatarIos carry each platform's own
+      // avatar token so neither renders the other's broken values.
+      kind: profile.type === "parent" ? "adult" : "child",
       avatar: profile.avatar,
+      avatarWeb: profile.avatar,
       gradeLevel: profile.gradeLevel || null,
       createdAt: profile.createdAt,
       updatedAt: new Date().toISOString(),
+      clientOrigin: "web",
     };
 
     await setDoc(profileRef, profileData);
@@ -80,12 +86,20 @@ export async function getProfilesFromFirebase(email: string): Promise<any[]> {
     const profiles: any[] = [];
     snapshot.forEach((doc) => {
       const data = doc.data();
+      // Normalize the shared schema. Web-created docs carry type/avatar;
+      // iOS-created docs (id "ios_*") carry kind/avatarIos — map those to
+      // the web shape so profiles created in the app appear here too.
+      const isIOS = doc.id.startsWith("ios_");
       profiles.push({
-        id: data.localId,
+        id: data.localId ?? doc.id,
+        remoteId: doc.id,
         name: data.name,
-        type: data.type,
-        avatar: data.avatar,
-        gradeLevel: data.gradeLevel,
+        type: data.type ?? (data.kind === "child" ? "student" : "parent"),
+        avatar: data.avatar || data.avatarWeb || "avatar-1",
+        gradeLevel: data.gradeLevel ?? null,
+        educationStatus: data.educationStatus ?? null,
+        age: data.age ?? null,
+        origin: isIOS ? "ios" : "web",
         createdAt: data.createdAt,
       });
     });
