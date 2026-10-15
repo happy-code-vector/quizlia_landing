@@ -101,9 +101,25 @@ async function getQuota(token: string, uid: string): Promise<QuotaDoc | null> {
 
 export type QuotaResult = { ok: true } | { ok: false; status: number; message: string };
 
+/** Optimistic-concurrency write: concurrent callers race on the quota doc
+ *  (pre-analysis + main pipeline, web trio); the updateTime precondition
+ *  409s the loser. Re-read fresh state and retry once before giving up. */
+async function patchWithRetry(
+  token: string,
+  uid: string,
+  buildWrite: (quota: QuotaDoc) => Record<string, unknown>
+): Promise<boolean> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const quota = (await getQuota(token, uid)) ?? {};
+    const write = await restPatch(`generationQuota/${uid}`, token, buildWrite(quota), quota.updateTime);
+    if (write) return true;
+  }
+  return false;
+}
+
 /**
  * Meters one generation. `setId` lets a client that fans one generation
- * into multiple requests (the web's note+flashcards+quiz trio) pay one
+ * into multiple requests (the web's note+flashcards/quiz trio) pay one
  * unit: the first sibling increments, the rest are recognized and free.
  */
 export async function meterGeneration(
@@ -116,8 +132,8 @@ export async function meterGeneration(
   // Super admins generate without limits (and without metering).
   if (admin) return { ok: true };
 
-  const quota = (await getQuota(token, uid)) ?? {};
-  const isToday = quota.date === today();
+  let quota = (await getQuota(token, uid)) ?? {};
+  let isToday = quota.date === today();
 
   if (setId && isToday && (quota.recentSets ?? []).includes(setId)) {
     return { ok: true };
@@ -127,13 +143,16 @@ export async function meterGeneration(
     if (quota.freeUsed) {
       return { ok: false, status: 429, message: "Your free note has been used. Upgrade to keep generating." };
     }
-    const write = await restPatch(`generationQuota/${uid}`, token, {
-      date: today(),
-      used: isToday ? (quota.used ?? 0) + 1 : 1,
-      freeUsed: true,
-      ...(setId && { recentSets: [setId] }),
-    }, quota.updateTime);
-    return write ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
+    const ok = await patchWithRetry(token, uid, (q) => {
+      const day = q.date === today();
+      return {
+        date: today(),
+        used: day ? (q.used ?? 0) + 1 : 1,
+        freeUsed: true,
+        ...(setId && { recentSets: [setId] }),
+      };
+    });
+    return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
   }
 
   const limit = plan === "family" ? GENERATION_LIMITS.family : GENERATION_LIMITS.individual;
@@ -142,13 +161,16 @@ export async function meterGeneration(
     return { ok: false, status: 429, message: `Daily limit reached (${limit} generations per day). Resets at midnight.` };
   }
 
-  const write = await restPatch(`generationQuota/${uid}`, token, {
-    date: today(),
-    used: used + 1,
-    ...(setId && { recentSets: [...(isToday ? quota.recentSets ?? [] : []), setId].slice(-10) }),
-  }, quota.updateTime);
+  const ok = await patchWithRetry(token, uid, (q) => {
+    const day = q.date === today();
+    return {
+      date: today(),
+      used: day ? (q.used ?? 0) + 1 : 1,
+      ...(setId && { recentSets: [...(day ? q.recentSets ?? [] : []), setId].slice(-10) }),
+    };
+  });
 
-  return write ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
+  return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
 }
 
 /** Chat/onboarding bucket: generous daily cap, separate from generations. */
@@ -164,9 +186,12 @@ export async function meterChat(token: string, uid: string): Promise<QuotaResult
   if (used >= 100) {
     return { ok: false, status: 429, message: "Daily limit reached. Try again tomorrow." };
   }
-  const write = await restPatch(`generationQuota/${uid}`, token, {
-    date: today(),
-    chatUsed: used + 1,
-  }, quota.updateTime);
-  return write ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
+  const ok = await patchWithRetry(token, uid, (q) => {
+    const day = q.date === today();
+    return {
+      date: today(),
+      chatUsed: (day ? q.chatUsed ?? 0 : 0) + 1,
+    };
+  });
+  return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
 }
