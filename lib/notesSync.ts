@@ -197,6 +197,9 @@ export async function mergeIOSNotesIntoContent(
 
       const d = noteDoc.data() as Record<string, unknown>;
 
+      // Tombstoned on iOS: skip the note entirely (deleted cross-device).
+      if ((d.deleted as unknown) === true) continue;
+
       // The iOS chat seed runs even for already-known topics: items are
       // idempotence-keyed by sourceId, but chat is length-compared.
       if (typeof d.chat === "string" && d.chat.trim().length > 0) {
@@ -299,6 +302,25 @@ export async function mergeIOSNotesIntoContent(
   } catch (error) {
     console.warn("iOS notes merge failed:", error);
     return false;
+  }
+}
+
+// Web-side delete of an app-origin note: tombstone the ios_<id> doc so
+// the note stays deleted on iOS too (restore pull skips tombstones).
+export async function tombstoneIOSNoteIfAny(
+  profile: { id: number | string; email?: string },
+  topicId: string
+): Promise<void> {
+  if (typeof window === "undefined") return;
+  if (!topicId.startsWith("ios_")) return;
+  if (!isFirebaseConfigured() || !db || !auth?.currentUser) return;
+
+  try {
+    const uid = auth.currentUser.uid;
+    const ref = doc(db, "users", uid, "profiles", String(profile.id), "notes", topicId);
+    await setDoc(ref, { deleted: true, deletedAt: new Date().toISOString() }, { merge: true });
+  } catch (error) {
+    console.warn("iOS note tombstone failed:", error);
   }
 }
 

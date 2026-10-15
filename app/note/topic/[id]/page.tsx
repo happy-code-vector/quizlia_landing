@@ -7,7 +7,7 @@ import { useToast } from "@/components/app/ToastContainer";
 import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
 import { QuizStudyMode } from "@/components/app/QuizStudyMode";
 import { Topic, getYouTubeThumbnail, getSourceIcon, getYouTubeEmbedUrl } from "@/lib/types";
-import { persistProfileContent, loadProfileContent } from "@/lib/notesSync";
+import { persistProfileContent, loadProfileContent, tombstoneIOSNoteIfAny } from "@/lib/notesSync";
 import { db, auth } from "@/lib/firebase";
 import { doc, deleteDoc } from "firebase/firestore";
 import { isAdminUser, publishNoteToLibrary } from "@/lib/publishNote";
@@ -164,6 +164,8 @@ export default function TopicDetailPage() {
       const content = JSON.parse(storedContent);
       const updatedContent = content.filter((item: any) => item.sourceId !== topicId);
       persistProfileContent(profile, updatedContent);
+      // App-origin note: tombstone so it stays deleted on iOS too.
+      tombstoneIOSNoteIfAny(profile, topicId);
     }
 
     showToast("Topic deleted successfully", "success");

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Sidebar } from "@/components/app/Sidebar";
 import { useToast } from "@/components/app/ToastContainer";
 import { getAllStudyGuides, categoryColors, difficultyColors, StudyGuide } from "@/lib/studyGuide";
-import { persistProfileContent, loadProfileContent, mergeIOSNotesIntoContent, pullRemoteChats } from "@/lib/notesSync";
+import { persistProfileContent, loadProfileContent, mergeIOSNotesIntoContent, pullRemoteChats, tombstoneIOSNoteIfAny } from "@/lib/notesSync";
 import { syncProfileFolders } from "@/lib/folderSync";
 import { CreateFolderModal } from "@/components/app/CreateFolderModal";
 import { RenameModal } from "@/components/app/RenameModal";
@@ -289,6 +289,8 @@ function NotesExplorer() {
       const content = JSON.parse(storedContent);
       const updatedContent = content.filter((item: ContentItem) => item.sourceId !== topicId && `legacy_${item.id}` !== topicId);
       persistProfileContent(profile, updatedContent);
+      // App-origin note: tombstone so it stays deleted on iOS too.
+      tombstoneIOSNoteIfAny(profile, topicId);
 
       setTopics((prev) => prev.filter((t) => t.id !== topicId));
     }
