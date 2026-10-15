@@ -191,6 +191,10 @@ export async function meterChat(token: string, uid: string): Promise<QuotaResult
     return {
       date: today(),
       chatUsed: (day ? q.chatUsed ?? 0 : 0) + 1,
+      // The rules' create/update branches validate `used` on every write
+      // (tamper-proofing) — carry the current value (0 when starting clean)
+      // so a chat-first write on a fresh account passes them.
+      used: day ? q.used ?? 0 : 0,
     };
   });
   return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
