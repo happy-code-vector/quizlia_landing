@@ -4,22 +4,22 @@ const tiles = [
   {
     title: "Learn from any link",
     description: "Paste any link and get notes and study materials right away.",
-    video: "/Learn_Anything_From_a_Link_version_1.mp4",
-    poster: "/posters/Learn_Anything_From_a_Link.jpg",
+    video: "/tiles/learn-from-any-link.mp4",
+    poster: "/tiles/learn-from-any-link.jpg",
     bg: "bg-c-soft",
   },
   {
     title: "YouTube summaries",
     description: "That 2-hour lecture becomes a 5-minute read.",
-    video: "/Instant_YouTube_Summaries_version_1.mp4",
-    poster: "/posters/Instant_YouTube_Summaries.jpg",
+    video: "/tiles/youtube-summaries.mp4",
+    poster: "/tiles/youtube-summaries.jpg",
     bg: "bg-c-mint",
   },
   {
     title: "Quiz yourself",
     description: "QuizliAI writes the questions, so you find the gaps before the test does.",
-    video: "/Quiz_Yourself_Instantly_version_1.mp4",
-    poster: "/posters/Quiz_Yourself_Instantly.jpg",
+    video: "/tiles/quiz-yourself.mp4",
+    poster: "/tiles/quiz-yourself.jpg",
     bg: "bg-c-peach",
   },
 ]
