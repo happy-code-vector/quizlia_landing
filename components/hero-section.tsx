@@ -25,12 +25,12 @@ export function HeroSection() {
             quizzed.
           </span>
         </h1>
-        <p className="anim-rise mt-[30px] max-w-[520px] [--d:0.1s] text-[20px] leading-[1.45] text-white">
+        <p className="mt-[30px] max-w-[520px] text-[20px] leading-[1.45] text-white">
           Pick a sample below and watch QuizliAI turn it into notes, flashcards and a quiz. This is what the app does
           with your own stuff.
         </p>
 
-        <div className="anim-rise mt-8 flex flex-col items-center gap-4 [--d:0.2s] sm:flex-row">
+        <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row">
           <Link
             href={APP_STORE_URL}
             target="_blank"

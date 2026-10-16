@@ -4,7 +4,7 @@ import { APP_STORE_URL } from "@/lib/constants"
 
 export function CTASection() {
   return (
-    <section aria-labelledby="cta-h" className="relative overflow-hidden bg-c-brand text-white">
+    <section aria-labelledby="cta-h" className="relative overflow-hidden bg-c-brand-ink text-white">
       <div aria-hidden="true" className="pointer-events-none absolute -left-[140px] top-[60px] h-[420px] w-[420px] rounded-full bg-white/[0.08] anim-drift" />
       <div aria-hidden="true" className="pointer-events-none absolute -right-[80px] -top-[60px] h-[300px] w-[300px] rounded-full bg-white/[0.08] anim-drift [animation-direction:alternate-reverse]" />
       <div className="relative mx-auto flex w-full max-w-[1200px] flex-col items-center px-5 py-[110px] text-center md:px-10">

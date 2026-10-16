@@ -8,7 +8,7 @@ export function FounderAvatar() {
 
   if (failed) {
     return (
-      <div className="w-36 h-36 rounded-full bg-c-brand flex items-center justify-center text-6xl font-extrabold text-white mb-6 shrink-0">
+      <div className="w-36 h-36 rounded-full bg-c-brand-ink flex items-center justify-center text-6xl font-extrabold text-white mb-6 shrink-0">
         A
       </div>
     )

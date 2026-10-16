@@ -18,7 +18,7 @@ export default function Home() {
         Skip to the demo
       </a>
       {/* Purple top section: nav + hero. The demo card below overlaps its bottom padding. */}
-      <div className="relative overflow-hidden bg-c-brand pb-[150px] text-white">
+      <div className="relative overflow-hidden bg-c-brand-ink pb-[150px] text-white">
         <div aria-hidden="true" className="pointer-events-none absolute -left-[140px] top-[120px] h-[420px] w-[420px] rounded-full bg-white/[0.08] anim-drift" />
         <div aria-hidden="true" className="pointer-events-none absolute -right-[80px] -top-[60px] h-[300px] w-[300px] rounded-full bg-white/[0.08] anim-drift [animation-direction:alternate-reverse]" />
         <SiteHeader />
@@ -26,7 +26,7 @@ export default function Home() {
       </div>
       <main id="main" className="flex-1">
         <section id="demo" aria-label="Live demo" className="scroll-mt-4 px-4 md:px-10">
-          <div className="reveal"><LiveDemo /></div>
+          <LiveDemo />
           <DemoCta />
         </section>
         <FeaturesShowcaseSection />
