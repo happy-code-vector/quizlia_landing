@@ -1,50 +1,48 @@
-"use client"
-
 import Link from "next/link"
 import Image from "next/image"
 import { APP_STORE_URL } from "@/lib/constants"
 
+const links = [
+  { href: "#demo", label: "Try it" },
+  { href: "#how-it-works", label: "How it works" },
+  { href: "#faq", label: "FAQ" },
+  { href: "#about", label: "About" },
+]
+
 export function SiteHeader() {
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-white/10 bg-black/80 backdrop-blur-lg">
-      <div className="container max-w-[1200px] mx-auto flex h-16 items-center justify-between px-4">
-        {/* Logo */}
-        <Link href="/" className="flex items-center gap-3">
-          <Image 
-            src="/logo.png" 
-            alt="QuizliAI Logo" 
-            width={120} 
-            height={40}
-            className="h-8 w-auto"
-          />
-          <span className="font-bold text-xl text-white font-rethink-sans">QuizliAI</span>
-          </Link>
+    <header className="relative z-10">
+      <div className="mx-auto flex h-20 w-full max-w-[1200px] items-center justify-between px-5 md:px-10">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 rounded-[10px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+        >
+          <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-[10px] bg-white">
+            <Image src="/logo.png" alt="" width={36} height={36} className="h-full w-full object-cover" priority />
+          </span>
+          <span className="text-xl font-extrabold tracking-[-0.03em] text-white">QuizliAI</span>
+        </Link>
 
-        {/* Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
-          <Link href="#features" className="text-sm font-medium text-white/70 hover:text-white transition-colors font-rethink-sans">
-            Features
-          </Link>
-          <Link href="#how-it-works" className="text-sm font-medium text-white/70 hover:text-white transition-colors font-rethink-sans">
-            How It Works
-          </Link>
-          <Link href="#faq" className="text-sm font-medium text-white/70 hover:text-white transition-colors font-rethink-sans">
-            FAQ
-          </Link>
-          <Link href="#about" className="text-sm font-medium text-white/70 hover:text-white transition-colors font-rethink-sans">
-            About
-          </Link>
+        <nav aria-label="Primary" className="hidden items-center gap-8 md:flex">
+          {links.map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="rounded text-[15px] font-semibold text-white transition-opacity hover:opacity-80 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            >
+              {l.label}
+            </Link>
+          ))}
         </nav>
 
-        {/* Download Button */}
-        <Link 
+        <Link
           href={APP_STORE_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="px-6 py-2 bg-[#964CEE] hover:bg-[#964CEE]/90 text-white rounded-full text-sm font-medium transition-all duration-300 hover:scale-[1.02] font-rethink-sans"
+          className="inline-flex min-h-11 items-center justify-center rounded-full bg-c-ink px-6 text-[15px] font-bold text-white transition-transform duration-150 motion-safe:hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
         >
           Download
-          </Link>
+        </Link>
       </div>
     </header>
   )

@@ -1,25 +1,21 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { Inter, Manrope, Shadows_Into_Light } from 'next/font/google';
+import { Rethink_Sans, Source_Serif_4 } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 
-// Google Fonts
-const inter = Inter({ 
+// Fonts load through next/font only (self-hosted, size-adjusted fallback, no layout jump).
+const rethink = Rethink_Sans({
   subsets: ['latin'],
-  variable: '--font-inter',
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--nf-rethink',
   display: 'swap',
 });
 
-const manrope = Manrope({ 
+const sourceSerif = Source_Serif_4({
   subsets: ['latin'],
-  variable: '--font-manrope',
-  display: 'swap',
-});
-
-const shadows = Shadows_Into_Light({ 
-  weight: '400',
-  subsets: ['latin'],
-  variable: '--font-shadows',
+  weight: ['400', '600', '700'],
+  style: ['normal', 'italic'],
+  variable: '--nf-serif',
   display: 'swap',
 });
 
@@ -39,11 +35,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${inter.variable} ${manrope.variable} ${shadows.variable}`}>
+    <html lang="en" suppressHydrationWarning className={`${rethink.variable} ${sourceSerif.variable}`}>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Rethink+Sans:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,600;1,400;1,600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
+        {/* Material Symbols is still used by the /note app (icon font). */}
+        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
       </head>
       <body className="font-rethink-sans">
         <ThemeProvider

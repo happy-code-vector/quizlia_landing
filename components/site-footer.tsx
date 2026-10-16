@@ -4,8 +4,8 @@ import { APP_STORE_URL } from "@/lib/constants"
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-white/10 bg-black">
-      <div className="container max-w-[1200px] mx-auto px-4 py-12 md:py-16">
+    <footer className="border-t-2 border-c-soft bg-c-page">
+      <div className="mx-auto w-full max-w-[1200px] px-5 py-12 md:px-10 md:py-16">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
           {/* Brand */}
           <div className="space-y-4">
@@ -17,9 +17,9 @@ export function SiteFooter() {
                 height={40}
                 className="h-8 w-auto"
               />
-              <span className="text-xl font-semibold text-white font-rethink-sans">QuizliAI</span>
+              <span className="text-xl font-extrabold tracking-[-0.03em] text-c-ink">QuizliAI</span>
             </Link>
-            <p className="text-sm text-white/50 font-rethink-sans">
+            <p className="text-sm text-c-muted">
               Your smart assistant for notes, transcripts, and AI-powered learning.
             </p>
             <a
@@ -28,10 +28,10 @@ export function SiteFooter() {
               rel="noopener noreferrer"
               className="group flex items-center gap-3 pt-2"
             >
-              <span className="rounded-lg border border-white/15 bg-white p-1.5">
+              <span className="rounded-lg border border-c-soft bg-white p-1.5">
                 <Image src="/app-qr.svg" alt="QR code to download QuizliAI on the App Store" width={56} height={56} unoptimized className="block h-14 w-14" />
               </span>
-              <span className="text-xs font-rethink-sans text-white/50 group-hover:text-white transition-colors">
+              <span className="text-xs text-c-muted group-hover:text-c-ink transition-colors">
                 Get the iOS app
               </span>
             </a>
@@ -39,15 +39,15 @@ export function SiteFooter() {
 
           {/* Product Links */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-white font-rethink-sans">Product</h3>
+            <h3 className="font-bold text-c-ink">Product</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#features" className="text-sm text-white/50 hover:text-white transition-colors font-rethink-sans">
-                  Features
+                <Link href="#demo" className="text-sm text-c-muted hover:text-c-ink transition-colors">
+                  Try the demo
                 </Link>
               </li>
               <li>
-                <Link href="#how-it-works" className="text-sm text-white/50 hover:text-white transition-colors font-rethink-sans">
+                <Link href="#how-it-works" className="text-sm text-c-muted hover:text-c-ink transition-colors">
                   How It Works
                 </Link>
               </li>
@@ -56,10 +56,10 @@ export function SiteFooter() {
 
           {/* Company Links */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-white font-rethink-sans">Company</h3>
+            <h3 className="font-bold text-c-ink">Company</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="#about" className="text-sm text-white/50 hover:text-white transition-colors font-rethink-sans">
+                <Link href="#about" className="text-sm text-c-muted hover:text-c-ink transition-colors">
                   About
                 </Link>
               </li>
@@ -69,15 +69,15 @@ export function SiteFooter() {
 
           {/* Legal Links */}
           <div className="space-y-4">
-            <h3 className="font-semibold text-white font-rethink-sans">Legal</h3>
+            <h3 className="font-bold text-c-ink">Legal</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="https://sites.google.com/view/quizliai-privacy/home" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors font-rethink-sans">
+                <Link href="https://sites.google.com/view/quizliai-privacy/home" target="_blank" rel="noopener noreferrer" className="text-sm text-c-muted hover:text-c-ink transition-colors">
                   Privacy
                 </Link>
               </li>
               <li>
-                <Link href="https://sites.google.com/view/quizliai-terms/home" target="_blank" rel="noopener noreferrer" className="text-sm text-white/50 hover:text-white transition-colors font-rethink-sans">
+                <Link href="https://sites.google.com/view/quizliai-terms/home" target="_blank" rel="noopener noreferrer" className="text-sm text-c-muted hover:text-c-ink transition-colors">
                   Terms
                 </Link>
               </li>
@@ -86,8 +86,8 @@ export function SiteFooter() {
         </div>
 
         {/* Copyright */}
-        <div className="mt-12 border-t border-white/10 pt-6 text-center">
-          <p className="text-sm text-white/40 font-rethink-sans">
+        <div className="mt-12 border-t-2 border-c-soft pt-6 text-center">
+          <p className="text-sm text-c-muted">
             © {new Date().getFullYear()} QuizliAI. All rights reserved.
           </p>
         </div>

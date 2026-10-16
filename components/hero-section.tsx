@@ -1,87 +1,54 @@
-import Image from "next/image"
 import Link from "next/link"
+import Image from "next/image"
 import { APP_STORE_URL } from "@/lib/constants"
 
 export function HeroSection() {
   return (
-    <section className="relative pt-20 md:pt-32 pb-16 overflow-hidden" style={{ backgroundColor: '#070014' }}>
-      <div className="container px-4 md:px-6 max-w-[1200px] mx-auto">
-        <div className="flex flex-col items-center text-center space-y-8">
-          {/* Hero Heading */}
-          <h1 className="mt-[80px] text-center font-inter font-semibold text-[40px] md:text-[50px] leading-[1.1] md:leading-[1.1] max-w-[600px] w-[95%] mx-auto tracking-[-1px] md:tracking-[-2.53px] bg-gradient-to-b from-white from-10% to-[#9844FF] to-75% bg-clip-text text-transparent pb-8 md:pb-8 [@media(max-width:768px)]:text-[32px] [@media(max-width:768px)]:font-manrope [@media(max-width:768px)]:pb-3 [@media(max-width:768px)]:max-w-[350px]">
-            Study Smarter & Ace<br />Every Test with QuizliAI
-              </h1>
-          
-          {/* Subtitle */}
-          <p className="flex flex-col justify-center max-w-[364px] w-[90%] mx-auto text-center font-rethink-sans text-[18px] font-medium leading-[1.2] md:leading-[22.4px] tracking-[0.32px] text-white/50 [@media(max-width:768px)]:text-[16px] [@media(max-width:768px)]:max-w-[300px]">
-            QuizliAI is your smart study assistant. Get instant notes, transcripts, and study materials from anything.
-          </p>
+    <section aria-labelledby="hero-h" className="relative z-10">
+      <Image
+        src="/mascot/quizliai_mascot_wave.webp"
+        alt=""
+        width={449}
+        height={640}
+        priority
+        className="anim-wave pointer-events-none absolute bottom-[-40px] right-[3%] z-10 hidden h-auto w-[190px] xl:block 2xl:right-[8%] 2xl:w-[230px]"
+      />
+      <div className="mx-auto flex w-full max-w-[1200px] flex-col items-center px-5 pt-[70px] text-center md:px-10">
+        <h1
+          id="hero-h"
+          className="anim-rise text-[clamp(52px,9.5vw,148px)] font-extrabold leading-[0.88] tracking-[-0.055em] text-white"
+        >
+          Paste anything.
+          <br />
+          Get{" "}
+          <span className="anim-chip inline-block rotate-[-3deg] rounded-[0.18em] bg-c-lime px-[0.14em] pb-[0.04em] text-c-ink">
+            quizzed.
+          </span>
+        </h1>
+        <p className="anim-rise mt-[30px] max-w-[520px] [--d:0.1s] text-[20px] leading-[1.45] text-white">
+          Pick a sample below and watch QuizliAI turn it into notes, flashcards and a quiz. This is what the app does
+          with your own stuff.
+        </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
-            {/* Download Button */}
-            <Link
-              href={APP_STORE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="relative flex justify-center items-center w-[192px] h-[50px] px-[15px] py-[2px] gap-[10px] rounded-[200px] transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(150,76,238,0.5)]"
-            >
-              {/* Static inner border */}
-              <span className="absolute inset-0 rounded-[200px] border border-white/10"></span>
-
-              {/* Animated gradient border */}
-              <span className="absolute inset-0 rounded-[200px] overflow-hidden">
-                <span className="absolute inset-[-2px] rounded-[200px] bg-gradient-to-r from-[#964CEE] via-[#C77DFF] to-[#964CEE] bg-[length:200%_100%] animate-gradient-rotate opacity-50"></span>
-              </span>
-
-              {/* Button content */}
-              <span className="absolute inset-[2px] rounded-[200px] bg-gradient-to-r from-[#0B0B0B] to-[#191919] flex items-center justify-center z-10">
-                <span className="text-white font-rethink-sans">Download QuizliAI</span>
-              </span>
-            </Link>
-
-            {/* Continue on Web Button */}
-            <Link
-              href="/note"
-              className="flex justify-center items-center w-[192px] h-[50px] px-[15px] py-[2px] gap-[8px] rounded-[200px] border border-white/20 bg-white/5 text-white font-rethink-sans transition-all duration-300 ease-out hover:bg-white/10 hover:border-white/30 hover:scale-[1.02]"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-              </svg>
-              Continue on Web
-            </Link>
-          </div>
-
-          {/* App Store QR — scan or tap */}
-          <a
+        <div className="anim-rise mt-8 flex flex-col items-center gap-4 [--d:0.2s] sm:flex-row">
+          <Link
             href={APP_STORE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="group mt-2 flex flex-col items-center gap-2"
+            className="inline-flex min-h-12 items-center justify-center rounded-full bg-c-ink px-6 text-[15px] font-bold text-white transition-transform duration-150 motion-safe:hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
           >
-            <span className="rounded-2xl border border-white/15 bg-white p-2.5 transition-transform duration-300 ease-out group-hover:scale-[1.03]">
-              <Image src="/app-qr.svg" alt="QR code to download QuizliAI on the App Store" width={96} height={96} unoptimized className="block h-24 w-24" />
-            </span>
-            <span className="text-xs font-rethink-sans text-white/50 group-hover:text-white/80 transition-colors">
-              Scan to download on the App Store
-            </span>
-          </a>
-
-          {/* Hero Image */}
-          <div className="mt-[30px] w-full md:w-[100%] lg:w-full max-w-[1000px] mx-auto px-4">
-              <Image 
-                src="/Poster.jpg" 
-              alt="QuizliAI app interface showing AI-powered study materials"
-              width={1000}
-              height={600}
-              className="w-full h-auto rounded-[20px]"
-                priority
-              />
-          </div>
-
-          {/* Trusted By Section */}
-       
+            Download for iPhone
+          </Link>
+          <Link
+            href="/note"
+            className="inline-flex min-h-12 items-center justify-center rounded-full border-2 border-white px-6 text-[15px] font-bold text-white transition-transform duration-150 motion-safe:hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+          >
+            Continue on web
+          </Link>
         </div>
+        <p className="anim-rise mt-4 text-[14px] font-semibold text-white [--d:0.3s]">
+          Android is coming soon. Use the web app on any device until then.
+        </p>
       </div>
     </section>
   )
