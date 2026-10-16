@@ -144,6 +144,17 @@ export function useGenerateContent({ profile, targetFolderId, onGenerated }: Use
 
       // Check for HTTP errors
       if (!noteResponse.ok || !flashcardResponse.ok || !quizResponse.ok) {
+        // Quota exhausted server-side (the shared budget may have been
+        // spent on another device or the app) — paywall, not an error toast.
+        if (
+          noteResponse.status === 429 ||
+          flashcardResponse.status === 429 ||
+          quizResponse.status === 429
+        ) {
+          setIsPaywallOpen(true);
+          return;
+        }
+
         const errorMessages = [];
         if (!noteResponse.ok) errorMessages.push(noteResult.message || noteResult.error || `Notes: HTTP ${noteResponse.status}`);
         if (!flashcardResponse.ok) errorMessages.push(flashcardResult.message || flashcardResult.error || `Flashcards: HTTP ${flashcardResponse.status}`);
