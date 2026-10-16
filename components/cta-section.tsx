@@ -26,13 +26,7 @@ export function CTASection() {
         >
           Download QuizliAI, it&apos;s free
         </Link>
-        <p className="mt-4 text-[14px] font-semibold">
-          Android is coming soon.{" "}
-          <Link href="/note" className="underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">
-            Use the web app
-          </Link>{" "}
-          on any device until then.
-        </p>
+        <p className="mt-5 text-[18px] font-bold md:text-[20px]">Android is coming soon.</p>
         <a
           href={APP_STORE_URL}
           target="_blank"

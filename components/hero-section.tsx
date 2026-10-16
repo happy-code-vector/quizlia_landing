@@ -46,8 +46,8 @@ export function HeroSection() {
             Continue on web
           </Link>
         </div>
-        <p className="anim-rise mt-4 text-[14px] font-semibold text-white [--d:0.3s]">
-          Android is coming soon. Use the web app on any device until then.
+        <p className="anim-rise mt-5 text-[18px] font-bold text-white [--d:0.3s] md:text-[20px]">
+          Android is coming soon.
         </p>
       </div>
     </section>
