@@ -425,17 +425,21 @@ export function verifyStoreKitJws(jws: string): DeviceEntitlement | null {
     const header: JwsHeader = JSON.parse(b64urlToBuffer(h).toString("utf8"));
     if (header.alg !== "ES256" || !Array.isArray(header.x5c) || header.x5c.length < 2) return null;
 
-    const leaf = certFromPemB64(header.x5c[0]);
-    const intermediate = certFromPemB64(header.x5c[header.x5c.length - 2]);
+    const certs = header.x5c.map(certFromPemB64);
+    const leaf = certs[0];
     const root = new X509Certificate(APPLE_ROOT_CA_G3);
 
-    // Chain: leaf ← intermediate ← Apple root. (StoreKit sends 2–3 certs;
-    // with 3 present the middle is also checked.)
-    if (!signedBy(intermediate, root)) return null;
-    if (header.x5c.length >= 3) {
-      const middle = certFromPemB64(header.x5c[1]);
-      if (!signedBy(leaf, middle) || !signedBy(middle, intermediate)) return null;
-    } else if (!signedBy(leaf, intermediate)) return null;
+    // Chain walk (plan amendment 2026-10-21: the original indexed
+    // x5c[len-2] as "intermediate", which under Apple's actual
+    // [leaf, intermediate, root] shape tested the intermediate against
+    // ITSELF — rejecting every genuine receipt; probe-confirmed with a
+    // synthetic chain). Walk consecutive pairs — each cert must be signed
+    // by the next — then anchor the trailing cert at the embedded root.
+    for (let i = 0; i < certs.length - 1; i++) {
+      if (!signedBy(certs[i], certs[i + 1])) return null;
+    }
+    const last = certs[certs.length - 1];
+    if (!last.equals(root) && !signedBy(last, root)) return null;
 
     if (!signatureValid(`${h}.${p}`, b64urlToBuffer(s), leaf)) return null;
 
@@ -491,11 +495,16 @@ node -e "const ts=require('child_process').execSync; console.log('compile-only c
 
 - [ ] **Step 5: Commit**
 
-The repo's `.gitignore` has a stock `*.pem` rule — force-add the (public, non-secret) Apple root PEM:
+The repo's `.gitignore` has a stock `*.pem` rule — add a scoped exception (end of `.gitignore`, so future cert refreshes stage normally) and force-add this first PEM past the stock rule:
+
+```text
+# Apple root CA (public cert) used by lib/storekit-verify.ts — not a secret
+!lib/certs/*.pem
+```
 
 ```bash
 git add -f lib/certs/AppleRootCA-G3.pem
-git add lib/storekit-products.ts lib/storekit-verify.ts
+git add lib/storekit-products.ts lib/storekit-verify.ts .gitignore
 git commit -m "feat: offline StoreKit 2 JWS verification (x5c chain to Apple root)"
 ```
 
