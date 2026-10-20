@@ -117,7 +117,7 @@ export async function getAllNotesForSitemapServer(): Promise<
             },
           },
         }),
-        next: { revalidate: 3600 },
+        next: { revalidate: 300 },
       }
     );
 
