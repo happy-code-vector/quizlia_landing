@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { meterGeneration } from "@/lib/quota";
-import { resolveCaller, exchangeRefreshToken } from "@/lib/token-verify";
+import { exchangeRefreshToken } from "@/lib/token-verify";
+import {
+  verifyAppCheck,
+  resolveAccountCaller,
+  resolveDeviceCaller,
+  devicePlan,
+  type DeviceCaller,
+} from "@/lib/caller";
+import { meterDeviceGeneration } from "@/lib/devices";
 import { getTranscript, youtubeVideoId } from "@/lib/transcript";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +23,8 @@ export const maxDuration = 60;
 //
 // Metering: this is the user's free note (PRD section 8). It is charged only
 // after a transcript is found, and `setId` keeps retries of the same video
-// on the same day from charging twice.
+// on the same day from charging twice. Signed-out devices (X-Device-ID,
+// lib/caller) meter at the same checkpoint via lib/devices.
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const MODEL = "claude-haiku-5-5";
 const MAX_TRANSCRIPT_CHARS = 120_000;
@@ -125,11 +134,14 @@ async function callModel(prompt: string): Promise<StudyResult | null> {
 export async function POST(request: NextRequest) {
   if (!ANTHROPIC_API_KEY) return error(500, "not_configured", "Model key not configured");
 
-  const caller = await resolveCaller(
-    request.headers.get("authorization") || "",
-    request.headers.get("x-firebase-refresh")
-  );
-  if (!caller) return error(401, "unauthenticated", "Not authenticated");
+  // Account tokens win; signed-out devices fall through to the device path.
+  await verifyAppCheck(request);
+  const caller = await resolveAccountCaller(request);
+  let device: DeviceCaller | null = null;
+  if (!caller) {
+    device = await resolveDeviceCaller(request);
+    if (!device) return error(401, "unauthenticated", "Not authenticated");
+  }
 
   let body: { url?: string; goal?: string; audience?: string };
   try {
@@ -146,11 +158,16 @@ export async function POST(request: NextRequest) {
     return error(422, "no_captions", "This video has no captions we can read. Try another video or the sample.");
   }
 
-  const token = (request.headers.get("authorization") || "").startsWith("Bearer ")
-    ? (request.headers.get("authorization") || "").slice(7)
-    : await exchangeRefreshToken(request.headers.get("x-firebase-refresh") || "");
-  const quota = await meterGeneration(token || "", caller.uid, `video-${videoId}`);
-  if (!quota.ok) return error(quota.status, "quota", quota.message);
+  if (device) {
+    const meter = await meterDeviceGeneration(device.deviceId, devicePlan(device.entitlement));
+    if (!meter.ok) return error(meter.status, "quota", meter.message);
+  } else if (caller) {
+    const token = (request.headers.get("authorization") || "").startsWith("Bearer ")
+      ? (request.headers.get("authorization") || "").slice(7)
+      : await exchangeRefreshToken(request.headers.get("x-firebase-refresh") || "");
+    const quota = await meterGeneration(token || "", caller.uid, `video-${videoId}`);
+    if (!quota.ok) return error(quota.status, "quota", quota.message);
+  }
 
   const prompt = buildPrompt(
     transcript.text.slice(0, MAX_TRANSCRIPT_CHARS),

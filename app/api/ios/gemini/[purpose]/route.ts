@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { meterGeneration, meterChat } from "@/lib/quota";
-import { resolveCaller, exchangeRefreshToken } from "@/lib/token-verify";
+import { exchangeRefreshToken } from "@/lib/token-verify";
+import { verifyAppCheck, resolveAccountCaller, resolveDeviceCaller, devicePlan } from "@/lib/caller";
+import { meterDeviceGeneration, meterDeviceChat } from "@/lib/devices";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
 import { youtubeVideoId, getVideoDurationSeconds } from "@/lib/transcript";
 
@@ -8,14 +10,18 @@ export const dynamic = "force-dynamic";
 
 // Gemini proxy for the iOS app. The API key stays server-side; the app
 // authenticates with its Firebase identity (ID token, or a refresh token
-// which is exchanged server-side) and quotas are enforced per account:
+// which is exchanged server-side) and quotas are enforced per account —
+// or, signed out, as a device: X-Device-ID (+ App Check token, log-only
+// until APP_CHECK_ENFORCE=1) with an inline StoreKit JWS receipt, quotas
+// enforced per device (lib/caller, lib/devices):
 //   /api/ios/gemini/generation — the notes pipeline: free = 1 lifetime,
 //                              paid (subscription mirror) = 15/day
 //   /api/ios/gemini/chat       — note chat + onboarding samples: 100/day
 // The model is chosen here, so it can change without an app release.
-// No service account: the caller is verified via Google's public certs
-// (token-verify) and quotas are written under tamper-proof rules with
-// the caller's own token (lib/quota).
+// No service account for accounts: the caller is verified via Google's
+// public certs (token-verify) and quotas are written under tamper-proof
+// rules with the caller's own token (lib/quota); device meters are
+// Admin-SDK writes (lib/devices).
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
@@ -40,29 +46,49 @@ async function checkQuota(purpose: string, token: string, uid: string): Promise<
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ purpose: string }> }) {
-  if (!GEMINI_API_KEY) {
-    return NextResponse.json({ error: { code: 500, message: "Gemini key not configured" } }, { status: 500 });
-  }
-
-  // Bearer ID token, or the app's refresh token (exchanged server-side
-  // using only the public web API key).
-  const caller = await resolveCaller(
-    request.headers.get("authorization") || "",
-    request.headers.get("x-firebase-refresh")
-  );
-  if (!caller) {
-    return NextResponse.json({ error: { code: 401, message: "Not authenticated" } }, { status: 401 });
-  }
-
   const { purpose } = await context.params;
   if (!["generation", "chat", "onboarding"].includes(purpose)) {
     return NextResponse.json({ error: { code: 404, message: "Unknown purpose" } }, { status: 404 });
+  }
+
+  // Account tokens win; signed-out devices fall through to the device path.
+  await verifyAppCheck(request);
+  const caller = await resolveAccountCaller(request);
+  if (!caller) {
+    const device = await resolveDeviceCaller(request);
+    if (!device) {
+      return NextResponse.json({ error: { code: 401, message: "Not authenticated" } }, { status: 401 });
+    }
+    const plan = devicePlan(device.entitlement);
+    const meter = purpose === "generation"
+      ? await meterDeviceGeneration(device.deviceId, plan)
+      : await meterDeviceChat(device.deviceId);
+    if (!meter.ok) {
+      return NextResponse.json(
+        { error: { code: meter.status, message: meter.message } },
+        { status: meter.status }
+      );
+    }
+    return await proxyToGemini(request, purpose);
   }
 
   // The quota write needs the caller's own (verified) token.
   const token = (request.headers.get("authorization") || "").startsWith("Bearer ")
     ? (request.headers.get("authorization") || "").slice(7)
     : await exchangeRefreshToken(request.headers.get("x-firebase-refresh") || "");
+
+  const quotaError = await checkQuota(purpose, token || "", caller.uid);
+  if (quotaError) return quotaError;
+
+  return await proxyToGemini(request, purpose);
+}
+
+// Everything after quota passes: read the JSON body and stream it to
+// Gemini with the server-side key. Shared by account and device callers.
+async function proxyToGemini(request: NextRequest, purpose: string): Promise<Response> {
+  if (!GEMINI_API_KEY) {
+    return NextResponse.json({ error: { code: 500, message: "Gemini key not configured" } }, { status: 500 });
+  }
 
   let body: any;
   try {
@@ -72,7 +98,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     return NextResponse.json({ error: { code: 500, message: "Proxy failure" } }, { status: 500 });
   }
 
-  // Cost guard (PRD item 3): runs before metering so a rejected video consumes no credit.
+  // Cost guard (PRD item 3): reject over-long videos with a clear error
+  // instead of sending ~1M tokens upstream.
   for (const part of (Array.isArray(body?.contents) ? body.contents : []).flatMap((c: any) =>
     Array.isArray(c?.parts) ? c.parts : []
   )) {
@@ -96,9 +123,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
       break;
     }
   }
-
-  const quotaError = await checkQuota(purpose, token || "", caller.uid);
-  if (quotaError) return quotaError;
 
   try {
     // Append the format contract as the LAST text part so it takes

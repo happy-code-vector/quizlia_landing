@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { resolveCaller } from "@/lib/token-verify";
+import { verifyAppCheck, resolveAccountCaller, resolveDeviceCaller } from "@/lib/caller";
 
 export const dynamic = "force-dynamic";
 
@@ -16,12 +16,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: { code: 500, message: "Gemini key not configured" } }, { status: 500 });
   }
 
-  const caller = await resolveCaller(
-    request.headers.get("authorization") || "",
-    request.headers.get("x-firebase-refresh")
-  );
+  // Account tokens win; signed-out devices fall through to the device path.
+  await verifyAppCheck(request);
+  const caller = await resolveAccountCaller(request);
   if (!caller) {
-    return NextResponse.json({ error: { code: 401, message: "Not authenticated" } }, { status: 401 });
+    const device = await resolveDeviceCaller(request);
+    if (!device) {
+      return NextResponse.json({ error: { code: 401, message: "Not authenticated" } }, { status: 401 });
+    }
   }
 
   try {
