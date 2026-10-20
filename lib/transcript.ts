@@ -106,7 +106,8 @@ const DURATION_CACHE_MS = 24 * 60 * 60 * 1000;
  * Video duration in seconds via Supadata metadata, or null when it can't
  * be determined (no key, lookup failure, unknown field). Callers treat
  * null as "cannot check" and proceed — the cap is a cost guard, not a
- * hard security boundary. No direct YouTube fetching (PRD rev 44).
+ * hard security boundary. No direct YouTube fetching (PRD rev 44), and
+ * the lookup aborts after 3s.
  */
 export async function getVideoDurationSeconds(videoId: string): Promise<number | null> {
   if (!SUPADATA_API_KEY) return null;
@@ -117,7 +118,7 @@ export async function getVideoDurationSeconds(videoId: string): Promise<number |
       `https://api.supadata.ai/v1/metadata?url=${encodeURIComponent(
         `https://www.youtube.com/watch?v=${videoId}`
       )}`,
-      { headers: { "x-api-key": SUPADATA_API_KEY } }
+      { headers: { "x-api-key": SUPADATA_API_KEY }, signal: AbortSignal.timeout(3000) }
     );
     if (res.status !== 200) {
       console.warn(`duration: supadata ${res.status} for ${videoId}`);

@@ -141,6 +141,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     });
 
     const text = await upstream.text();
+    if (!upstream.ok) {
+      console.error("iOS proxy upstream error:", upstream.status, text);
+    }
     return new NextResponse(text, {
       status: upstream.status,
       headers: { "Content-Type": "application/json" },

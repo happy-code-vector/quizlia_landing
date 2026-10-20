@@ -180,9 +180,13 @@ export async function POST(request: NextRequest) {
 
     // Cost guard (PRD item 3): reject videos over 60 minutes BEFORE
     // metering — a rejected video must not consume a generation credit.
-    if (mimeType === "video/youtube" && content) {
-      const preFlightUrl = content.replace("Analyze the following link: ", "").trim();
-      const videoId = youtubeVideoId(preFlightUrl);
+    const youtubeUrl =
+      mimeType === "video/youtube" && content
+        ? content.replace("Analyze the following link: ", "").trim()
+        : null;
+
+    if (youtubeUrl) {
+      const videoId = youtubeVideoId(youtubeUrl);
       if (videoId) {
         const duration = await getVideoDurationSeconds(videoId);
         if (duration !== null && duration > MAX_VIDEO_SECONDS) {
@@ -198,8 +202,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Server-side quota gate. The web fires note+flashcard+quiz as one
-    // generation sharing a setId, so the trio is metered exactly once.
+    // Server-side quota gate. The web sends one study_pack request per
+    // generation; setId still dedupes metering against client re-fires.
     const quotaError = await checkQuota(request, setId);
     if (quotaError) return quotaError;
 
@@ -226,10 +230,7 @@ export async function POST(request: NextRequest) {
     const parts: any[] = [];
 
     // Handle YouTube videos using File API (as per Google's video understanding docs)
-    if (mimeType === "video/youtube" && content) {
-      // For YouTube, we need to extract the video URL and use fileData
-      const youtubeUrl = content.replace("Analyze the following link: ", "").trim();
-
+    if (youtubeUrl) {
       parts.push({
         fileData: {
           mimeType: "video/mp4", // YouTube videos are treated as video/mp4
