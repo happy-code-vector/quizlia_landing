@@ -322,11 +322,11 @@ git commit -m "feat: devices collection data layer mirroring quota semantics"
 
 - [ ] **Step 1: Download Apple's root certificate**
 
-Run (Git Bash):
+Run (Git Bash) — note: Apple's exact URL extension has shifted between `.crt`/`.cer`; grab the Apple Root CA - G3 file from https://www.apple.com/certificateauthority/ and convert if needed:
 
 ```bash
-curl -L "https://www.apple.com/certificateauthority/AppleRootCA-G3.crt" -o /tmp/AppleRootCA-G3.crt
-openssl x509 -inform DER -in /tmp/AppleRootCA-G3.crt -outform PEM -out "lib/certs/AppleRootCA-G3.pem"
+curl -L "https://www.apple.com/certificateauthority/AppleRootCA-G3.cer" -o /tmp/AppleRootCA-G3.cer
+openssl x509 -inform DER -in /tmp/AppleRootCA-G3.cer -outform PEM -out "lib/certs/AppleRootCA-G3.pem"
 openssl x509 -in "lib/certs/AppleRootCA-G3.pem" -noout -subject
 ```
 
@@ -411,7 +411,10 @@ function signedBy(child: X509Certificate, parent: X509Certificate): boolean {
 function signatureValid(signingInput: string, signature: Buffer, leaf: X509Certificate): boolean {
   const verify = createVerify("SHA256");
   verify.update(signingInput);
-  return verify.verify({ key: leaf.publicKey, dsaEncoding: "der" }, signature);
+  // JWS ES256 signatures are raw r||s (RFC 7518 / IEEE P1363), NOT DER.
+  // (Plan amendment 2026-10-21: original said "der", which rejects every
+  // genuine StoreKit receipt — probe-verified by the Task 3 implementer.)
+  return verify.verify({ key: leaf.publicKey, dsaEncoding: "ieee-p1363" }, signature);
 }
 
 export function verifyStoreKitJws(jws: string): DeviceEntitlement | null {
@@ -488,10 +491,20 @@ node -e "const ts=require('child_process').execSync; console.log('compile-only c
 
 - [ ] **Step 5: Commit**
 
+The repo's `.gitignore` has a stock `*.pem` rule — force-add the (public, non-secret) Apple root PEM:
+
 ```bash
-git add lib/certs/AppleRootCA-G3.pem lib/storekit-products.ts lib/storekit-verify.ts
+git add -f lib/certs/AppleRootCA-G3.pem
+git add lib/storekit-products.ts lib/storekit-verify.ts
 git commit -m "feat: offline StoreKit 2 JWS verification (x5c chain to Apple root)"
 ```
+
+> Deployment watch-item (handled in Task 13): the PEM is read via
+> `process.cwd()` at module load — verify Netlify's function bundle
+> includes it (Next output file tracing); if not, add the file to
+> `outputFileTracingIncludes` for the `/api/ios/*` routes in
+> `next.config.js` (check `node_modules/next/dist/docs/` for this Next
+> version's exact key).
 
 ---
 
@@ -1318,6 +1331,10 @@ DID=$(uuidgen | tr 'A-Z' 'a-z')
 curl -s -o /dev/null -w "%{http_code}\n" -X POST $BASE/api/ios/entitlements \
   -H "content-type: application/json" -H "x-device-id: $DID" -d '{"jws":["x.y.z"]}'
 # Expected: 200 {"plan":"free","linked":false}
+# NOTE: this 200 ALSO proves the Apple-root PEM shipped in the Netlify
+# function bundle — lib/storekit-verify reads it at module load, so a
+# missing file makes every /api/ios/* import throw and 500. If it 500s
+# here, add lib/certs/** to outputFileTracingIncludes (Task 3 note).
 curl -s -o /dev/null -w "%{http_code}\n" -X POST $BASE/api/stripe/checkout \
   -H "content-type: application/json" -d '{"priceId":"x","profileId":"1","planId":"weekly"}'
 # Expected: 401
