@@ -38,9 +38,13 @@ export async function publishNoteToLibrary(topic: Topic, uid: string): Promise<{
   await setDoc(doc(db, "notes", slug), {
     slug,
     title: topic.title,
-    category: "community",
-    difficulty: "medium",
-    sourceChannel: "QuizliAI user",
+    // Real values from generation (category/difficulty are produced by the
+    // note prompt); constants only as fallbacks for pre-category notes.
+    category: topic.note?.category || "community",
+    difficulty: topic.note?.difficulty || "medium",
+    sourceChannel: topic.sourceType === "youtube" && youtubeId
+      ? `YouTube · ${topic.title}`
+      : "QuizliAI user",
     youtubeId,
     createdAt: now,
     updatedAt: now,

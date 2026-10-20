@@ -19,6 +19,8 @@ const PROMPTS = {
 TASK:
 Analyze the provided content and return a structured summary in JSON format with the following keys:
 - title: string (concise title of the content)
+- category: string (the single best-fit subject area from exactly: history, biology, literature, math, science, or community if none fit)
+- difficulty: string ("easy", "medium", or "hard" — estimated from how advanced the material is)
 - quick_summary: string (a 5–8 sentence overall summary)
 - key_findings: array of strings (as many key facts or statistics as possible)
 - important_notes: array of strings (all relevant cautions, limitations, or extra details you can find)
@@ -34,6 +36,8 @@ RULES:
 RESPONSE FORMAT (JSON only):
 {
   "title": "string",
+  "category": "history",
+  "difficulty": "medium",
   "quick_summary": "string",
   "key_findings": ["point 1", "point 2", "..."],
   "important_notes": ["point 1", "point 2", "..."],

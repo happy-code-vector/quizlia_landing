@@ -23,6 +23,10 @@ export interface NoteSection {
 
 export interface NoteData {
   title: string;
+  /** Best-fit subject area (history/biology/literature/math/science/community) */
+  category?: string;
+  /** easy | medium | hard — estimated at generation */
+  difficulty?: string;
   quick_summary: string;
   key_findings: string[];
   important_notes?: string[];

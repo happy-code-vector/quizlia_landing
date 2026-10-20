@@ -148,6 +148,7 @@ export async function getStudyGuidesByCategory(category: string): Promise<StudyG
 
 // Category colors for badges
 export const categoryColors: Record<string, string> = {
+  community: "from-purple-500 to-pink-500",
   history: "from-amber-500 to-orange-500",
   biology: "from-green-500 to-emerald-500",
   literature: "from-purple-500 to-violet-500",
