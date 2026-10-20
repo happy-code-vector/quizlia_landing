@@ -248,6 +248,12 @@ export async function POST(request: NextRequest) {
             fileData || mimeType === "video/youtube" || type === "study_pack"
               ? 65536
               : 16384,
+          // PRD item 2: low-res video (~98 tok/s vs ~290 default) and a
+          // minimal thinking budget (thinking tokens bill as output).
+          ...(mimeType === "video/youtube" && {
+            mediaResolution: "MEDIA_RESOLUTION_LOW",
+            thinkingConfig: { thinkingBudget: 0 },
+          }),
         },
       }),
     });

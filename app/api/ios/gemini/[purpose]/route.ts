@@ -77,12 +77,30 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
 
     // Forward only what the Gemini REST API accepts; the model is fixed
     // server-side so it can change without an app release.
+    // Video requests (any part with a YouTube file URI) get low-res media
+    // and a minimal thinking budget server-side (PRD item 2) — overriding
+    // whatever the app version sent.
+    const isVideoRequest = contents.some(
+      (c: any) =>
+        Array.isArray(c?.parts) &&
+        c.parts.some((p: any) => {
+          const uri = p?.file_data?.file_uri || p?.fileData?.fileUri || "";
+          return typeof uri === "string" && /youtu\.be|youtube\.com/i.test(uri);
+        })
+    );
+
     const upstream = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         contents,
-        generationConfig: body.generationConfig,
+        generationConfig: isVideoRequest
+          ? {
+              ...body.generationConfig,
+              mediaResolution: "MEDIA_RESOLUTION_LOW",
+              thinkingConfig: { thinkingBudget: 0 },
+            }
+          : body.generationConfig,
       }),
     });
 
