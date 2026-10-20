@@ -19,11 +19,10 @@ export function watchAdminFlag() {
     checkedUid = user.uid;
     isAdmin = false;
 
-    doc(database, "users", user.uid)
-      .onSnapshot((snap) => {
-        isAdmin = snap.data()?.admin === true;
-        listeners.forEach((fn) => fn(isAdmin));
-      });
+    onSnapshot(doc(database, "users", user.uid), (snap) => {
+      isAdmin = snap.data()?.admin === true;
+      listeners.forEach((fn) => fn(isAdmin));
+    });
   });
 }
 
