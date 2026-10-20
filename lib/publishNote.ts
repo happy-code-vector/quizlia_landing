@@ -34,6 +34,27 @@ export async function publishNoteToLibrary(topic: Topic, uid: string): Promise<{
       ? (getYouTubeVideoId(topic.sourceUrl) ?? "")
       : "";
 
+  // Source line: what the content actually came from. The YouTube channel
+  // name isn't captured by generation, so the video's topic stands in;
+  // website topics carry their real domain.
+  const domainOf = (url: string): string => {
+    try {
+      return new URL(url).hostname.replace(/^www\./, "");
+    } catch {
+      return url.slice(0, 40);
+    }
+  };
+  const sourceChannel =
+    topic.sourceType === "youtube" && youtubeId
+      ? `YouTube · ${topic.title}`
+      : topic.sourceType === "url" && topic.sourceUrl
+        ? domainOf(topic.sourceUrl)
+        : topic.sourceType === "pdf"
+          ? `PDF · ${topic.title}`
+          : topic.sourceType === "image"
+            ? `Photo · ${topic.title}`
+            : "QuizliAI user";
+
   // Same shape as seeded guides so the public page renders it identically.
   await setDoc(doc(db, "notes", slug), {
     slug,
@@ -42,9 +63,7 @@ export async function publishNoteToLibrary(topic: Topic, uid: string): Promise<{
     // note prompt); constants only as fallbacks for pre-category notes.
     category: topic.note?.category || "community",
     difficulty: topic.note?.difficulty || "medium",
-    sourceChannel: topic.sourceType === "youtube" && youtubeId
-      ? `YouTube · ${topic.title}`
-      : "QuizliAI user",
+    sourceChannel,
     youtubeId,
     createdAt: now,
     updatedAt: now,
