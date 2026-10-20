@@ -6,11 +6,17 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 import { ToastProvider } from "@/components/app/ToastContainer";
 import { ThemeProvider } from "@/components/app/ThemeProvider";
 import { AppPromoQRCard } from "@/components/app/AppPromoQRCard";
+import { watchAdminFlag } from "@/lib/admin";
 
 function AppLayoutContent({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, loading } = useAuth();
+
+  // Track users/{uid}.admin so client gates match the server's bypass.
+  useEffect(() => {
+    watchAdminFlag();
+  }, []);
 
   useEffect(() => {
     // Check for profile in localStorage

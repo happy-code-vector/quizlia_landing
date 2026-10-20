@@ -1,5 +1,8 @@
 // Subscription management utilities
 //
+// Admin flag (users/{uid}.admin) — admins are limitless everywhere.
+import { isAdminUser } from "./admin";
+//
 // Plan lineup mirrors the iOS app (Release B) exactly:
 //   Weekly $6.99 (no trial, 1 profile)
 //   Individual Annual $49.99 (7-day trial, 1 profile)
@@ -183,6 +186,11 @@ export function isFreeGenerationUsed(profileId: number): boolean {
 
 // Check if user can generate
 export function canGenerate(profileId: number): { allowed: boolean; remaining: number; limit: number } {
+  // Admins (users/{uid}.admin): limitless, like the server treats them.
+  if (isAdminUser()) {
+    return { allowed: true, remaining: -1, limit: -1 };
+  }
+
   const subscription = getSubscription(profileId);
   const plan = resolveEffectivePlan(subscription.planId);
 
@@ -216,6 +224,9 @@ export function getPlanById(planId: string): SubscriptionPlan | undefined {
 
 // Check if subscription is active (paid)
 export function isPaidSubscription(profileId: number): boolean {
+  // Admins render as paid (Pro badge, no usage meter).
+  if (isAdminUser()) return true;
+
   const subscription = getSubscription(profileId);
   if (subscription.status !== "active") return false;
   return subscription.planId !== "free";
