@@ -98,3 +98,39 @@ export async function getTranscript(videoId: string): Promise<Transcript | null>
   }
   return transcript;
 }
+
+const durationCache = new Map<string, { value: number; at: number }>();
+const DURATION_CACHE_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Video duration in seconds via Supadata metadata, or null when it can't
+ * be determined (no key, lookup failure, unknown field). Callers treat
+ * null as "cannot check" and proceed — the cap is a cost guard, not a
+ * hard security boundary. No direct YouTube fetching (PRD rev 44).
+ */
+export async function getVideoDurationSeconds(videoId: string): Promise<number | null> {
+  if (!SUPADATA_API_KEY) return null;
+  const hit = durationCache.get(videoId);
+  if (hit && Date.now() - hit.at < DURATION_CACHE_MS) return hit.value;
+  try {
+    const res = await fetch(
+      `https://api.supadata.ai/v1/metadata?url=${encodeURIComponent(
+        `https://www.youtube.com/watch?v=${videoId}`
+      )}`,
+      { headers: { "x-api-key": SUPADATA_API_KEY } }
+    );
+    if (res.status !== 200) {
+      console.warn(`duration: supadata ${res.status} for ${videoId}`);
+      return null;
+    }
+    const data = (await res.json()) as { media?: { duration?: unknown } };
+    const duration = typeof data.media?.duration === "number" ? data.media.duration : null;
+    if (duration !== null) {
+      durationCache.set(videoId, { value: duration, at: Date.now() });
+    }
+    return duration;
+  } catch (e) {
+    console.warn("duration: supadata error", e);
+    return null;
+  }
+}

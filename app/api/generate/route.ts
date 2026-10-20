@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { meterGeneration } from "@/lib/quota";
 import { resolveCaller } from "@/lib/token-verify";
 import { JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
+import { youtubeVideoId, getVideoDurationSeconds } from "@/lib/transcript";
 
 export const dynamic = 'force-dynamic';
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
+
+// PRD item 3: a 60-minute video at default resolution is ~1.08M tokens;
+// longer videos are rejected with a clear error instead of billed.
+const MAX_VIDEO_SECONDS = 60 * 60;
 
 const PROMPTS = {
   note: `You are QuicNotes, an AI that extracts study notes from the given content.
@@ -204,6 +209,24 @@ export async function POST(request: NextRequest) {
     if (mimeType === "video/youtube" && content) {
       // For YouTube, we need to extract the video URL and use fileData
       const youtubeUrl = content.replace("Analyze the following link: ", "").trim();
+
+      // Cost guard (PRD item 3): reject videos over 60 minutes before
+      // they hit Gemini. Skipped silently when the duration can't be
+      // determined (no vendor key / lookup failure).
+      const videoId = youtubeVideoId(youtubeUrl);
+      if (videoId) {
+        const duration = await getVideoDurationSeconds(videoId);
+        if (duration !== null && duration > MAX_VIDEO_SECONDS) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "video_too_long",
+              message: `That video is ${Math.round(duration / 60)} minutes long — the limit is 60 minutes.`,
+            },
+            { status: 422 }
+          );
+        }
+      }
 
       parts.push({
         fileData: {

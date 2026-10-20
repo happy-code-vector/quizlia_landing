@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { meterGeneration, meterChat } from "@/lib/quota";
 import { resolveCaller, exchangeRefreshToken } from "@/lib/token-verify";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
+import { youtubeVideoId, getVideoDurationSeconds } from "@/lib/transcript";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,10 @@ export const dynamic = "force-dynamic";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
+
+// PRD item 3: a 60-minute video at default resolution is ~1.08M tokens;
+// longer videos are rejected with a clear error instead of billed.
+const MAX_VIDEO_SECONDS = 60 * 60;
 
 async function checkQuota(purpose: string, token: string, uid: string): Promise<Response | null> {
   // Shared budget with the web app (lib/quota): same doc, same units,
@@ -88,6 +93,32 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
           return typeof uri === "string" && /youtu\.be|youtube\.com/i.test(uri);
         })
     );
+
+    if (isVideoRequest) {
+      // PRD item 3: reject >60-minute videos before they hit Gemini.
+      // Checks the first YouTube part found in the request.
+      for (const part of contents.flatMap((c: any) => (Array.isArray(c?.parts) ? c.parts : []))) {
+        const uri: string = part?.file_data?.file_uri || part?.fileData?.fileUri || "";
+        if (typeof uri === "string" && /youtu\.be|youtube\.com/i.test(uri)) {
+          const videoId = youtubeVideoId(uri);
+          if (videoId) {
+            const duration = await getVideoDurationSeconds(videoId);
+            if (duration !== null && duration > MAX_VIDEO_SECONDS) {
+              return NextResponse.json(
+                {
+                  error: {
+                    code: 422,
+                    message: `That video is ${Math.round(duration / 60)} minutes long — the limit is 60 minutes.`,
+                  },
+                },
+                { status: 422 }
+              );
+            }
+          }
+          break;
+        }
+      }
+    }
 
     const upstream = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
