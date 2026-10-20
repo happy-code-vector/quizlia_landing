@@ -116,9 +116,9 @@ export function LiveDemo() {
             <Image
               src="/mascot/quizliai_mascot_think.webp"
               alt=""
-              width={328}
+              width={284}
               height={640}
-              className="anim-float pointer-events-none absolute bottom-0 right-0 h-auto w-[96px] sm:w-[120px]"
+              className="anim-float pointer-events-none absolute bottom-0 right-0 h-auto w-[83px] sm:w-[104px]"
             />
             <div role="status" aria-live="polite" className="sr-only">
               {steps[Math.min(step, 3) - 1]}
@@ -360,9 +360,9 @@ function QuizPane({ sample }: { sample: Sample }) {
           <Image
             src="/mascot/quizliai_mascot_thumbs_up.webp"
             alt=""
-            width={420}
+            width={328}
             height={640}
-            className="anim-pop h-auto w-[56px] shrink-0"
+            className="anim-pop h-auto w-[44px] shrink-0"
           />
         )}
         <p className="text-[15px] font-semibold text-c-ink" aria-live="polite">

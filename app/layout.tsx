@@ -22,11 +22,8 @@ const sourceSerif = Source_Serif_4({
 export const metadata: Metadata = {
   title: 'QuizliAI - AI-Powered Note Taking & Study Assistant',
   description: 'Your smartest assistant. Get instant notes, transcripts, and study materials from anything. Never take notes again.',
-  icons: {
-    icon: '/logo.png',
-    shortcut: '/logo.png',
-    apple: '/logo.png',
-  },
+  // Icons come from app/favicon.ico, app/icon.png and app/apple-icon.png
+  // (Next.js file convention): every route gets them, with versioned URLs.
 };
 
 export default function RootLayout({
