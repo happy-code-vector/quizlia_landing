@@ -11,7 +11,7 @@ export function CTASection() {
         <Image
           src="/mascot/quizliai_mascot_celebrate.webp"
           alt=""
-          width={523}
+          width={328}
           height={640}
           className="anim-float mb-6 h-auto w-[150px] md:w-[180px]"
         />
