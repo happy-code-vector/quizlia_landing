@@ -439,7 +439,9 @@ export function verifyStoreKitJws(jws: string): DeviceEntitlement | null {
       if (!signedBy(certs[i], certs[i + 1])) return null;
     }
     const last = certs[certs.length - 1];
-    if (!last.equals(root) && !signedBy(last, root)) return null;
+    // raw-DER comparison — @types/node@20 lacks X509Certificate#equals;
+    // Node's runtime equals() itself compares this.raw, so identical.
+    if (!last.raw.equals(root.raw) && !signedBy(last, root)) return null;
 
     if (!signatureValid(`${h}.${p}`, b64urlToBuffer(s), leaf)) return null;
 
