@@ -67,12 +67,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
   let body: any;
   try {
     body = await request.json();
-  } catch {
+  } catch (error) {
+    console.error("iOS proxy error:", error);
     return NextResponse.json({ error: { code: 500, message: "Proxy failure" } }, { status: 500 });
   }
 
   // Cost guard (PRD item 3): runs before metering so a rejected video consumes no credit.
-  for (const part of (Array.isArray(body.contents) ? body.contents : []).flatMap((c: any) =>
+  for (const part of (Array.isArray(body?.contents) ? body.contents : []).flatMap((c: any) =>
     Array.isArray(c?.parts) ? c.parts : []
   )) {
     const uri: string = part?.file_data?.file_uri || part?.fileData?.fileUri || "";
