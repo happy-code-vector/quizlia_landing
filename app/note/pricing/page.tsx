@@ -142,9 +142,9 @@ export default function PricingPage() {
 
                 <button
                   onClick={() => handleSubscribe(plan)}
-                  disabled={isLoading === plan.id || isPaid}
+                  disabled={isLoading === plan.id || isCurrent}
                   className={`w-full py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 ${
-                    isPaid
+                    isCurrent
                       ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 cursor-not-allowed"
                       : isPopular
                         ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:opacity-90"
@@ -156,7 +156,7 @@ export default function PricingPage() {
                       <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
                       Processing...
                     </>
-                  ) : isPaid ? (
+                  ) : isCurrent ? (
                     <>
                       <span className="material-symbols-outlined text-lg">check_circle</span>
                       Current Plan
