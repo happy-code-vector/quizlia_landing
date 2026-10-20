@@ -46,12 +46,18 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
 
-      // Owner-writable EXCEPT the admin flag: the post-write value of
-      // `admin` (absent = false) must equal the pre-write value. Merge
-      // writes that omit the field keep the doc's value via the merged
-      // post-state; a full replace that drops it is DENIED (no silent
-      // de-admining). The console / Admin SDK bypass rules to set it.
-      allow create, update: if request.auth != null && request.auth.uid == userId
+      // Owner-writable EXCEPT the admin flag. On update, the post-write
+      // value of `admin` (absent = keeps the current value via merge) must
+      // equal the pre-write value; a full replace that drops it is DENIED
+      // (no silent de-admining). On create there is no pre-state, so the
+      // requirement is simply that `admin` is absent/false — nobody signs
+      // themselves up as admin. (Split create/update: reading
+      // resource.data on a not-yet-existing doc errors in the engine and
+      // denied every first-time user-doc create — seen live 2026-10-20.)
+      // The console / Admin SDK bypass rules to set it.
+      allow create: if request.auth != null && request.auth.uid == userId
+                    && request.resource.data.get('admin', false) == false;
+      allow update: if request.auth != null && request.auth.uid == userId
                     && request.resource.data.get('admin', false)
                        == resource.data.get('admin', false);
 
