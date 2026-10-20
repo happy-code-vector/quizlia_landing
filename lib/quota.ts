@@ -14,7 +14,7 @@
 const PROJECT_ID = process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "";
 const FIRESTORE_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
 
-const today = () => new Date().toISOString().split("T")[0];
+export const today = () => new Date().toISOString().split("T")[0];
 
 type Subs = Record<string, { active?: boolean } | undefined>;
 export type PlanKind = "free" | "individual" | "family";
