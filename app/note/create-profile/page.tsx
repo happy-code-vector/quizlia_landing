@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/app/ToastContainer";
-import { saveProfileToFirebase, syncProfilesFromFirebase } from "@/lib/firebaseProfiles";
+import { saveProfileToFirebase, syncProfilesFromFirebase, getProfilesFromFirebase } from "@/lib/firebaseProfiles";
 import { getMaxProfiles } from "@/lib/subscription";
 
 const avatarColors = [
@@ -33,12 +33,36 @@ export default function CreateProfilePage() {
   const [password, setPassword] = useState("");
   const [isSignUp, setIsSignUp] = useState(false);
 
-  // Check if user is already authenticated
+  // Check if user is already authenticated — and whether this account
+  // already has profiles. A returning user (signed in, cloud profiles
+  // exist) belongs on profile-selection, not the create form.
   useEffect(() => {
-    if (!authLoading && user) {
+    if (authLoading || !user) return;
+
+    let cancelled = false;
+    const email = user.email ?? "";
+    if (!email) {
       setStep("profile");
+      return;
     }
-  }, [user, authLoading]);
+
+    getProfilesFromFirebase(email)
+      .then((cloud) => {
+        if (cancelled) return;
+        if (cloud.length > 0) {
+          router.push("/note/profile-selection");
+        } else {
+          setStep("profile");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStep("profile");
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, authLoading, router]);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
