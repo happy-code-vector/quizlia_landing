@@ -4,6 +4,7 @@
 // admins; this code assumes the caller checked (or will find out on write).
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db, auth } from "./firebase";
+import { getYouTubeVideoId } from "./types";
 import type { Topic } from "./types";
 
 /** Super admin check — users/{uid}.admin is set in the Firebase console. */
@@ -26,6 +27,13 @@ export async function publishNoteToLibrary(topic: Topic, uid: string): Promise<{
   const slug = `${slugify(topic.title)}-${Date.now().toString(36)}`;
   const now = new Date().toISOString();
 
+  // YouTube topics keep their video: the public page's embedded player,
+  // thumbnail, and the library card's preview all key off youtubeId.
+  const youtubeId =
+    topic.sourceType === "youtube" && topic.sourceUrl
+      ? (getYouTubeVideoId(topic.sourceUrl) ?? "")
+      : "";
+
   // Same shape as seeded guides so the public page renders it identically.
   await setDoc(doc(db, "notes", slug), {
     slug,
@@ -33,7 +41,7 @@ export async function publishNoteToLibrary(topic: Topic, uid: string): Promise<{
     category: "community",
     difficulty: "medium",
     sourceChannel: "QuizliAI user",
-    youtubeId: "",
+    youtubeId,
     createdAt: now,
     updatedAt: now,
     tldr:
