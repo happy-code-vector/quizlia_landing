@@ -139,9 +139,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     await firebaseSignOut(auth);
 
-    // Also clear localStorage
+    // Wipe account-scoped local state so the previous account's profiles
+    // and content never bleed into the next session on this device (the
+    // web twin of the iOS logout wipe). Sign-in re-syncs from the cloud.
     if (typeof window !== "undefined") {
-      localStorage.removeItem("user");
+      const accountScoped = [
+        "profiles",
+        "currentProfile",
+        "user",
+        "sidebarExpanded",
+      ];
+      const keyPrefixes = [
+        "content_",
+        "subscription_",
+        "usage_",
+        "freeGenerationUsed_",
+        "folders_",
+        "chat_",
+        "publishedSlug_",
+      ];
+      const toRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && keyPrefixes.some((p) => key.startsWith(p))) {
+          toRemove.push(key);
+        }
+      }
+      [...accountScoped, ...toRemove].forEach((key) => localStorage.removeItem(key));
     }
   };
 
