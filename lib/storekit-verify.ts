@@ -58,17 +58,19 @@ export function verifyStoreKitJws(jws: string): DeviceEntitlement | null {
     const header: JwsHeader = JSON.parse(b64urlToBuffer(h).toString("utf8"));
     if (header.alg !== "ES256" || !Array.isArray(header.x5c) || header.x5c.length < 2) return null;
 
-    const leaf = certFromPemB64(header.x5c[0]);
-    const intermediate = certFromPemB64(header.x5c[header.x5c.length - 2]);
+    const certs = header.x5c.map(certFromPemB64);
+    const leaf = certs[0];
     const root = new X509Certificate(APPLE_ROOT_CA_G3);
 
-    // Chain: leaf ← intermediate ← Apple root. (StoreKit sends 2–3 certs;
-    // with 3 present the middle is also checked.)
-    if (!signedBy(intermediate, root)) return null;
-    if (header.x5c.length >= 3) {
-      const middle = certFromPemB64(header.x5c[1]);
-      if (!signedBy(leaf, middle) || !signedBy(middle, intermediate)) return null;
-    } else if (!signedBy(leaf, intermediate)) return null;
+    // Chain walk: each cert must be signed by the next (consecutive
+    // pairs), then the trailing cert anchors at the embedded Apple root —
+    // either it IS the root (Apple's [leaf, intermediate, root] shape) or
+    // it is signed by it ([leaf, intermediate]).
+    for (let i = 0; i < certs.length - 1; i++) {
+      if (!signedBy(certs[i], certs[i + 1])) return null;
+    }
+    const last = certs[certs.length - 1];
+    if (!last.raw.equals(root.raw) && !signedBy(last, root)) return null;
 
     if (!signatureValid(`${h}.${p}`, b64urlToBuffer(s), leaf)) return null;
 

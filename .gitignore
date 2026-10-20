@@ -35,3 +35,6 @@ yarn-error.log*
 next-env.d.ts
 .env
 *.json
+
+# Apple root CA (public cert) used by lib/storekit-verify.ts — not a secret
+!lib/certs/*.pem
