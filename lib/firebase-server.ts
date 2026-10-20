@@ -91,6 +91,64 @@ export async function getAllStudyGuideSlugsServer(): Promise<string[]> {
   }
 }
 
+// All note slugs + last-modified for the sitemap — REST (unauthenticated
+// reads are public per the notes rules), because the client SDK in
+// lib/firebase.ts only initializes in the browser and the sitemap
+// generates server-side.
+export async function getAllNotesForSitemapServer(): Promise<
+  Array<{ slug: string; lastModified: string | null }>
+> {
+  if (!FIREBASE_PROJECT_ID) {
+    console.warn("Firebase project ID not configured");
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `https://firestore.googleapis.com/v1/projects/${FIREBASE_PROJECT_ID}/databases/(default)/documents:runQuery`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          structuredQuery: {
+            from: [{ collectionId: "notes" }],
+            select: {
+              fields: [{ fieldPath: "slug" }, { fieldPath: "updatedAt" }, { fieldPath: "createdAt" }],
+            },
+          },
+        }),
+        next: { revalidate: 3600 },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Firebase API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!Array.isArray(data)) return [];
+
+    return data
+      .filter((doc: any) => doc.document?.fields?.slug?.stringValue)
+      .map((doc: any) => {
+        const fields = doc.document.fields;
+        const stamp =
+          fields.updatedAt?.timestampValue ??
+          fields.updatedAt?.stringValue ??
+          fields.createdAt?.timestampValue ??
+          fields.createdAt?.stringValue ??
+          null;
+        return {
+          slug: fields.slug.stringValue as string,
+          lastModified: stamp ? new Date(stamp).toISOString() : null,
+        };
+      });
+  } catch (error) {
+    console.error("Error fetching notes for sitemap:", error);
+    return [];
+  }
+}
+
 // Convert Firestore document format to TypeScript object
 function convertFirestoreDocument(fields: Record<string, any>): StudyGuide {
   const result: any = {};
