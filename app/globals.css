@@ -12,7 +12,14 @@
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;
-  display: inline-block;
+  /* inline-flex + align/justify centers the glyph inside its own box and
+     vertical-align: middle centers the box against adjacent text — fixes
+     the baseline offset that made icons sit high/low next to labels. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  flex-shrink: 0;
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
@@ -20,6 +27,7 @@
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: 'liga';
+  transition: color 150ms ease-out, transform 150ms ease-out;
 }
 
 /* Buttons — these classes are referenced throughout the app but were never
