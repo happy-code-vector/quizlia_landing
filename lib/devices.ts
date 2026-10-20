@@ -41,12 +41,19 @@ async function patchDevice(
   build: (doc: DeviceDoc) => DeviceDoc
 ): Promise<boolean> {
   const ref = getAdminDb().collection("devices").doc(deviceId);
-  return getAdminDb().runTransaction(async (tx) => {
-    const snap = await tx.get(ref);
-    const next = build((snap.data() as DeviceDoc) ?? {});
-    tx.set(ref, { ...next, updatedAt: new Date().toISOString() }, { merge: true });
+  try {
+    await getAdminDb().runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      const next = build((snap.data() as DeviceDoc) ?? {});
+      tx.set(ref, { ...next, updatedAt: new Date().toISOString() }, { merge: true });
+    });
     return true;
-  });
+  } catch {
+    // runTransaction retries contention internally and REJECTS when it
+    // gives up — that rejection is the conflict path the meters report
+    // as {ok:false, status:500}.
+    return false;
+  }
 }
 
 /** Mirrors meterGeneration() from lib/quota.ts for device callers. */
@@ -105,18 +112,24 @@ export async function setDeviceEntitlement(
 }
 
 /** One-identity-one-budget (spec §5.5): after linking, neither side has a
- *  second free generation. Uses the ACCOUNT quota doc only via admin REST
- *  semantics — quota docs stay rules-tamper-proof, so this writes the
- *  generationQuota doc through the same field set meterGeneration uses. */
+ *  second free generation. The account-side write is rollover-aware:
+ *  date/used are pinned only when the account's counter is NOT already
+ *  today's — a stale yesterday `used` must not throttle today, and today's
+ *  real usage must not be reset. */
 export async function syncFreeUsedAcrossLink(deviceId: string, uid: string): Promise<void> {
   const [device, quotaSnap] = await Promise.all([
     readDevice(deviceId),
     getAdminDb().collection("generationQuota").doc(uid).get(),
   ]);
-  const quota = (quotaSnap.data() ?? {}) as { freeUsed?: boolean };
+  const quota = (quotaSnap.data() ?? {}) as { freeUsed?: boolean; date?: string };
   if (device.freeUsed && !quota.freeUsed) {
+    const isToday = quota.date === today();
     await getAdminDb().collection("generationQuota").doc(uid).set(
-      { freeUsed: true, date: today(), updatedAt: new Date().toISOString() },
+      {
+        freeUsed: true,
+        ...(!isToday && { date: today(), used: 0 }),
+        updatedAt: new Date().toISOString(),
+      },
       { merge: true }
     );
   } else if (quota.freeUsed && !device.freeUsed) {
