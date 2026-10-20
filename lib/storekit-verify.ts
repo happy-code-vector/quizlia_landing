@@ -1,0 +1,109 @@
+// Offline StoreKit 2 signed-transaction (JWS) verification — spec §5.4.
+// Chain: leaf cert ← intermediate ← Apple Root CA - G3 (embedded PEM).
+// Signature: ES256 over `${header}.${payload}` with the leaf's public key.
+// No network, no Apple API key; fail closed (null) on ANY anomaly.
+import { createVerify, X509Certificate } from "node:crypto";
+import { readFileSync } from "fs";
+import { join } from "path";
+import { PRODUCT_FIELD_BY_ID } from "@/lib/storekit-products";
+import type { DeviceEntitlement } from "@/lib/devices";
+
+/** Alias of DeviceEntitlement (plan Task 3 interface, consumed by Tasks 4/5). */
+export type StoreKitEntitlement = DeviceEntitlement;
+
+const APPLE_ROOT_CA_G3 = readFileSync(join(process.cwd(), "lib/certs/AppleRootCA-G3.pem"), "utf8");
+const EXPECTED_BUNDLE_ID = "com.test.QuickNote";
+
+interface JwsHeader {
+  alg: string;
+  x5c: string[];
+}
+
+interface TransactionPayload {
+  bundleId: string;
+  productId: string;
+  transactionId: string;
+  expiresDate: number; // ms since epoch
+  revocationDate?: number | null;
+  signedDate: number;
+}
+
+function b64urlToBuffer(s: string): Buffer {
+  return Buffer.from(s.replace(/-/g, "+").replace(/_/g, "/"), "base64");
+}
+
+function certFromPemB64(pemB64: string): X509Certificate {
+  return new X509Certificate(`-----BEGIN CERTIFICATE-----\n${pemB64}\n-----END CERTIFICATE-----`);
+}
+
+/** true iff `child` is directly signed by `parent`. */
+function signedBy(child: X509Certificate, parent: X509Certificate): boolean {
+  return child.verify(parent.publicKey);
+}
+
+/** true iff the leaf's signature over the signing input is valid. */
+function signatureValid(signingInput: string, signature: Buffer, leaf: X509Certificate): boolean {
+  const verify = createVerify("SHA256");
+  verify.update(signingInput);
+  // JWS ES256 signatures are raw r||s (RFC 7518 §3.4), NOT DER —
+  // dsaEncoding:"der" would reject every genuine Apple receipt.
+  return verify.verify({ key: leaf.publicKey, dsaEncoding: "ieee-p1363" }, signature);
+}
+
+export function verifyStoreKitJws(jws: string): DeviceEntitlement | null {
+  try {
+    const [h, p, s] = jws.split(".");
+    if (!h || !p || !s) return null;
+
+    const header: JwsHeader = JSON.parse(b64urlToBuffer(h).toString("utf8"));
+    if (header.alg !== "ES256" || !Array.isArray(header.x5c) || header.x5c.length < 2) return null;
+
+    const leaf = certFromPemB64(header.x5c[0]);
+    const intermediate = certFromPemB64(header.x5c[header.x5c.length - 2]);
+    const root = new X509Certificate(APPLE_ROOT_CA_G3);
+
+    // Chain: leaf ← intermediate ← Apple root. (StoreKit sends 2–3 certs;
+    // with 3 present the middle is also checked.)
+    if (!signedBy(intermediate, root)) return null;
+    if (header.x5c.length >= 3) {
+      const middle = certFromPemB64(header.x5c[1]);
+      if (!signedBy(leaf, middle) || !signedBy(middle, intermediate)) return null;
+    } else if (!signedBy(leaf, intermediate)) return null;
+
+    if (!signatureValid(`${h}.${p}`, b64urlToBuffer(s), leaf)) return null;
+
+    const payload: TransactionPayload = JSON.parse(b64urlToBuffer(p).toString("utf8"));
+    if (payload.bundleId !== EXPECTED_BUNDLE_ID) return null;
+    if (payload.revocationDate != null) return null;
+    if (payload.expiresDate <= Date.now()) return null;
+
+    const mapped = PRODUCT_FIELD_BY_ID[payload.productId];
+    if (!mapped) return null;
+
+    return {
+      plan: mapped.plan,
+      productField: mapped.field,
+      productId: payload.productId,
+      transactionId: String(payload.transactionId),
+      expiresAt: new Date(payload.expiresDate).toISOString(),
+      renewalDate: new Date(payload.expiresDate).toISOString(),
+      verifiedAt: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Best (family > individual, then longest expiry) of a receipt list. */
+export function bestEntitlement(jwsList: string[]): DeviceEntitlement | null {
+  const verified = jwsList
+    .map((jws) => verifyStoreKitJws(jws))
+    .filter((e): e is DeviceEntitlement => e !== null);
+  if (!verified.length) return null;
+  verified.sort((a, b) =>
+    a.plan !== b.plan
+      ? a.plan === "family" ? -1 : 1
+      : b.expiresAt.localeCompare(a.expiresAt)
+  );
+  return verified[0];
+}
