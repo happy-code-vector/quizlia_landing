@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { meterGeneration, meterChat } from "@/lib/quota";
 import { exchangeRefreshToken } from "@/lib/token-verify";
-import { verifyAppCheck, resolveAccountCaller, resolveDeviceCaller, devicePlan } from "@/lib/caller";
+import {
+  verifyAppCheck,
+  resolveAccountCaller,
+  resolveDeviceCaller,
+  devicePlan,
+  type DeviceCaller,
+} from "@/lib/caller";
 import { meterDeviceGeneration, meterDeviceChat } from "@/lib/devices";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
 import { youtubeVideoId, getVideoDurationSeconds } from "@/lib/transcript";
@@ -54,42 +60,17 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
   // Account tokens win; signed-out devices fall through to the device path.
   await verifyAppCheck(request);
   const caller = await resolveAccountCaller(request);
+  let device: DeviceCaller | null = null;
   if (!caller) {
-    const device = await resolveDeviceCaller(request);
+    device = await resolveDeviceCaller(request);
     if (!device) {
       return NextResponse.json({ error: { code: 401, message: "Not authenticated" } }, { status: 401 });
     }
-    const plan = devicePlan(device.entitlement);
-    const meter = purpose === "generation"
-      ? await meterDeviceGeneration(device.deviceId, plan)
-      : await meterDeviceChat(device.deviceId);
-    if (!meter.ok) {
-      return NextResponse.json(
-        { error: { code: meter.status, message: meter.message } },
-        { status: meter.status }
-      );
-    }
-    return await proxyToGemini(request, purpose);
   }
 
-  // The quota write needs the caller's own (verified) token.
-  const token = (request.headers.get("authorization") || "").startsWith("Bearer ")
-    ? (request.headers.get("authorization") || "").slice(7)
-    : await exchangeRefreshToken(request.headers.get("x-firebase-refresh") || "");
-
-  const quotaError = await checkQuota(purpose, token || "", caller.uid);
-  if (quotaError) return quotaError;
-
-  return await proxyToGemini(request, purpose);
-}
-
-// Everything after quota passes: read the JSON body and stream it to
-// Gemini with the server-side key. Shared by account and device callers.
-async function proxyToGemini(request: NextRequest, purpose: string): Promise<Response> {
-  if (!GEMINI_API_KEY) {
-    return NextResponse.json({ error: { code: 500, message: "Gemini key not configured" } }, { status: 500 });
-  }
-
+  // Parse and validate BEFORE any metering, for both caller paths: a
+  // rejected request (malformed body, over-long video) burns no credit —
+  // not the account budget, not the device's one lifetime free note.
   let body: any;
   try {
     body = await request.json();
@@ -122,6 +103,38 @@ async function proxyToGemini(request: NextRequest, purpose: string): Promise<Res
       }
       break;
     }
+  }
+
+  if (device) {
+    const plan = devicePlan(device.entitlement);
+    const meter = purpose === "generation"
+      ? await meterDeviceGeneration(device.deviceId, plan)
+      : await meterDeviceChat(device.deviceId);
+    if (!meter.ok) {
+      return NextResponse.json(
+        { error: { code: meter.status, message: meter.message } },
+        { status: meter.status }
+      );
+    }
+  } else if (caller) {
+    // The quota write needs the caller's own (verified) token.
+    const token = (request.headers.get("authorization") || "").startsWith("Bearer ")
+      ? (request.headers.get("authorization") || "").slice(7)
+      : await exchangeRefreshToken(request.headers.get("x-firebase-refresh") || "");
+
+    const quotaError = await checkQuota(purpose, token || "", caller.uid);
+    if (quotaError) return quotaError;
+  }
+
+  return await proxyToGemini(purpose, body);
+}
+
+// Everything after validation and quota pass: append the format contract
+// to the already-parsed body and stream it to Gemini with the server-side
+// key. Shared by account and device callers.
+async function proxyToGemini(purpose: string, body: any): Promise<Response> {
+  if (!GEMINI_API_KEY) {
+    return NextResponse.json({ error: { code: 500, message: "Gemini key not configured" } }, { status: 500 });
   }
 
   try {
