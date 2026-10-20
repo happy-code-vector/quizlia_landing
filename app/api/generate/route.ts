@@ -178,6 +178,26 @@ export async function POST(request: NextRequest) {
   try {
     const { type, content, fileData, mimeType, setId } = await request.json();
 
+    // Cost guard (PRD item 3): reject videos over 60 minutes BEFORE
+    // metering — a rejected video must not consume a generation credit.
+    if (mimeType === "video/youtube" && content) {
+      const preFlightUrl = content.replace("Analyze the following link: ", "").trim();
+      const videoId = youtubeVideoId(preFlightUrl);
+      if (videoId) {
+        const duration = await getVideoDurationSeconds(videoId);
+        if (duration !== null && duration > MAX_VIDEO_SECONDS) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "video_too_long",
+              message: `That video is ${Math.round(duration / 60)} minutes long — the limit is 60 minutes.`,
+            },
+            { status: 422 }
+          );
+        }
+      }
+    }
+
     // Server-side quota gate. The web fires note+flashcard+quiz as one
     // generation sharing a setId, so the trio is metered exactly once.
     const quotaError = await checkQuota(request, setId);
@@ -209,24 +229,6 @@ export async function POST(request: NextRequest) {
     if (mimeType === "video/youtube" && content) {
       // For YouTube, we need to extract the video URL and use fileData
       const youtubeUrl = content.replace("Analyze the following link: ", "").trim();
-
-      // Cost guard (PRD item 3): reject videos over 60 minutes before
-      // they hit Gemini. Skipped silently when the duration can't be
-      // determined (no vendor key / lookup failure).
-      const videoId = youtubeVideoId(youtubeUrl);
-      if (videoId) {
-        const duration = await getVideoDurationSeconds(videoId);
-        if (duration !== null && duration > MAX_VIDEO_SECONDS) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: "video_too_long",
-              message: `That video is ${Math.round(duration / 60)} minutes long — the limit is 60 minutes.`,
-            },
-            { status: 422 }
-          );
-        }
-      }
 
       parts.push({
         fileData: {

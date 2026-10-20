@@ -64,12 +64,42 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     ? (request.headers.get("authorization") || "").slice(7)
     : await exchangeRefreshToken(request.headers.get("x-firebase-refresh") || "");
 
+  let body: any;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: { code: 500, message: "Proxy failure" } }, { status: 500 });
+  }
+
+  // Cost guard (PRD item 3): runs before metering so a rejected video consumes no credit.
+  for (const part of (Array.isArray(body.contents) ? body.contents : []).flatMap((c: any) =>
+    Array.isArray(c?.parts) ? c.parts : []
+  )) {
+    const uri: string = part?.file_data?.file_uri || part?.fileData?.fileUri || "";
+    if (typeof uri === "string" && /youtu\.be|youtube\.com/i.test(uri)) {
+      const videoId = youtubeVideoId(uri);
+      if (videoId) {
+        const duration = await getVideoDurationSeconds(videoId);
+        if (duration !== null && duration > MAX_VIDEO_SECONDS) {
+          return NextResponse.json(
+            {
+              error: {
+                code: 422,
+                message: `That video is ${Math.round(duration / 60)} minutes long — the limit is 60 minutes.`,
+              },
+            },
+            { status: 422 }
+          );
+        }
+      }
+      break;
+    }
+  }
+
   const quotaError = await checkQuota(purpose, token || "", caller.uid);
   if (quotaError) return quotaError;
 
   try {
-    const body = await request.json();
-
     // Append the format contract as the LAST text part so it takes
     // precedence over prompt text older app versions still send.
     const contract = purpose === "chat" ? FREE_TEXT_FORMAT_CONTRACT : JSON_FORMAT_CONTRACT;
@@ -93,32 +123,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
           return typeof uri === "string" && /youtu\.be|youtube\.com/i.test(uri);
         })
     );
-
-    if (isVideoRequest) {
-      // PRD item 3: reject >60-minute videos before they hit Gemini.
-      // Checks the first YouTube part found in the request.
-      for (const part of contents.flatMap((c: any) => (Array.isArray(c?.parts) ? c.parts : []))) {
-        const uri: string = part?.file_data?.file_uri || part?.fileData?.fileUri || "";
-        if (typeof uri === "string" && /youtu\.be|youtube\.com/i.test(uri)) {
-          const videoId = youtubeVideoId(uri);
-          if (videoId) {
-            const duration = await getVideoDurationSeconds(videoId);
-            if (duration !== null && duration > MAX_VIDEO_SECONDS) {
-              return NextResponse.json(
-                {
-                  error: {
-                    code: 422,
-                    message: `That video is ${Math.round(duration / 60)} minutes long — the limit is 60 minutes.`,
-                  },
-                },
-                { status: 422 }
-              );
-            }
-          }
-          break;
-        }
-      }
-    }
 
     const upstream = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
       method: "POST",
