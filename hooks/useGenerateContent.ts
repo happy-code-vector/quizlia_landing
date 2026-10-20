@@ -99,9 +99,8 @@ export function useGenerateContent({ profile, targetFolderId, onGenerated }: Use
         ...(fileData && { fileData })
       };
 
-      // One generation fans out to three requests (note/flashcards/quiz);
-      // the shared setId makes the server meter it as a single generation
-      // against the account's cross-platform budget.
+      // The shared setId makes the server meter this generation as a
+      // single unit against the account's cross-platform budget.
       const setId = `gen_${Date.now().toString(36)}`;
 
       // The server's quota gate requires a signed-in caller; without a
@@ -112,54 +111,33 @@ export function useGenerateContent({ profile, targetFolderId, onGenerated }: Use
         return;
       }
 
-      // Generate all three types in parallel. Attach the Firebase ID token
-      // so the server can enforce per-account quotas (see /api/generate).
+      // Attach the Firebase ID token so the server can enforce per-account
+      // quotas (see /api/generate).
       const authToken = await auth.currentUser.getIdToken();
       const requestHeaders: Record<string, string> = { "Content-Type": "application/json" };
       requestHeaders["Authorization"] = `Bearer ${authToken}`;
 
-      const [noteResponse, flashcardResponse, quizResponse] = await Promise.all([
-        fetch("/api/generate", {
-          method: "POST",
-          headers: requestHeaders,
-          body: JSON.stringify({ ...requestBody, type: "note", setId }),
-        }),
-        fetch("/api/generate", {
-          method: "POST",
-          headers: requestHeaders,
-          body: JSON.stringify({ ...requestBody, type: "flashcard", setId }),
-        }),
-        fetch("/api/generate", {
-          method: "POST",
-          headers: requestHeaders,
-          body: JSON.stringify({ ...requestBody, type: "quiz", setId }),
-        }),
-      ]);
+      // One generation = one request: the server returns the note,
+      // flashcards and quiz together (type "study_pack", as iOS already
+      // does) so the source — video especially — is ingested once, not
+      // three times. setId still meters it as a single generation
+      // against the account's cross-platform budget.
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: requestHeaders,
+        body: JSON.stringify({ ...requestBody, type: "study_pack", setId }),
+      });
 
-      const [noteResult, flashcardResult, quizResult] = await Promise.all([
-        noteResponse.json().catch(() => ({ success: false, message: "Failed to parse notes response" })),
-        flashcardResponse.json().catch(() => ({ success: false, message: "Failed to parse flashcards response" })),
-        quizResponse.json().catch(() => ({ success: false, message: "Failed to parse quiz response" })),
-      ]);
+      const result = await response.json().catch(() => ({ success: false, message: "Failed to parse response" }));
 
-      // Check for HTTP errors
-      if (!noteResponse.ok || !flashcardResponse.ok || !quizResponse.ok) {
+      if (!response.ok) {
         // Quota exhausted server-side (the shared budget may have been
         // spent on another device or the app) — paywall, not an error toast.
-        if (
-          noteResponse.status === 429 ||
-          flashcardResponse.status === 429 ||
-          quizResponse.status === 429
-        ) {
+        if (response.status === 429) {
           setIsPaywallOpen(true);
           return;
         }
-
-        const errorMessages = [];
-        if (!noteResponse.ok) errorMessages.push(noteResult.message || noteResult.error || `Notes: HTTP ${noteResponse.status}`);
-        if (!flashcardResponse.ok) errorMessages.push(flashcardResult.message || flashcardResult.error || `Flashcards: HTTP ${flashcardResponse.status}`);
-        if (!quizResponse.ok) errorMessages.push(quizResult.message || quizResult.error || `Quiz: HTTP ${quizResponse.status}`);
-        showToast(errorMessages[0] || "Failed to generate content. Please try again.", "error");
+        showToast(result.message || result.error || `Generation failed: HTTP ${response.status}`, "error");
         return;
       }
 
@@ -172,58 +150,59 @@ export function useGenerateContent({ profile, targetFolderId, onGenerated }: Use
       const newItems: ContentItem[] = [];
       const errors: string[] = [];
 
-      // Add notes
-      if (noteResult.success && noteResult.data && !noteResult.data.error && noteResult.data.title) {
+      // Add notes (mandatory artifact)
+      const noteData = result.data?.note;
+      if (result.success && noteData && !noteData.error && noteData.title) {
         newItems.push({
           id: timestamp,
-          title: noteResult.data.title,
+          title: noteData.title,
           description: `AI-generated notes from ${sourceLabel}`,
           type: "notes",
           createdAt: new Date().toISOString(),
-          data: noteResult.data,
+          data: noteData,
           sourceId,
           sourceName,
           sourceType: contentType,
           folderId: targetFolderId,
         });
       } else {
-        errors.push(noteResult.message || "Notes generation failed");
+        errors.push(result.message || "Notes generation failed");
       }
 
-      // Add flashcards
-      if (flashcardResult.success && flashcardResult.data?.flashcards?.length > 0) {
+      // Add flashcards (optional artifact — empty array degrades to a warning)
+      if (result.data?.flashcards?.length > 0) {
         newItems.push({
           id: timestamp + 1,
           title: `Flashcards: ${sourceText.substring(0, 30)}...`,
-          description: `${flashcardResult.data.flashcards.length} flashcards`,
+          description: `${result.data.flashcards.length} flashcards`,
           type: "flashcards",
           createdAt: new Date().toISOString(),
           sourceId,
           sourceName,
           sourceType: contentType,
-          data: flashcardResult.data,
+          data: { flashcards: result.data.flashcards },
           folderId: targetFolderId,
         });
       } else {
-        errors.push(flashcardResult.message || "Flashcards generation failed");
+        errors.push("Flashcards generation failed");
       }
 
-      // Add quiz
-      if (quizResult.success && quizResult.data?.quizzes?.length > 0) {
+      // Add quiz (optional artifact)
+      if (result.data?.quizzes?.length > 0) {
         newItems.push({
           id: timestamp + 2,
           title: `Quiz: ${sourceText.substring(0, 30)}...`,
-          description: `${quizResult.data.quizzes.length} questions`,
+          description: `${result.data.quizzes.length} questions`,
           type: "quiz",
           createdAt: new Date().toISOString(),
           sourceId,
           sourceName,
           sourceType: contentType,
-          data: quizResult.data,
+          data: { quizzes: result.data.quizzes },
           folderId: targetFolderId,
         });
       } else {
-        errors.push(quizResult.message || "Quiz generation failed");
+        errors.push("Quiz generation failed");
       }
 
       if (newItems.length === 0) {

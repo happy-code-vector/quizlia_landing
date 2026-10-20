@@ -90,6 +90,38 @@ RESPONSE FORMAT (JSON only):
     }
   ]
 }`,
+
+  study_pack: `You are QuicNotes, an AI that produces a complete study pack from the given content.
+
+TASK:
+Produce all three deliverables in ONE JSON response:
+1. Structured study notes (same schema as the "note" task below).
+2. Study flashcards — the maximum number of high-quality flashcards possible.
+3. Multiple-choice quiz questions — the maximum possible number of high-quality MCQs.
+
+NOTE SCHEMA:
+- title: string (concise title of the content)
+- quick_summary: string (a 5–8 sentence overall summary)
+- key_findings: array of strings (as many key facts or statistics as possible)
+- important_notes: array of strings (all relevant cautions, limitations, or extra details you can find)
+- sections: array of cheat-sheet sections — the detailed study material, organized topic by topic (3–8 sections, each with a short descriptive title, clear explanatory content, and up to 5 key terms)
+
+FLASHCARD SCHEMA (each): { "question": string (clear, concise; preferably under 20 words), "answer": string (short, precise, factual) }
+
+QUIZ SCHEMA (each): { "question": string (under 25 words), "options": array of 4 distinct strings, "correct_answer": string (must exactly match one option), "explanation": string (1–2 sentences) }
+
+RULES:
+- Answers must be based only on the provided content.
+- No duplicates or trivial items. Only one correct answer per quiz question.
+- Distractors must be plausible but clearly wrong.
+- If you cannot access or analyze the content, return: {"error": "content_not_accessible", "message": "Unable to access or analyze the provided content"}
+
+RESPONSE FORMAT (JSON only):
+{
+  "note": { "title": "string", "quick_summary": "string", "key_findings": ["..."], "important_notes": ["..."], "sections": [ { "title": "section title", "content": "explanatory text", "keyTerms": ["term 1", "term 2"] } ] },
+  "flashcards": [ { "question": "string", "answer": "string" } ],
+  "quizzes": [ { "question": "string", "options": ["string","string","string","string"], "correct_answer": "string", "explanation": "string" } ]
+}`,
 };
 
 function cleanJSONString(jsonString: string): string {
@@ -210,8 +242,12 @@ export async function POST(request: NextRequest) {
           },
         ],
         generationConfig: {
-          // Token allocation: 65536 for PDFs and YouTube videos, 16384 for URLs
-          maxOutputTokens: (fileData || mimeType === "video/youtube") ? 65536 : 16384,
+          // Token allocation: 65536 for PDFs, YouTube videos and combined
+          // study packs; 16384 for single-artifact URL requests
+          maxOutputTokens:
+            fileData || mimeType === "video/youtube" || type === "study_pack"
+              ? 65536
+              : 16384,
         },
       }),
     });
@@ -291,6 +327,28 @@ export async function POST(request: NextRequest) {
           },
           { status: 500 }
         );
+      }
+
+      if (type === "study_pack") {
+        const note = parsed.note;
+        const flashcards = Array.isArray(parsed.flashcards) ? parsed.flashcards : [];
+        const quizzes = Array.isArray(parsed.quizzes) ? parsed.quizzes : [];
+        // The note is the one mandatory artifact; cards/quiz degrade to [].
+        if (!note || !note.title || !note.key_findings || !note.quick_summary) {
+          console.error("Invalid study_pack note structure:", parsed);
+          return NextResponse.json(
+            {
+              success: false,
+              error: "invalid_response",
+              message: "AI did not return valid note content"
+            },
+            { status: 500 }
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          data: { note, flashcards, quizzes }
+        });
       }
 
       return NextResponse.json({ success: true, data: parsed });
