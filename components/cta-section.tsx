@@ -13,7 +13,7 @@ export function CTASection() {
           alt=""
           width={328}
           height={640}
-          className="anim-float mb-6 h-auto w-[150px] md:w-[180px]"
+          className="anim-float mb-6 h-auto w-[94px] md:w-[113px]"
         />
         <h2 id="cta-h" className="reveal text-[clamp(48px,8vw,96px)] font-extrabold leading-[0.9] tracking-[-0.055em]">
           Ace the next one.

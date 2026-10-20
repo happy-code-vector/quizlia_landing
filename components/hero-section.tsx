@@ -11,7 +11,7 @@ export function HeroSection() {
         width={345}
         height={640}
         priority
-        className="anim-wave pointer-events-none absolute bottom-[-40px] right-[3%] z-10 hidden h-auto w-[190px] xl:block 2xl:right-[8%] 2xl:w-[230px]"
+        className="anim-wave pointer-events-none absolute bottom-[-40px] right-[3%] z-10 hidden h-auto w-[146px] xl:block 2xl:right-[8%] 2xl:w-[177px]"
       />
       <div className="mx-auto flex w-full max-w-[1200px] flex-col items-center px-5 pt-[70px] text-center md:px-10">
         <h1
