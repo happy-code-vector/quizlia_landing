@@ -12,13 +12,14 @@ const listeners = new Set<(admin: boolean) => void>();
 /** Reads users/{uid}.admin once per signed-in account and keeps it live. */
 export function watchAdminFlag() {
   if (!isFirebaseConfigured() || !db || !auth) return;
+  const database = db;
 
   auth.onAuthStateChanged((user) => {
     if (!user || user.uid === checkedUid) return;
     checkedUid = user.uid;
     isAdmin = false;
 
-    doc(db, "users", user.uid)
+    doc(database, "users", user.uid)
       .onSnapshot((snap) => {
         isAdmin = snap.data()?.admin === true;
         listeners.forEach((fn) => fn(isAdmin));
