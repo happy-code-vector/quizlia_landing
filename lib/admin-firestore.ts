@@ -6,13 +6,27 @@
 //   2. FIREBASE_SERVICE_ACCOUNT      — raw JSON string (script convention)
 //   3. firebase-service-account.json — local dev file (gitignored)
 // Never import this from client code; it stays inside app/api + lib/server.
+//
+// firebase-admin is loaded LAZILY via dynamic import(): both Turbopack
+// (hashed registry ids) and webpack (dynamic-import externals) failed to
+// resolve the package at module-load inside Netlify's function runtime —
+// empty-body 500s on every /api/ios/* route (2026-10-21). Lazy loading
+// moves that failure into the request path, where route-level catch blocks
+// can surface the real error message to clients.
 import { readFileSync } from "fs";
-import { initializeApp, getApps, cert, App as AdminApp } from "firebase-admin/app";
-import { getFirestore, Firestore } from "firebase-admin/firestore";
-import { getAppCheck, AppCheck } from "firebase-admin/app-check";
-import { getAuth, Auth } from "firebase-admin/auth";
+import type { App as AdminApp } from "firebase-admin/app";
+import type { Firestore } from "firebase-admin/firestore";
+import type { AppCheck } from "firebase-admin/app-check";
+import type { Auth } from "firebase-admin/auth";
 
-let cachedApp: AdminApp | undefined;
+type AdminBundle = {
+  app: AdminApp;
+  db: Firestore;
+  appCheck: AppCheck;
+  auth: Auth;
+};
+
+let initPromise: Promise<AdminBundle> | null = null;
 
 function resolveServiceAccount(): Record<string, unknown> {
   if (process.env.FIREBASE_SERVICE_ACCOUNT_B64) {
@@ -31,25 +45,39 @@ function resolveServiceAccount(): Record<string, unknown> {
   }
 }
 
-/** Lazily-initialized Admin app singleton (credentials resolved on first use). */
-export function getAdminApp(): AdminApp {
-  if (!cachedApp) {
-    const existing = getApps();
-    cachedApp = existing.length
-      ? existing[0]
-      : initializeApp({ credential: cert(resolveServiceAccount() as any) });
-  }
-  return cachedApp;
+async function loadAdmin(): Promise<AdminBundle> {
+  const [appMod, firestoreMod, appCheckMod, authMod] = await Promise.all([
+    import("firebase-admin/app"),
+    import("firebase-admin/firestore"),
+    import("firebase-admin/app-check"),
+    import("firebase-admin/auth"),
+  ]);
+  const existing = appMod.getApps();
+  const app = existing.length
+    ? existing[0]
+    : appMod.initializeApp({ credential: appMod.cert(resolveServiceAccount() as any) });
+  return {
+    app,
+    db: firestoreMod.getFirestore(app),
+    appCheck: appCheckMod.getAppCheck(app),
+    auth: authMod.getAuth(app),
+  };
 }
 
-export function getAdminDb(): Firestore {
-  return getFirestore(getAdminApp());
+/** Lazily-initialized Admin bundle — all getters await the same single init. */
+export function getAdminBundle(): Promise<AdminBundle> {
+  initPromise ??= loadAdmin();
+  return initPromise;
 }
 
-export function getAdminAppCheck(): AppCheck {
-  return getAppCheck(getAdminApp());
+export async function getAdminDb(): Promise<Firestore> {
+  return (await getAdminBundle()).db;
 }
 
-export function getAdminAuth(): Auth {
-  return getAuth(getAdminApp());
+export async function getAdminAppCheck(): Promise<AppCheck> {
+  return (await getAdminBundle()).appCheck;
+}
+
+export async function getAdminAuth(): Promise<Auth> {
+  return (await getAdminBundle()).auth;
 }

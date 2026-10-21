@@ -13,7 +13,8 @@ async function writeSubscription(
   active: boolean
 ): Promise<void> {
   const renewalDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-  await getAdminDb().collection("users").doc(uid).set(
+  const db = await getAdminDb();
+  await db.collection("users").doc(uid).set(
     {
       [`subscriptions.${planId}.active`]: active,
       ...(active && { [`subscriptions.${planId}.renewalDate`]: renewalDate }),
@@ -60,7 +61,8 @@ export async function POST(request: NextRequest) {
           break;
         }
         // Map subscription → uid so lifecycle events resolve the account.
-        await getAdminDb().collection("stripeSubscriptions").doc(String(session.subscription)).set(
+        const db = await getAdminDb();
+        await db.collection("stripeSubscriptions").doc(String(session.subscription)).set(
           { uid, planId, updatedAt: new Date().toISOString() },
           { merge: true }
         );
@@ -70,7 +72,8 @@ export async function POST(request: NextRequest) {
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const subscription = event.data.object as Stripe.Subscription;
-        const mapping = await getAdminDb()
+        const db = await getAdminDb();
+        const mapping = await db
           .collection("stripeSubscriptions")
           .doc(subscription.id)
           .get();

@@ -48,8 +48,9 @@ export async function POST(request: NextRequest) {
 
     // 2. Account side: merge upward and record the link.
     if (account) {
+      const db = await getAdminDb();
       if (entitlement) {
-        await getAdminDb().collection("users").doc(account.uid).set(
+        await db.collection("users").doc(account.uid).set(
           {
             [`subscriptions.${entitlement.productField}.active`]: true,
             ...(entitlement.renewalDate && {
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
         );
       }
       if (device) {
-        await getAdminDb().collection("devices").doc(device.deviceId).set(
+        await db.collection("devices").doc(device.deviceId).set(
           { linkedUid: account.uid, updatedAt: new Date().toISOString() },
           { merge: true }
         );
@@ -74,8 +75,12 @@ export async function POST(request: NextRequest) {
     const appCheck = appCheckErrorResponse(error);
     if (appCheck) return appCheck;
     console.error("Entitlements error:", error);
+    // DIAGNOSTIC (2026-10-21, incident: Netlify function 500s): include the
+    // underlying message so the failure names itself without function-log
+    // access. Revert to the fixed message once the root cause is fixed.
+    const detail = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: { code: 500, message: "Entitlement sync failed, try again." } },
+      { error: { code: 500, message: `Entitlement sync failed: ${detail}` } },
       { status: 500 }
     );
   }

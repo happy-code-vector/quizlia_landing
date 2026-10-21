@@ -53,7 +53,8 @@ export async function verifyAppCheck(request: NextRequest): Promise<void> {
     return;
   }
   try {
-    await getAdminAppCheck().verifyToken(token);
+    const appCheck = await getAdminAppCheck();
+    await appCheck.verifyToken(token);
   } catch (err) {
     if (process.env.APP_CHECK_ENFORCE === "1") {
       throw new AppCheckFailure(403, "Invalid App Check token");

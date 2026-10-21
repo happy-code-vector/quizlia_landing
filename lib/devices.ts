@@ -33,7 +33,8 @@ export function isValidDeviceId(deviceId: string): boolean {
 }
 
 export async function readDevice(deviceId: string): Promise<DeviceDoc> {
-  const snap = await getAdminDb().collection("devices").doc(deviceId).get();
+  const db = await getAdminDb();
+  const snap = await db.collection("devices").doc(deviceId).get();
   return (snap.data() as DeviceDoc) ?? {};
 }
 
@@ -41,9 +42,10 @@ async function patchDevice(
   deviceId: string,
   build: (doc: DeviceDoc) => DeviceDoc
 ): Promise<boolean> {
-  const ref = getAdminDb().collection("devices").doc(deviceId);
+  const db = await getAdminDb();
+  const ref = db.collection("devices").doc(deviceId);
   try {
-    await getAdminDb().runTransaction(async (tx) => {
+    await db.runTransaction(async (tx) => {
       const snap = await tx.get(ref);
       const next = build((snap.data() as DeviceDoc) ?? {});
       tx.set(ref, { ...next, updatedAt: new Date().toISOString() }, { merge: true });
@@ -118,7 +120,8 @@ export async function setDeviceEntitlement(
   deviceId: string,
   entitlement: DeviceEntitlement | null
 ): Promise<void> {
-  await getAdminDb().collection("devices").doc(deviceId).set(
+  const db = await getAdminDb();
+  await db.collection("devices").doc(deviceId).set(
     { entitlement, updatedAt: new Date().toISOString() },
     { merge: true }
   );
@@ -130,14 +133,15 @@ export async function setDeviceEntitlement(
  *  today's — a stale yesterday `used` must not throttle today, and today's
  *  real usage must not be reset. */
 export async function syncFreeUsedAcrossLink(deviceId: string, uid: string): Promise<void> {
+  const db = await getAdminDb();
   const [device, quotaSnap] = await Promise.all([
     readDevice(deviceId),
-    getAdminDb().collection("generationQuota").doc(uid).get(),
+    db.collection("generationQuota").doc(uid).get(),
   ]);
   const quota = (quotaSnap.data() ?? {}) as { freeUsed?: boolean; date?: string };
   if (device.freeUsed && !quota.freeUsed) {
     const isToday = quota.date === today();
-    await getAdminDb().collection("generationQuota").doc(uid).set(
+    await db.collection("generationQuota").doc(uid).set(
       {
         freeUsed: true,
         ...(!isToday && { date: today(), used: 0 }),
