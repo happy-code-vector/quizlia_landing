@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { auth } from "@/lib/firebase";
 import { SUBSCRIPTION_PLANS, getSubscription, isPaidSubscription, SubscriptionPlan } from "@/lib/subscription";
 
 export default function PricingPage() {
@@ -32,9 +33,13 @@ export default function PricingPage() {
 
     setIsLoading(plan.id);
     try {
+      const idToken = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
         body: JSON.stringify({
           priceId: plan.stripePriceId,
           profileId,

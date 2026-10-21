@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { auth } from "@/lib/firebase";
 import { SUBSCRIPTION_PLANS, SubscriptionPlan } from "@/lib/subscription";
 
 interface PaywallModalProps {
@@ -21,9 +22,13 @@ export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId 
   const handleSubscribe = async (plan: SubscriptionPlan) => {
     setIsLoading(true);
     try {
+      const idToken = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
       const response = await fetch("/api/stripe/checkout", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+        },
         body: JSON.stringify({
           priceId: plan.stripePriceId,
           profileId,

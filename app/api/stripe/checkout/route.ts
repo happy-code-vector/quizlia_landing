@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
+import { verifyIdToken } from "@/lib/token-verify";
 
 export const dynamic = 'force-dynamic';
 
@@ -28,6 +29,15 @@ export async function POST(request: NextRequest) {
     // Initialize Stripe
     const stripe = new Stripe(stripeSecretKey);
 
+    // Real checkout requires a verified signed-in user — the webhook
+    // writes subscriptions for this uid later (spec §5.6).
+    const authHeader = request.headers.get("authorization") || "";
+    const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const caller = idToken ? await verifyIdToken(idToken) : null;
+    if (!caller) {
+      return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+    }
+
     // Get the origin for redirect URLs
     const origin = request.headers.get("origin") || "http://localhost:3000";
 
@@ -46,6 +56,7 @@ export async function POST(request: NextRequest) {
       success_url: `${origin}/note/subscription/success?session_id={CHECKOUT_SESSION_ID}&profile_id=${profileId}`,
       cancel_url: `${origin}/note?canceled=true`,
       metadata: {
+        uid: caller.uid,
         profileId: String(profileId),
         planId,
       },
