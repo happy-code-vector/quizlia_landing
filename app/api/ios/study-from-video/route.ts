@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (device) {
-    const meter = await meterDeviceGeneration(device.deviceId, devicePlan(device.entitlement));
+    const meter = await meterDeviceGeneration(device.deviceId, devicePlan(device.entitlement), `video-${videoId}`);
     if (!meter.ok) return error(meter.status, "quota", meter.message);
   } else if (caller) {
     const token = (request.headers.get("authorization") || "").startsWith("Bearer ")

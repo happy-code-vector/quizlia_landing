@@ -19,6 +19,7 @@ export interface DeviceDoc {
   freeUsed?: boolean;
   used?: number;
   date?: string;
+  recentSets?: string[];
   chatUsed?: number;
   chatDate?: string;
   entitlement?: DeviceEntitlement | null;
@@ -56,12 +57,20 @@ async function patchDevice(
   }
 }
 
-/** Mirrors meterGeneration() from lib/quota.ts for device callers. */
+/** Mirrors meterGeneration() from lib/quota.ts for device callers.
+ *  `setId` dedupes retries (same semantics as quota.ts recentSets) — a
+ *  paid device retrying a failed video generation burns one unit, not one
+ *  per attempt. */
 export async function meterDeviceGeneration(
   deviceId: string,
-  plan: PlanKind
+  plan: PlanKind,
+  setId?: string
 ): Promise<QuotaResult> {
   const doc = await readDevice(deviceId);
+
+  if (setId && doc.date === today() && (doc.recentSets ?? []).includes(setId)) {
+    return { ok: true };
+  }
 
   if (plan === "free") {
     if (doc.freeUsed) {
@@ -71,6 +80,7 @@ export async function meterDeviceGeneration(
       date: today(),
       used: (d.date === today() ? d.used ?? 0 : 0) + 1,
       freeUsed: true,
+      ...(setId && { recentSets: [setId] }),
     }));
     return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
   }
@@ -83,6 +93,9 @@ export async function meterDeviceGeneration(
   const ok = await patchDevice(deviceId, (d) => ({
     date: today(),
     used: (d.date === today() ? d.used ?? 0 : 0) + 1,
+    ...(setId && {
+      recentSets: [...(d.date === today() ? d.recentSets ?? [] : []), setId].slice(-10),
+    }),
   }));
   return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
 }
