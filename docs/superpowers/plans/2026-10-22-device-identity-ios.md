@@ -121,15 +121,15 @@ Inside `didFinishLaunchingWithOptions`, immediately AFTER `FirebaseApp.configure
         // can't do App Attest — use the debug provider there (Kevin
         // registers the printed debug token in the Firebase console once).
         #if targetEnvironment(simulator)
-        AppCheck.setProviderFactory(AppCheckDebugProviderFactory())
+        AppCheck.setAppCheckProviderFactory(AppCheckDebugProviderFactory())
         #else
-        AppCheck.setProviderFactory(AppAttestProviderFactory())
+        AppCheck.setAppCheckProviderFactory(AppAttestProviderFactory())
         #endif
 ```
 
 - [ ] **Step 3: Verify**
 
-Grep check — Run: `git -C "e:/Projects/Arasheed/QuickNote/QuickNote" grep -n "setProviderFactory" -- "*.swift"` → exactly one hit (AppDelegate). The `QuizliSyncManager.shared.start()` call stays where it is (Task 5 changes its INSIDES only).
+Grep check — Run: `git -C "e:/Projects/Arasheed/QuickNote/QuickNote" grep -n "setAppCheckProviderFactory" -- "*.swift"` → exactly two hits (AppDelegate). The `QuizliSyncManager.shared.start()` call stays where it is (Task 5 changes its INSIDES only).
 
 - [ ] **Step 4: Commit**
 
@@ -252,7 +252,7 @@ final class EntitlementsManager {
         }
         AppCheck.appCheck().token(forcingRefresh: false) { token, error in
             if let token = token {
-                request.setValue(token.tokenString, forHTTPHeaderField: "X-App-Check")
+                request.setValue(token.token, forHTTPHeaderField: "X-App-Check")
             } else if let error = error {
                 print("⚠️ [appcheck] no token (server log-only): \(error.localizedDescription)")
             }
@@ -360,7 +360,7 @@ enum QuizliProxyHeaders {
 
         AppCheck.appCheck().token(forcingRefresh: false) { token, error in
             if let token = token {
-                request.setValue(token.tokenString, forHTTPHeaderField: "X-App-Check")
+                request.setValue(token.token, forHTTPHeaderField: "X-App-Check")
             } else if let error = error {
                 print("⚠️ [appcheck] no token (server log-only): \(error.localizedDescription)")
             }
