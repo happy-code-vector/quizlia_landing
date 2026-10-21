@@ -199,7 +199,7 @@ POST body: `{ jws: string | string[] }`; headers as in 5.3.
 
 ### 5.8 App Check (web)
 
-- Register the web app for App Check with **reCAPTCHA v3** in the Firebase console
+- Register the web app for App Check with **reCAPTCHA Enterprise** (Google Cloud "Fraud Defense" — classic v3 keys are deprecated) in the Firebase console
   (site key setup is a console step, documented in the plan).
 - `lib/firebase.ts` initializes App Check; Firestore traffic from the site carries
   tokens. Enforcement stays OFF this release (log-only), flipped in console after

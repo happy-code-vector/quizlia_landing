@@ -1,6 +1,6 @@
 // Firebase configuration and initialization
 import { initializeApp, getApps, FirebaseApp } from "firebase/app";
-import { initializeAppCheck, ReCaptchaV3Provider } from "firebase/app-check";
+import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "firebase/app-check";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getAuth, Auth } from "firebase/auth";
 
@@ -50,8 +50,11 @@ if (typeof window !== "undefined" && isFirebaseConfigured()) {
           true;
       }
       try {
+        // reCAPTCHA Enterprise (Google Cloud "Fraud Defense") — classic
+        // reCAPTCHA v3 keys are deprecated. Same env var carries the
+        // Enterprise web key; see .env.example for where it's created.
         initializeAppCheck(app, {
-          provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_APPCHECK_RECAPTCHA_SITE_KEY),
+          provider: new ReCaptchaEnterpriseProvider(process.env.NEXT_PUBLIC_APPCHECK_RECAPTCHA_SITE_KEY),
           isTokenAutoRefreshEnabled: true,
         });
       } catch (error) {

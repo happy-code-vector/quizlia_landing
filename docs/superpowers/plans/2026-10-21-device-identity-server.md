@@ -107,7 +107,8 @@ FIREBASE_SERVICE_ACCOUNT_B64=
 # App Check enforcement flip (log-only until the acquirer signs off; leave unset)
 APP_CHECK_ENFORCE=
 
-# Web App Check provider site key (Firebase console → App Check → Apps → reCAPTCHA v3)
+# Web App Check provider site key (Google Cloud console → Security → reCAPTCHA
+# Enterprise/Fraud Defense → Web-type score key; Firebase console → App Check → Apps)
 NEXT_PUBLIC_APPCHECK_RECAPTCHA_SITE_KEY=
 ```
 
@@ -1213,7 +1214,7 @@ git commit -m "feat: success page reads webhook-written subscriptions; writes de
 
 - [ ] **Step 1: Console setup (Kevin, manual)**
 
-Firebase console (quailizy) → App Check → Apps → the web app → Register with **reCAPTCHA v3** (create the site key in the reCAPTCHA admin using `quizliai.com` + `localhost`) → copy the site key into `.env.local` as `NEXT_PUBLIC_APPCHECK_RECAPTCHA_SITE_KEY` (and later Netlify). Do NOT enable enforcement for Firestore yet.
+Google Cloud console (the cloud project behind quailizy) → Security → reCAPTCHA (Fraud Defense) → enable the API if prompted → create a **Web-type score-based key** with domain `quizliai.com` (NEVER add `localhost` to this key — local dev uses the App Check debug token; classic reCAPTCHA v3 keys are deprecated) → register the web app with that key: Firebase console → App Check → Apps → copy the key into `.env.local` as `NEXT_PUBLIC_APPCHECK_RECAPTCHA_SITE_KEY` (and later Netlify). Do NOT enable enforcement for Firestore yet.
 
 - [ ] **Step 2: Initialize App Check in `lib/firebase.ts`**
 
