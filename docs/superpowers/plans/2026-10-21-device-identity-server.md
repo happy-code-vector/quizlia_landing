@@ -390,7 +390,15 @@ import { join } from "path";
 import { PRODUCT_FIELD_BY_ID } from "@/lib/storekit-products";
 import type { DeviceEntitlement } from "@/lib/devices";
 
-const APPLE_ROOT_CA_G3 = readFileSync(join(process.cwd(), "lib/certs/AppleRootCA-G3.pem"), "utf8");
+// Apple Root CA - G3 (public cert) — INLINED as a string constant so the
+// Netlify function bundle never depends on file tracing for a runtime fs
+// read (final-review Important #4; module-load readFileSync 500s every
+// /api/ios/* route if the PEM misses the bundle). Rotation: replace this
+// constant with the PEM from https://www.apple.com/certificateauthority/
+// (Apple Root CA - G3) and update lib/certs/AppleRootCA-G3.pem to match.
+const APPLE_ROOT_CA_G3 = `-----BEGIN CERTIFICATE-----
+<PEM body lines pasted from lib/certs/AppleRootCA-G3.pem>
+-----END CERTIFICATE-----`;
 const EXPECTED_BUNDLE_ID = "com.test.QuickNote";
 
 interface JwsHeader {
@@ -571,18 +579,43 @@ export async function resolveAccountCaller(request: NextRequest): Promise<Verifi
   );
 }
 
+/** Raised only when APP_CHECK_ENFORCE=1: missing token (401) or invalid
+ *  token (403). Routes convert via appCheckErrorResponse(). (Final-review
+ *  Important #2: a MISSING token must fail enforce mode too, or the flip
+ *  rejects only attackers polite enough to send a bad token.) */
+export class AppCheckFailure extends Error {
+  constructor(public status: 401 | 403, message: string) {
+    super(message);
+  }
+}
+
+export function appCheckErrorResponse(error: unknown): NextResponse | null {
+  if (error instanceof AppCheckFailure) {
+    return NextResponse.json(
+      { error: { code: error.status, message: error.message } },
+      { status: error.status }
+    );
+  }
+  return null;
+}
+
 /** Log-only until APP_CHECK_ENFORCE=1 (spec §8.3). */
 export async function verifyAppCheck(request: NextRequest): Promise<void> {
   const token = request.headers.get("x-app-check");
   if (!token) {
+    if (process.env.APP_CHECK_ENFORCE === "1") {
+      throw new AppCheckFailure(401, "App Check token required");
+    }
     console.warn("[appcheck] missing token (log-only)");
     return;
   }
   try {
     await getAdminAppCheck().verifyToken(token);
   } catch (err) {
+    if (process.env.APP_CHECK_ENFORCE === "1") {
+      throw new AppCheckFailure(403, "Invalid App Check token");
+    }
     const message = err instanceof Error ? err.message : String(err);
-    if (process.env.APP_CHECK_ENFORCE === "1") throw err;
     console.warn(`[appcheck] invalid token (log-only): ${message}`);
   }
 }
@@ -921,9 +954,9 @@ git commit -m "feat: rules — devices/stripeSubscriptions collections deny-all"
 - Consumes: `verifyIdToken` from `lib/token-verify.ts`.
 - Produces: checkout sessions whose `metadata.uid` is a VERIFIED uid; client sends `Authorization: Bearer <idToken>`.
 
-- [ ] **Step 1: Verify the caller in the checkout route**
+- [ ] **Step 1: Verify the caller and derive the plan in the checkout route**
 
-After `const { priceId, profileId, planId } = await request.json();` and inside the non-demo branch (after `const stripe = new Stripe(stripeSecretKey);`), add:
+After `const { priceId, profileId } = await request.json();` (planId is NOT taken from the body — see below) and inside the non-demo branch (after `const stripe = new Stripe(stripeSecretKey);`), add:
 
 ```ts
     // Real checkout requires a verified signed-in user — the webhook
@@ -933,6 +966,25 @@ After `const { priceId, profileId, planId } = await request.json();` and inside 
     const caller = idToken ? await verifyIdToken(idToken) : null;
     if (!caller) {
       return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+    }
+
+    // Derive the plan from the priceId SERVER-SIDE (final-review Critical #1:
+    // a client-supplied planId rode unvalidated into the webhook's
+    // authoritative write — cheapest-price + family-planId = zero-payment
+    // family tier). The body's planId is never trusted.
+    const priceToPlan: Record<string, string> = {};
+    if (process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY) {
+      priceToPlan[process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY] = "weekly";
+    }
+    if (process.env.NEXT_PUBLIC_STRIPE_PRICE_INDIVIDUAL_YEARLY) {
+      priceToPlan[process.env.NEXT_PUBLIC_STRIPE_PRICE_INDIVIDUAL_YEARLY] = "individual_yearly";
+    }
+    if (process.env.NEXT_PUBLIC_STRIPE_PRICE_FAMILY_YEARLY) {
+      priceToPlan[process.env.NEXT_PUBLIC_STRIPE_PRICE_FAMILY_YEARLY] = "family_yearly";
+    }
+    const planId = priceToPlan[priceId];
+    if (!planId) {
+      return NextResponse.json({ error: "Unknown price" }, { status: 400 });
     }
 ```
 
