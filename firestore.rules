@@ -40,6 +40,17 @@ service cloud.firestore {
                     && resource.data.ownerUid == request.auth.uid;
     }
 
+    // Device-keyed server state for signed-out iOS callers (spec §7).
+    // Written/read only by the Admin SDK (Netlify); clients never touch it.
+    match /devices/{deviceId} {
+      allow read, write: if false;
+    }
+
+    // Stripe subscription → uid mapping used by the webhook (Task 8).
+    match /stripeSubscriptions/{subscriptionId} {
+      allow read, write: if false;
+    }
+
     // User data is UID-keyed and readable/writable only by its owner
     // (web + iOS share this schema). The migration script (Admin SDK)
     // moves the old email-keyed docs into these paths.
