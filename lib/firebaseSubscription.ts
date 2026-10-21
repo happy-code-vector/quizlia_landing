@@ -173,6 +173,9 @@ export async function getFirebaseSubscription(email: string): Promise<UserSubscr
   }
 }
 
+// NOTE (2026-10-21): production subscriptions are server-written (Stripe
+// webhook + /api/ios/entitlements via Admin SDK). These client writes are
+// demo-mode only until the cutover rules lockdown (see plan Task 12).
 // Update subscription in Firestore
 export async function updateFirebaseSubscription(
   email: string,

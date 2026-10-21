@@ -3,7 +3,11 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getPlanById, resolveEffectivePlan } from "@/lib/subscription";
-import { saveSubscriptionToFirebase } from "@/lib/firebaseSubscription";
+import {
+  getFirebaseSubscription,
+  saveSubscriptionToFirebase,
+  syncSubscriptionFromFirebase,
+} from "@/lib/firebaseSubscription";
 import Link from "next/link";
 
 function SuccessContent() {
@@ -35,8 +39,21 @@ function SuccessContent() {
           stripeSubscriptionId: sessionId?.startsWith("demo_") ? null : `sub_${sessionId}`,
         };
 
-        // Save to both Firebase and localStorage
-        await saveSubscriptionToFirebase(email, parseInt(profileId), subscription);
+        if (sessionId?.startsWith("demo_")) {
+          // Demo mode (no Stripe keys, no webhook): keep the legacy
+          // client-side local mirror so dev-without-Stripe still works.
+          await saveSubscriptionToFirebase(email, parseInt(profileId), subscription);
+        } else {
+          // Production: the Stripe webhook already wrote Firestore — poll
+          // the read path until the subscription reflects it (the webhook
+          // may land a few seconds after the redirect).
+          for (let i = 0; i < 5; i++) {
+            await syncSubscriptionFromFirebase(email, parseInt(profileId));
+            const sub = await getFirebaseSubscription(email);
+            if (sub && sub.status === "active" && sub.planId !== "free") break;
+            if (i < 4) await new Promise((r) => setTimeout(r, 2000));
+          }
+        }
 
         setIsProcessing(false);
       }
