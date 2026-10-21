@@ -1,10 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // firebase-admin uses dynamic requires (grpc-js/protobufjs) that break
-  // when bundled into serverless functions (empty-body 500s on Netlify;
-  // seen live 2026-10-21 on every /api/ios/* route). Keeping it external
-  // makes the runtime resolve it from node_modules instead.
-  serverExternalPackages: ["firebase-admin", "@google-cloud/firestore"],
+  // firebase-admin is bundled INLINE (no serverExternalPackages): Netlify's
+  // function runtime failed to resolve both Turbopack externals (hashed
+  // registry ids) and webpack dynamic-import externals (empty-body 500s on
+  // /api/ios/*, seen live 2026-10-21). Bundled = nothing to resolve at
+  // runtime. Requires the webpack build (see package.json build script).
   images: {
     remotePatterns: [
       {
