@@ -80,7 +80,13 @@ export async function POST(request: NextRequest) {
     // access. Revert to the fixed message once the root cause is fixed.
     const detail = error instanceof Error ? error.message : String(error);
     return NextResponse.json(
-      { error: { code: 500, message: `Entitlement sync failed: ${detail}` } },
+      {
+        error: {
+          code: 500,
+          message: `Entitlement sync failed: ${detail}`,
+          runtime: `node ${process.version} commit ${process.env.COMMIT_REF ?? "?"}`,
+        },
+      },
       { status: 500 }
     );
   }
