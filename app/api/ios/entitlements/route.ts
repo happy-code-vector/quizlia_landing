@@ -75,18 +75,9 @@ export async function POST(request: NextRequest) {
     const appCheck = appCheckErrorResponse(error);
     if (appCheck) return appCheck;
     console.error("Entitlements error:", error);
-    // DIAGNOSTIC (2026-10-21, incident: Netlify function 500s): include the
-    // underlying message so the failure names itself without function-log
-    // access. Revert to the fixed message once the root cause is fixed.
-    const detail = error instanceof Error ? error.message : String(error);
+    console.error("Entitlements error:", error);
     return NextResponse.json(
-      {
-        error: {
-          code: 500,
-          message: `Entitlement sync failed: ${detail}`,
-          runtime: `node ${process.version} commit ${process.env.COMMIT_REF ?? "?"}`,
-        },
-      },
+      { error: { code: 500, message: "Entitlement sync failed, try again." } },
       { status: 500 }
     );
   }
