@@ -3,15 +3,32 @@
 // Signature: ES256 over `${header}.${payload}` with the leaf's public key.
 // No network, no Apple API key; fail closed (null) on ANY anomaly.
 import { createVerify, X509Certificate } from "node:crypto";
-import { readFileSync } from "fs";
-import { join } from "path";
 import { PRODUCT_FIELD_BY_ID } from "@/lib/storekit-products";
 import type { DeviceEntitlement } from "@/lib/devices";
 
 /** Alias of DeviceEntitlement (plan Task 3 interface, consumed by Tasks 4/5). */
 export type StoreKitEntitlement = DeviceEntitlement;
 
-const APPLE_ROOT_CA_G3 = readFileSync(join(process.cwd(), "lib/certs/AppleRootCA-G3.pem"), "utf8");
+// Apple Root CA - G3 (public cert) — INLINED as a string constant so the
+// Netlify function bundle never depends on file tracing for a runtime fs
+// read (final-review Important #4). Rotation: replace this constant with
+// the PEM from https://www.apple.com/certificateauthority/ (Apple Root CA
+// - G3) and update lib/certs/AppleRootCA-G3.pem to match.
+const APPLE_ROOT_CA_G3 = `-----BEGIN CERTIFICATE-----
+MIICQzCCAcmgAwIBAgIILcX8iNLFS5UwCgYIKoZIzj0EAwMwZzEbMBkGA1UEAwwS
+QXBwbGUgUm9vdCBDQSAtIEczMSYwJAYDVQQLDB1BcHBsZSBDZXJ0aWZpY2F0aW9u
+IEF1dGhvcml0eTETMBEGA1UECgwKQXBwbGUgSW5jLjELMAkGA1UEBhMCVVMwHhcN
+MTQwNDMwMTgxOTA2WhcNMzkwNDMwMTgxOTA2WjBnMRswGQYDVQQDDBJBcHBsZSBS
+b290IENBIC0gRzMxJjAkBgNVBAsMHUFwcGxlIENlcnRpZmljYXRpb24gQXV0aG9y
+aXR5MRMwEQYDVQQKDApBcHBsZSBJbmMuMQswCQYDVQQGEwJVUzB2MBAGByqGSM49
+AgEGBSuBBAAiA2IABJjpLz1AcqTtkyJygRMc3RCV8cWjTnHcFBbZDuWmBSp3ZHtf
+TjjTuxxEtX/1H7YyYl3J6YRbTzBPEVoA/VhYDKX1DyxNB0cTddqXl5dvMVztK517
+IDvYuVTZXpmkOlEKMaNCMEAwHQYDVR0OBBYEFLuw3qFYM4iapIqZ3r6966/ayySr
+MA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMDA2gA
+MGUCMQCD6cHEFl4aXTQY2e3v9GwOAEZLuN+yRhHFD/3meoyhpmvOwgPUnPWTxnS4
+at+qIxUCMG1mihDK1A3UT82NQz60imOlM27jbdoXt2QfyFMm+YhidDkLF1vLUagM
+6BgD56KyKA==
+-----END CERTIFICATE-----`;
 const EXPECTED_BUNDLE_ID = "com.test.QuickNote";
 
 interface JwsHeader {

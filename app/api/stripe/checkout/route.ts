@@ -7,7 +7,9 @@ export const dynamic = 'force-dynamic';
 // Stripe checkout session creation
 export async function POST(request: NextRequest) {
   try {
-    const { priceId, profileId, planId } = await request.json();
+    // planId is NEVER taken from the body for the real checkout — the demo
+    // branch below is its only consumer (no money moves in demo mode).
+    const { priceId, profileId, planId: demoPlanId } = await request.json();
 
     // Trial length by plan, mirroring the iOS intro offers (7-day trial
     // on both annual plans, none on weekly).
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (!stripeSecretKey || !priceId) {
       // Demo mode - simulate successful checkout
       return NextResponse.json({
-        url: `/note/subscription/success?session_id=demo_${Date.now()}&profile_id=${profileId}&plan_id=${planId}`,
+        url: `/note/subscription/success?session_id=demo_${Date.now()}&profile_id=${profileId}&plan_id=${demoPlanId}`,
         demo: true,
       });
     }
@@ -36,6 +38,25 @@ export async function POST(request: NextRequest) {
     const caller = idToken ? await verifyIdToken(idToken) : null;
     if (!caller) {
       return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+    }
+
+    // Derive the plan from the priceId SERVER-SIDE (final-review Critical #1:
+    // a client-supplied planId rode unvalidated into the webhook's
+    // authoritative write — cheapest-price + family-planId = zero-payment
+    // family tier). The body's planId is never trusted.
+    const priceToPlan: Record<string, string> = {};
+    if (process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY) {
+      priceToPlan[process.env.NEXT_PUBLIC_STRIPE_PRICE_WEEKLY] = "weekly";
+    }
+    if (process.env.NEXT_PUBLIC_STRIPE_PRICE_INDIVIDUAL_YEARLY) {
+      priceToPlan[process.env.NEXT_PUBLIC_STRIPE_PRICE_INDIVIDUAL_YEARLY] = "individual_yearly";
+    }
+    if (process.env.NEXT_PUBLIC_STRIPE_PRICE_FAMILY_YEARLY) {
+      priceToPlan[process.env.NEXT_PUBLIC_STRIPE_PRICE_FAMILY_YEARLY] = "family_yearly";
+    }
+    const planId = priceToPlan[priceId];
+    if (!planId) {
+      return NextResponse.json({ error: "Unknown price" }, { status: 400 });
     }
 
     // Get the origin for redirect URLs

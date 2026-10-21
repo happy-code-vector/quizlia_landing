@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAppCheck, resolveAccountCaller, resolveDeviceCaller } from "@/lib/caller";
+import {
+  verifyAppCheck,
+  appCheckErrorResponse,
+  resolveAccountCaller,
+  resolveDeviceCaller,
+} from "@/lib/caller";
 import { bestEntitlement } from "@/lib/storekit-verify";
 import { setDeviceEntitlement, syncFreeUsedAcrossLink } from "@/lib/devices";
 import { getAdminDb } from "@/lib/admin-firestore";
@@ -66,6 +71,8 @@ export async function POST(request: NextRequest) {
     const plan = entitlement ? entitlement.plan : "free";
     return NextResponse.json({ plan, linked: !!account });
   } catch (error) {
+    const appCheck = appCheckErrorResponse(error);
+    if (appCheck) return appCheck;
     console.error("Entitlements error:", error);
     return NextResponse.json(
       { error: { code: 500, message: "Entitlement sync failed, try again." } },

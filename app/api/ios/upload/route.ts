@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyAppCheck, resolveAccountCaller, resolveDeviceCaller } from "@/lib/caller";
+import {
+  verifyAppCheck,
+  appCheckErrorResponse,
+  resolveAccountCaller,
+  resolveDeviceCaller,
+} from "@/lib/caller";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +22,13 @@ export async function POST(request: NextRequest) {
   }
 
   // Account tokens win; signed-out devices fall through to the device path.
-  await verifyAppCheck(request);
+  try {
+    await verifyAppCheck(request);
+  } catch (error) {
+    const response = appCheckErrorResponse(error);
+    if (response) return response;
+    throw error;
+  }
   const caller = await resolveAccountCaller(request);
   if (!caller) {
     const device = await resolveDeviceCaller(request);

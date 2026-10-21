@@ -3,6 +3,7 @@ import { meterGeneration, meterChat } from "@/lib/quota";
 import { exchangeRefreshToken } from "@/lib/token-verify";
 import {
   verifyAppCheck,
+  appCheckErrorResponse,
   resolveAccountCaller,
   resolveDeviceCaller,
   devicePlan,
@@ -58,7 +59,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
   }
 
   // Account tokens win; signed-out devices fall through to the device path.
-  await verifyAppCheck(request);
+  try {
+    await verifyAppCheck(request);
+  } catch (error) {
+    const response = appCheckErrorResponse(error);
+    if (response) return response;
+    throw error;
+  }
   const caller = await resolveAccountCaller(request);
   let device: DeviceCaller | null = null;
   if (!caller) {

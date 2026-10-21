@@ -2,7 +2,7 @@
 // signed-out device authenticates with X-Device-ID (+ App Check token,
 // log-only until APP_CHECK_ENFORCE=1) and proves paid status inline via a
 // StoreKit JWS receipt in X-Storekit-Jws.
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { resolveCaller, type VerifiedToken } from "@/lib/token-verify";
 import { isValidDeviceId, readDevice, type DeviceEntitlement } from "@/lib/devices";
 import { verifyStoreKitJws } from "@/lib/storekit-verify";
@@ -22,18 +22,43 @@ export async function resolveAccountCaller(request: NextRequest): Promise<Verifi
   );
 }
 
+/** Raised only when APP_CHECK_ENFORCE=1: missing token (401) or invalid
+ *  token (403). Routes convert via appCheckErrorResponse(). (Final-review
+ *  Important #2: a MISSING token must fail enforce mode too, or the flip
+ *  rejects only attackers polite enough to send a bad token.) */
+export class AppCheckFailure extends Error {
+  constructor(public status: 401 | 403, message: string) {
+    super(message);
+  }
+}
+
+export function appCheckErrorResponse(error: unknown): NextResponse | null {
+  if (error instanceof AppCheckFailure) {
+    return NextResponse.json(
+      { error: { code: error.status, message: error.message } },
+      { status: error.status }
+    );
+  }
+  return null;
+}
+
 /** Log-only until APP_CHECK_ENFORCE=1 (spec §8.3). */
 export async function verifyAppCheck(request: NextRequest): Promise<void> {
   const token = request.headers.get("x-app-check");
   if (!token) {
+    if (process.env.APP_CHECK_ENFORCE === "1") {
+      throw new AppCheckFailure(401, "App Check token required");
+    }
     console.warn("[appcheck] missing token (log-only)");
     return;
   }
   try {
     await getAdminAppCheck().verifyToken(token);
   } catch (err) {
+    if (process.env.APP_CHECK_ENFORCE === "1") {
+      throw new AppCheckFailure(403, "Invalid App Check token");
+    }
     const message = err instanceof Error ? err.message : String(err);
-    if (process.env.APP_CHECK_ENFORCE === "1") throw err;
     console.warn(`[appcheck] invalid token (log-only): ${message}`);
   }
 }
