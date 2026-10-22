@@ -99,39 +99,47 @@ export async function getTranscript(videoId: string): Promise<Transcript | null>
   return transcript;
 }
 
-const durationCache = new Map<string, { value: number; at: number }>();
+const durationCache = new Map<string, { value: number | null; at: number; ttl: number }>();
 const DURATION_CACHE_MS = 24 * 60 * 60 * 1000;
+const DURATION_MISS_CACHE_MS = 5 * 60 * 1000;
 
 /**
  * Video duration in seconds via Supadata metadata, or null when it can't
  * be determined (no key, lookup failure, unknown field). Callers treat
  * null as "cannot check" and proceed — the cap is a cost guard, not a
  * hard security boundary. No direct YouTube fetching (PRD rev 44), and
- * the lookup aborts after 3s.
+ * the lookup aborts after 8s (the metadata endpoint routinely takes
+ * 2–6s even for popular videos — 3s aborted most lookups in practice).
+ * Failed lookups are cached for a few minutes so retries of the same
+ * video don't re-pay the wait.
  */
 export async function getVideoDurationSeconds(videoId: string): Promise<number | null> {
   if (!SUPADATA_API_KEY) return null;
   const hit = durationCache.get(videoId);
-  if (hit && Date.now() - hit.at < DURATION_CACHE_MS) return hit.value;
+  if (hit && Date.now() - hit.at < hit.ttl) return hit.value;
   try {
     const res = await fetch(
       `https://api.supadata.ai/v1/metadata?url=${encodeURIComponent(
         `https://www.youtube.com/watch?v=${videoId}`
       )}`,
-      { headers: { "x-api-key": SUPADATA_API_KEY }, signal: AbortSignal.timeout(3000) }
+      { headers: { "x-api-key": SUPADATA_API_KEY }, signal: AbortSignal.timeout(8000) }
     );
     if (res.status !== 200) {
       console.warn(`duration: supadata ${res.status} for ${videoId}`);
+      durationCache.set(videoId, { value: null, at: Date.now(), ttl: DURATION_MISS_CACHE_MS });
       return null;
     }
     const data = (await res.json()) as { media?: { duration?: unknown } };
     const duration = typeof data.media?.duration === "number" ? data.media.duration : null;
-    if (duration !== null) {
-      durationCache.set(videoId, { value: duration, at: Date.now() });
-    }
+    durationCache.set(videoId, {
+      value: duration,
+      at: Date.now(),
+      ttl: duration !== null ? DURATION_CACHE_MS : DURATION_MISS_CACHE_MS,
+    });
     return duration;
   } catch (e) {
     console.warn("duration: supadata error", e);
+    durationCache.set(videoId, { value: null, at: Date.now(), ttl: DURATION_MISS_CACHE_MS });
     return null;
   }
 }
