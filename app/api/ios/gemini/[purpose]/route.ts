@@ -10,6 +10,7 @@ import {
   type DeviceCaller,
 } from "@/lib/caller";
 import { meterDeviceGeneration, meterDeviceChat } from "@/lib/devices";
+import { generateCore } from "@/lib/generate-core";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
 import { youtubeVideoId, getVideoDurationSeconds } from "@/lib/transcript";
 
@@ -131,6 +132,24 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
 
     const quotaError = await checkQuota(purpose, token || "", caller.uid);
     if (quotaError) return quotaError;
+  }
+
+  // New unified shape: {type, content, mimeType} → generateCore()
+  // Old shape: full Gemini body (has "contents" array) → forward as today
+  if (body.type && body.content && !body.contents) {
+    const result = await generateCore({
+      type: body.type,
+      content: body.content,
+      mimeType: body.mimeType,
+      fileData: body.fileData,
+    });
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: { code: result.status, message: result.message } },
+        { status: result.status }
+      );
+    }
+    return NextResponse.json(result.data);
   }
 
   return await proxyToGemini(purpose, body);
