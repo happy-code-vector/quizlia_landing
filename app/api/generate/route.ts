@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { meterGeneration } from "@/lib/quota";
 import { resolveCaller } from "@/lib/token-verify";
 import { generateCore } from "@/lib/generate-core";
-import { youtubeVideoId, getVideoDurationSeconds } from "@/lib/transcript";
+import { youtubeVideoId, getTranscript, getVideoDurationSeconds } from "@/lib/transcript";
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +73,21 @@ export async function POST(request: NextRequest) {
               error: "video_too_long",
               message: `That video is ${Math.round(duration / 60)} minutes long — the limit is 60 minutes.`,
             },
+            { status: 422 }
+          );
+        }
+      }
+    }
+
+    // Pre-metering transcript check: a caption-less video must not burn a
+    // credit (same principle as the duration guard above).
+    if (youtubeUrl) {
+      const preVideoId = youtubeVideoId(youtubeUrl);
+      if (preVideoId) {
+        const preTranscript = await getTranscript(preVideoId);
+        if (!preTranscript) {
+          return NextResponse.json(
+            { success: false, error: "no_captions", message: "This video has no captions we can read. Try another video or the sample." },
             { status: 422 }
           );
         }

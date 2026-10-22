@@ -28,7 +28,7 @@ export interface GenerateInput {
 
 export type GenerateResult =
   | { ok: true; data: any }
-  | { ok: false; status: number; message: string };
+  | { ok: false; status: number; message: string; code?: string };
 
 // PROMPTS — moved verbatim from /api/generate/route.ts. Each prompt ends
 // with its RESPONSE FORMAT (JSON only) schema; the JSON_FORMAT_CONTRACT is
@@ -188,7 +188,7 @@ export async function generateCore(input: GenerateInput): Promise<GenerateResult
     // TEXT to Gemini — not the video fileUri. ~500x cheaper.
     const videoId = youtubeVideoId(input.content);
     if (!videoId) {
-      return { ok: false, status: 422, message: "Invalid YouTube link" };
+      return { ok: false, status: 422, message: "Invalid YouTube link", code: "bad_link" };
     }
 
     const duration = await getVideoDurationSeconds(videoId);
@@ -198,6 +198,7 @@ export async function generateCore(input: GenerateInput): Promise<GenerateResult
         ok: false,
         status: 422,
         message: `This video is ${mins} minutes long. Videos over 60 minutes are not supported.`,
+        code: "video_too_long",
       };
     }
 
@@ -207,6 +208,7 @@ export async function generateCore(input: GenerateInput): Promise<GenerateResult
         ok: false,
         status: 422,
         message: "This video has no captions we can read. Try another video or the sample.",
+        code: "no_captions",
       };
     }
 
