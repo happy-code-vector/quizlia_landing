@@ -11,6 +11,7 @@ import {
 } from "@/lib/caller";
 import { meterDeviceGeneration, meterDeviceChat } from "@/lib/devices";
 import { generateCore } from "@/lib/generate-core";
+import { chatCore } from "@/lib/chat-core";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
 import { youtubeVideoId, getVideoDurationSeconds, getTranscript } from "@/lib/transcript";
 
@@ -188,6 +189,18 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
       );
     }
     return NextResponse.json(result.data);
+  }
+
+  // Chat with new shape: {question, context} → chatCore()
+  if (body.question && body.context && !body.contents) {
+    const result = await chatCore(body.question, body.context);
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: { code: result.status, message: result.message } },
+        { status: result.status }
+      );
+    }
+    return NextResponse.json({ success: true, answer: result.answer });
   }
 
   return await proxyToGemini(purpose, body);
