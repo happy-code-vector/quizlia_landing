@@ -116,7 +116,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
 
   // New unified shape: {type, content, mimeType} → generateCore()
   // Old shape: full Gemini body (has "contents" array) → forward as today
-  const isNewShape = Boolean(body.type && body.content && !body.contents);
+  // Generation-purpose ONLY: the chat/onboarding purposes meter in the
+  // 100/day chat bucket — routing a study_pack through them would bypass
+  // generation metering (final-review Important #1).
+  const isNewShape = purpose === "generation" && Boolean(body.type && body.content && !body.contents);
 
   // Pre-metering YouTube validation: a caption-less or over-60-min
   // video must not burn a credit (same guard as /api/generate 65e568d).
