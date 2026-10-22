@@ -235,6 +235,13 @@ export function useGenerateContent({ profile, targetFolderId, onGenerated }: Use
               id: sourceId,
               title: noteItem.title,
               sourceType: contentType as Topic["sourceType"],
+              // The publish path derives the video embed (youtubeId) and
+              // the sourceChannel line from sourceUrl. sourceText is the
+              // raw, untruncated URL for link sources (files have none) —
+              // unlike sourceName, which is cut to 50 chars for display.
+              ...(contentType === "youtube" || contentType === "url"
+                ? { sourceUrl: sourceText }
+                : {}),
               createdAt: new Date().toISOString(),
               note: noteItem.data as Topic["note"],
               flashcards: flashcardItem?.data?.flashcards ?? [],
