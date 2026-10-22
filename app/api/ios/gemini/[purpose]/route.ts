@@ -12,7 +12,7 @@ import {
 import { meterDeviceGeneration, meterDeviceChat } from "@/lib/devices";
 import { generateCore } from "@/lib/generate-core";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
-import { youtubeVideoId, getVideoDurationSeconds } from "@/lib/transcript";
+import { youtubeVideoId, getVideoDurationSeconds, getTranscript } from "@/lib/transcript";
 
 export const dynamic = "force-dynamic";
 
@@ -113,6 +113,46 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     }
   }
 
+  // New unified shape: {type, content, mimeType} → generateCore()
+  // Old shape: full Gemini body (has "contents" array) → forward as today
+  const isNewShape = Boolean(body.type && body.content && !body.contents);
+
+  // Pre-metering YouTube validation: a caption-less or over-60-min
+  // video must not burn a credit (same guard as /api/generate 65e568d).
+  if (isNewShape && body.mimeType === "video/youtube" && body.content) {
+    const preVideoId = youtubeVideoId(body.content);
+    if (!preVideoId) {
+      return NextResponse.json(
+        { error: { code: 422, message: "Invalid YouTube link" } },
+        { status: 422 }
+      );
+    }
+    const preDuration = await getVideoDurationSeconds(preVideoId);
+    if (preDuration && preDuration > MAX_VIDEO_SECONDS) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 422,
+            message: `This video is ${Math.round(preDuration / 60)} minutes long. Videos over 60 minutes are not supported.`,
+          },
+        },
+        { status: 422 }
+      );
+    }
+    const preTranscript = await getTranscript(preVideoId);
+    if (!preTranscript) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 422,
+            message: "This video has no captions we can read. Try another video or the sample.",
+          },
+        },
+        { status: 422 }
+      );
+    }
+  }
+
   if (device) {
     const plan = devicePlan(device.entitlement);
     const meter = purpose === "generation"
@@ -134,9 +174,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     if (quotaError) return quotaError;
   }
 
-  // New unified shape: {type, content, mimeType} → generateCore()
-  // Old shape: full Gemini body (has "contents" array) → forward as today
-  if (body.type && body.content && !body.contents) {
+  if (isNewShape) {
     const result = await generateCore({
       type: body.type,
       content: body.content,
