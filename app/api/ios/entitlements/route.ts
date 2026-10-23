@@ -75,7 +75,6 @@ export async function POST(request: NextRequest) {
     const appCheck = appCheckErrorResponse(error);
     if (appCheck) return appCheck;
     console.error("Entitlements error:", error);
-    console.error("Entitlements error:", error);
     return NextResponse.json(
       { error: { code: 500, message: "Entitlement sync failed, try again." } },
       { status: 500 }
