@@ -126,7 +126,7 @@ export default function CreateProfilePage() {
 
       // Plan-based profile cap (mirrors the iOS app): free/individual
       // plans include 1 learner profile — adding another is a Family
-      // upsell; family/legacy plans allow up to 6.
+      // upsell; family/legacy plans allow up to 4.
       const currentProfile = localStorage.getItem("currentProfile");
       const governingProfileId = currentProfile
         ? JSON.parse(currentProfile).id
@@ -135,7 +135,7 @@ export default function CreateProfilePage() {
       if (profiles.length >= maxProfiles) {
         if (maxProfiles <= 1) {
           showToast(
-            "Your plan includes 1 learner profile. Upgrade to Family Annual for up to 6.",
+            "Your plan includes 1 learner profile. Upgrade to Family Annual for up to 4.",
             "error"
           );
         } else {

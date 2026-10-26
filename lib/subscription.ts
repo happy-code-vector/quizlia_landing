@@ -4,9 +4,9 @@
 import { isAdminUser } from "./admin";
 //
 // Plan lineup mirrors the iOS app (Release B) exactly:
-//   Weekly $6.99 (no trial, 1 profile)
+//   Weekly $7.99 (no trial, 1 profile)
 //   Individual Annual $49.99 (7-day trial, 1 profile)
-//   Family Annual $99.99 (7-day trial, up to 6 profiles)
+//   Family Annual $99.99 (7-day trial, up to 4 kid profiles)
 // Free tier: 1 generation total (notes, quiz, flashcards), then upgrade.
 // Legacy web plans (pro_monthly / pro_yearly) stay recognized and are
 // grandfathered to Family-level limits, like legacy iOS subscribers.
@@ -64,7 +64,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: "weekly",
     name: "Weekly",
-    price: 6.99,
+    price: 7.99,
     interval: "week",
     features: [
       "5 AI generations per day",
@@ -102,12 +102,12 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     features: [
       "15 AI generations per day",
       "Notes, quizzes, flashcards & AI chat",
-      "Up to 6 learner profiles",
+      "Up to 4 learner profiles",
       "7-day free trial",
     ],
     generationsPerDay: 15,
     freeGenerationsTotal: 0,
-    maxProfiles: 6,
+    maxProfiles: 4,
     trialDays: 7,
     stripePriceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_FAMILY_YEARLY || "",
   },
@@ -122,7 +122,7 @@ const LEGACY_EQUIVALENT_PLAN: SubscriptionPlan = {
   features: [],
   generationsPerDay: 15,
   freeGenerationsTotal: 0,
-  maxProfiles: 6,
+  maxProfiles: 4,
   trialDays: 0,
   stripePriceId: "",
 };
