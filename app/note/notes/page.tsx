@@ -8,6 +8,8 @@ import { useToast } from "@/components/app/ToastContainer";
 import { getAllStudyGuides, categoryColors, difficultyColors, StudyGuide } from "@/lib/studyGuide";
 import { persistProfileContent, loadProfileContent, mergeIOSNotesIntoContent, pullRemoteChats, tombstoneIOSNoteIfAny } from "@/lib/notesSync";
 import { syncProfileFolders } from "@/lib/folderSync";
+import { onSnapshot, collection, doc } from "firebase/firestore";
+import { db, auth, isFirebaseConfigured } from "@/lib/firebase";
 import { CreateFolderModal } from "@/components/app/CreateFolderModal";
 import { RenameModal } from "@/components/app/RenameModal";
 import { MoveFolderModal } from "@/components/app/MoveFolderModal";
@@ -185,6 +187,99 @@ function NotesExplorer() {
 
     return () => {
       cancelled = true;
+    };
+  }, [profile]);
+
+  // Real-time refresh: iOS (or another browser) writing this profile's
+  // cloud docs re-runs the per-visit pull without a page reload — the
+  // mirror of the iOS app's snapshot listeners. A visibility flip
+  // (tab hidden → shown) is the cheap catch-up for backgrounded time.
+  useEffect(() => {
+    if (!profile || typeof window === "undefined") return;
+    if (!isFirebaseConfigured() || !db || !auth?.currentUser) return;
+
+    const uid = auth.currentUser.uid;
+    let firstNotesFire = true;
+    let firstFoldersFire = true;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const refresh = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(async () => {
+        // Same idempotent pieces the per-visit effect runs, including the
+        // remote-folder-delete strip so topics unsort live as on mount.
+        const strip = (folderId: string) => {
+          const stored = localStorage.getItem(`content_${profile.id}`);
+          if (stored) {
+            const content = JSON.parse(stored).map((item: ContentItem) =>
+              item.folderId === folderId ? { ...item, folderId: undefined } : item
+            );
+            persistProfileContent(profile, content);
+          }
+          setTopics((prev) =>
+            prev.map((t) => (t.folderId === folderId ? { ...t, folderId: undefined } : t))
+          );
+        };
+
+        const [mergedFolders, notesAdded] = await Promise.all([
+          syncProfileFolders(profile, { onRemoteDelete: strip }),
+          mergeIOSNotesIntoContent(profile),
+          pullRemoteChats(profile),
+        ]);
+        setFolders(mergedFolders as Folder[]);
+        if (notesAdded) {
+          const stored = localStorage.getItem(`content_${profile.id}`);
+          if (stored) {
+            try {
+              setTopics(buildTopics(JSON.parse(stored)));
+            } catch {
+              // leave the current list in place
+            }
+          }
+        }
+      }, 1500);
+    };
+
+    const unsubNotes = onSnapshot(
+      collection(db, "users", uid, "profiles", String(profile.id), "notes"),
+      (snap) => {
+        if (firstNotesFire) {
+          firstNotesFire = false;
+          return;
+        }
+        // Only server-origin writes — this tab's own pushes echo back
+        // with hasPendingWrites == true.
+        if (snap.docChanges().some((c) => c.doc.metadata.hasPendingWrites === false)) {
+          refresh();
+        }
+      },
+      () => {
+        // Listener errors (e.g. signed out elsewhere) just go quiet.
+      }
+    );
+
+    const unsubFolders = onSnapshot(
+      doc(db, "users", uid, "profiles", String(profile.id), "folders", "folderRegistry"),
+      (snap) => {
+        if (firstFoldersFire) {
+          firstFoldersFire = false;
+          return;
+        }
+        if (snap.metadata.hasPendingWrites === false) refresh();
+      },
+      () => {}
+    );
+
+    const onVisible = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => {
+      unsubNotes();
+      unsubFolders();
+      document.removeEventListener("visibilitychange", onVisible);
+      if (timer) clearTimeout(timer);
     };
   }, [profile]);
 
