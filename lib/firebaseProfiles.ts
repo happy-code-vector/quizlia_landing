@@ -63,7 +63,11 @@ export async function saveProfileToFirebase(
       clientOrigin: "web",
     };
 
-    await setDoc(profileRef, profileData);
+    // merge: never replace — a plain setDoc wipes the iOS-owned fields on
+    // the same doc (avatarIos/avatarBg/age/educationStatus/favouriteTopic).
+    // Web-owned fields are all present in profileData, so merge still
+    // overwrites them with fresh values while preserving the app's.
+    await setDoc(profileRef, profileData, { merge: true });
     console.log("✅ Profile saved to Firebase:", profile.name);
     return profile.id.toString();
   } catch (error) {
