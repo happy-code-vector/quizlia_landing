@@ -319,7 +319,7 @@ function NotesExplorer() {
 
   const handleDeleteFolder = (folderId: string) => {
     if (!profile || typeof window === "undefined") return;
-    if (!window.confirm("Delete this folder? Its topics move back to Unsorted.")) return;
+    if (!window.confirm("Delete this folder? Its topics move back to General.")) return;
 
     // Tombstone (kept in the array, hidden by the UI) so the delete syncs.
     persistFolders(
@@ -411,7 +411,7 @@ function NotesExplorer() {
   const viewTitle = activeFolder
     ? `${activeFolder.icon} ${activeFolder.name}`
     : folderParam === "none"
-      ? "Unsorted"
+      ? "General"
       : "All Notes";
 
   return (
@@ -450,7 +450,7 @@ function NotesExplorer() {
               {/* Folder tile grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
                 <FolderTile href="/note/notes?folder=all" materialIcon="library_books" name="All Notes" count={topics.length} />
-                <FolderTile href="/note/notes?folder=none" materialIcon="inbox" name="Unsorted" count={unsortedCount} />
+                <FolderTile href="/note/notes?folder=none" materialIcon="inbox" name="General" count={unsortedCount} />
                 {visibleFolders.map((f) => (
                   <FolderTile
                     key={f.id}
