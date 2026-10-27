@@ -124,24 +124,34 @@ export default function CreateProfilePage() {
       const storedProfiles = localStorage.getItem("profiles");
       const profiles = storedProfiles ? JSON.parse(storedProfiles) : [];
 
-      // Plan-based profile cap (mirrors the iOS app): free/individual
-      // plans include 1 learner profile — adding another is a Family
-      // upsell; family/legacy plans allow up to 4.
+      // Plan-based profile caps (mirrors the iOS app): free/individual
+      // plans include 1 profile of any kind — adding another is a Family
+      // upsell. Family is 1 parent + up to 4 kids (a parent doesn't
+      // consume a kid slot), same rule as iOS profileLimit.
       const currentProfile = localStorage.getItem("currentProfile");
       const governingProfileId = currentProfile
         ? JSON.parse(currentProfile).id
         : newProfile.id;
       const maxProfiles = getMaxProfiles(governingProfileId);
-      if (profiles.length >= maxProfiles) {
-        if (maxProfiles <= 1) {
-          showToast(
-            "Your plan includes 1 learner profile. Upgrade to Family Annual for up to 4.",
-            "error"
-          );
-        } else {
-          showToast(`Family plans include up to ${maxProfiles} profiles.`, "error");
-        }
+      const parentCount = profiles.filter(
+        (p: { type?: string }) => p.type === "parent"
+      ).length;
+      const kidCount = profiles.length - parentCount;
+
+      if (maxProfiles <= 1 && profiles.length >= 1) {
+        showToast(
+          "Your plan includes 1 learner profile. Upgrade to Family Annual for more.",
+          "error"
+        );
         setTimeout(() => router.push("/note/pricing"), 1000);
+        return;
+      }
+      if (formData.type === "parent" && parentCount >= 1) {
+        showToast("Only one parent profile is allowed per account.", "error");
+        return;
+      }
+      if (formData.type !== "parent" && kidCount >= 4) {
+        showToast("Family plans include up to 4 kid profiles.", "error");
         return;
       }
 

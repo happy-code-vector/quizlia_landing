@@ -102,7 +102,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     features: [
       "15 AI generations per day",
       "Notes, quizzes, flashcards & AI chat",
-      "Up to 4 learner profiles",
+      "1 parent + up to 4 kid profiles",
       "7-day free trial",
     ],
     generationsPerDay: 15,
