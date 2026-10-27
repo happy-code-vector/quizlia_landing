@@ -229,6 +229,7 @@ export async function mergeIOSNotesIntoContent(
 
     let chatChanged = false;
     const newItems: any[] = [];
+    const tombstonedIds = new Set<string>();
     for (const noteDoc of snap.docs) {
       // The legacy consolidated blob is handled by loadProfileContent;
       // every other doc — ios origin or web — follows the canonical
@@ -237,8 +238,12 @@ export async function mergeIOSNotesIntoContent(
 
       const d = noteDoc.data() as Record<string, unknown>;
 
-      // Tombstoned on iOS: skip the note entirely (deleted cross-device).
-      if ((d.deleted as unknown) === true) continue;
+      // Tombstoned remotely (any origin): never import it, and apply the
+      // delete to a local copy if one exists (collected after the loop).
+      if ((d.deleted as unknown) === true) {
+        tombstonedIds.add(noteDoc.id);
+        continue;
+      }
 
       // The iOS chat seed runs even for already-known topics: items are
       // idempotence-keyed by sourceId, but chat is length-compared.
@@ -325,6 +330,23 @@ export async function mergeIOSNotesIntoContent(
       }
     }
 
+    // Remote deletes: drop local topics whose doc came back tombstoned
+    // (a note the iOS app — or another browser — deleted).
+    let removedRemote = false;
+    if (tombstonedIds.size > 0) {
+      let current: any[] = [];
+      try {
+        current = JSON.parse(localStorage.getItem(key) || "[]");
+      } catch {
+        current = [];
+      }
+      if (Array.isArray(current) && current.some((i: any) => tombstonedIds.has(i.sourceId))) {
+        const kept = current.filter((i: any) => !tombstonedIds.has(i.sourceId));
+        localStorage.setItem(key, JSON.stringify(kept));
+        removedRemote = true;
+      }
+    }
+
     if (newItems.length > 0) {
       // Lossless write-back: re-read storage (a user edit or delete may
       // have landed during the Firestore round-trip) and prepend only the
@@ -338,7 +360,7 @@ export async function mergeIOSNotesIntoContent(
       if (!Array.isArray(fresh)) fresh = [];
       localStorage.setItem(key, JSON.stringify([...newItems, ...fresh]));
     }
-    return newItems.length > 0 || chatChanged;
+    return newItems.length > 0 || chatChanged || removedRemote;
   } catch (error) {
     console.warn("iOS notes merge failed:", error);
     return false;
