@@ -79,9 +79,9 @@ export default function LoginPage() {
     if (typeof window !== "undefined") {
       const profiles = localStorage.getItem("profiles");
       if (profiles && JSON.parse(profiles).length > 0) {
-        router.push("/profile-selection");
+        router.push("/note/profile-selection");
       } else {
-        router.push("/create-profile");
+        router.push("/note/create-profile");
       }
     }
   };

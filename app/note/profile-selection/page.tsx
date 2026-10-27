@@ -135,7 +135,7 @@ export default function ProfileSelectionPage() {
           ))}
 
           <Link
-            href="/note/create-profile"
+            href="/note/create-profile?add=1"
             className="group cursor-pointer text-center transition-transform hover:scale-105"
           >
             <div className="relative w-full aspect-square mb-3">

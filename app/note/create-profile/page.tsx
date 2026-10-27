@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useToast } from "@/components/app/ToastContainer";
 import { saveProfileToFirebase, syncProfilesFromFirebase, getProfilesFromFirebase } from "@/lib/firebaseProfiles";
-import { getMaxProfiles } from "@/lib/subscription";
+import { getMaxProfiles, resolveEffectivePlan } from "@/lib/subscription";
+import { getFirebaseSubscription } from "@/lib/firebaseSubscription";
 
 const avatarColors = [
   "from-blue-400 to-purple-400",
@@ -38,6 +39,15 @@ export default function CreateProfilePage() {
   // exist) belongs on profile-selection, not the create form.
   useEffect(() => {
     if (authLoading || !user) return;
+
+    // ?add=1 marks an explicit "Add Profile" click (profile-selection,
+    // settings) — render the form even when this account already has
+    // profiles. Without it, the returning-user redirect below eats the
+    // click and bounces straight back to profile-selection.
+    if (new URLSearchParams(window.location.search).has("add")) {
+      setStep("profile");
+      return;
+    }
 
     let cancelled = false;
     const email = user.email ?? "";
@@ -143,7 +153,18 @@ export default function CreateProfilePage() {
       const governingProfileId = currentProfile
         ? JSON.parse(currentProfile).id
         : newProfile.id;
-      const maxProfiles = getMaxProfiles(governingProfileId);
+      // The plan is account-level (users/{uid}.subscriptions in Firestore —
+      // the same source the iOS app reads), not per-profile: the local
+      // subscription_${profileId} cache only exists for profiles that were
+      // current on a dashboard load, so a Family account whose last-selected
+      // profile is a kid would otherwise hit a bogus free-plan upsell.
+      let maxProfiles = getMaxProfiles(governingProfileId);
+      if (user?.email) {
+        const accountSub = await getFirebaseSubscription(user.email);
+        if (accountSub) {
+          maxProfiles = resolveEffectivePlan(accountSub.planId).maxProfiles;
+        }
+      }
       const parentCount = profiles.filter(
         (p: { type?: string }) => p.type === "parent"
       ).length;

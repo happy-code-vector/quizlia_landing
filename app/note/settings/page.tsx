@@ -408,7 +408,7 @@ export default function SettingsPage() {
                       <span className="material-symbols-outlined">swap_horiz</span>
                       Switch Profile
                     </Link>
-                    <Link href="/note/create-profile" className="btn-secondary w-full flex items-center justify-center gap-2">
+                    <Link href="/note/create-profile?add=1" className="btn-secondary w-full flex items-center justify-center gap-2">
                       <span className="material-symbols-outlined">add</span>
                       Create New Profile
                     </Link>

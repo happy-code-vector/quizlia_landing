@@ -39,7 +39,7 @@ export default function SignupPage() {
     try {
       await signUp(formData.email, formData.password, formData.name);
       showToast("Account created successfully!", "success");
-      setTimeout(() => router.push("/create-profile"), 500);
+      setTimeout(() => router.push("/note/create-profile"), 500);
     } catch (error: any) {
       console.error("Signup error:", error);
       let message = "Failed to create account. Please try again.";
@@ -69,9 +69,9 @@ export default function SignupPage() {
         if (typeof window !== "undefined") {
           const profiles = localStorage.getItem("profiles");
           if (profiles && JSON.parse(profiles).length > 0) {
-            router.push("/profile-selection");
+            router.push("/note/profile-selection");
           } else {
-            router.push("/create-profile");
+            router.push("/note/create-profile");
           }
         }
       }, 500);
