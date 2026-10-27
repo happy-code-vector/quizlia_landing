@@ -240,6 +240,13 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
     );
   }
 
+  // Published YouTube guides keep their video — the unified layout
+  // (e312b77) dropped the old page's embed and orphaned VideoEmbed, so
+  // guides rendered note-only even with youtubeId present.
+  const youtubeEmbedUrl = guide?.youtubeId
+    ? `https://www.youtube.com/embed/${guide.youtubeId}`
+    : null;
+
   const tabs: { id: TabType; label: string; icon: string; available: boolean; count?: number }[] = [
     { id: "note", label: "Notes", icon: "description", available: !!topic.note },
     { id: "flashcards", label: "Flashcards", icon: "style", available: !!topic.flashcards, count: topic.flashcards?.length },
@@ -288,6 +295,32 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
                   <span className="material-symbols-outlined">share</span>
                 </button>
               </div>
+
+              {/* Original source video (mirrors the topic page's player) */}
+              {youtubeEmbedUrl && (
+                <div className="mt-4 ml-14">
+                  <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 max-w-md">
+                    <iframe
+                      src={youtubeEmbedUrl}
+                      title="YouTube video player"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full aspect-video"
+                    />
+                  </div>
+                  {topic.sourceUrl && (
+                    <a
+                      href={topic.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 mt-2 text-sm text-purple-600 dark:text-purple-400 hover:underline"
+                    >
+                      <span className="material-symbols-outlined text-base">open_in_new</span>
+                      Watch on YouTube
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Tabs */}

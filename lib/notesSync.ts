@@ -102,11 +102,22 @@ export async function persistProfileContent(
         }
       }
 
+      // The original source URL (YouTube video, linked page) belongs in
+      // contentPath — the canonical home iOS also reads. noteData.sourceUrl
+      // carries the full untruncated URL from generation; sourceName holds
+      // the display-cut copy for youtube/url sources. Without this the
+      // URL never survives the cloud round-trip, and every consumer of
+      // topic.sourceUrl (video embed, thumbnails, source link) starves.
+      const looksLikeUrl = (v: unknown) => /^https?:\/\//i.test(String(v ?? ""));
+      const contentPath =
+        (typeof notesItem?.data?.sourceUrl === "string" && notesItem.data.sourceUrl) ||
+        (looksLikeUrl(first.sourceName) ? String(first.sourceName) : "");
+
       const payload: Record<string, unknown> = {
         id: sid,
         title: first.sourceName ?? first.title ?? "Web note",
         contentType: webContentType(first.sourceType),
-        contentPath: "",
+        contentPath,
         folderName: "",
         fid: first.folderId ?? null,
         createdAt: first.createdAt ?? new Date().toISOString(),
@@ -306,10 +317,19 @@ export async function mergeIOSNotesIntoContent(
       const note = tryParse(d.note);
       const flashcards = tryParse(d.flashcard);
       const quiz = tryParse(d.quiz);
+      const sourceType = mapType(d.contentType);
+      // The original URL lives in contentPath (iOS writes it; the web does
+      // too since the URL-loss fix). Legacy web docs stuffed it into title
+      // instead — a URL-shaped title is the fallback so old docs keep
+      // their video embed / source link across the round-trip.
+      const remoteUrl =
+        (typeof d.contentPath === "string" && d.contentPath) ||
+        (/^https?:\/\//i.test(String(d.title ?? "")) ? String(d.title) : "");
       const base = {
         sourceId: noteDoc.id,
-        sourceName: d.title,
-        sourceType: mapType(d.contentType),
+        sourceName:
+          (sourceType === "youtube" || sourceType === "url") && remoteUrl ? remoteUrl : d.title,
+        sourceType,
         title: d.title,
         createdAt: d.createdAt || new Date().toISOString(),
         folderId,
