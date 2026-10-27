@@ -66,35 +66,72 @@ export async function persistProfileContent(
 
   try {
     const uid = auth.currentUser.uid;
-    const ref = doc(db, "users", uid, "profiles", String(profile.id), "notes", "userContent");
+    const notesCol = collection(db, "users", uid, "profiles", String(profile.id), "notes");
 
-    // Attach each topic's chat history to the CLOUD payload only (local
-    // content_ items stay chat-free); non-array content (corrupt storage)
-    // passes through verbatim rather than being clobbered to []. Receiving
-    // devices reconcile with longer-history-wins via applyRemoteChats.
-    let payload: unknown = content;
-    if (Array.isArray(content)) {
-      payload = (content as any[]).map((item) => {
-        const sid = item?.sourceId;
-        if (typeof sid !== "string" || !sid || typeof window === "undefined") return item;
+    // One doc per note — the canonical schema shared with the iOS app
+    // (notes/{sourceId} with id/title/contentType/…/clientOrigin; note,
+    // flashcard, quiz, chat as JSON strings). A topic arrives as up to
+    // three items (notes/flashcards/quiz) sharing one sourceId. The legacy
+    // consolidated userContent blob is no longer written; the read path
+    // keeps it as a fallback for accounts that have not re-saved yet.
+    if (!Array.isArray(content)) return;
+
+    const bySource = new Map<string, any[]>();
+    for (const item of content as any[]) {
+      const sid = item?.sourceId ?? item?.id;
+      if (typeof sid === "string" && sid) {
+        bySource.set(sid, [...(bySource.get(sid) ?? []), item]);
+      }
+    }
+
+    for (const [sid, items] of bySource) {
+      const first = items[0] ?? {};
+      const notesItem = items.find((i: any) => i.type === "notes");
+      const fcItem = items.find((i: any) => i.type === "flashcards");
+      const quizItem = items.find((i: any) => i.type === "quiz");
+
+      // Chat rides the cloud doc only (local content_ items stay
+      // chat-free); receiving devices reconcile via applyRemoteChats.
+      let chatJson: string | null = null;
+      if (typeof window !== "undefined") {
         try {
           const chat = JSON.parse(localStorage.getItem(`chat_${profile.id}_${sid}`) || "[]");
-          if (Array.isArray(chat) && chat.length > 0) return { ...item, chat };
+          if (Array.isArray(chat) && chat.length > 0) chatJson = JSON.stringify(chat);
         } catch {
           // no chat stored for this topic
         }
-        return item;
-      });
-    }
+      }
 
-    await setDoc(ref, {
-      clientOrigin: "web",
-      updatedAt: new Date().toISOString(),
-      content: JSON.stringify(payload),
-    });
+      const payload: Record<string, unknown> = {
+        id: sid,
+        title: first.sourceName ?? first.title ?? "Web note",
+        contentType: webContentType(first.sourceType),
+        contentPath: "",
+        folderName: "",
+        fid: first.folderId ?? null,
+        createdAt: first.createdAt ?? new Date().toISOString(),
+        clientOrigin: "web",
+        updatedAt: new Date().toISOString(),
+        ...(notesItem ? { note: JSON.stringify(notesItem.data ?? null) } : {}),
+        ...(fcItem?.data?.flashcards ? { flashcard: JSON.stringify(fcItem.data.flashcards) } : {}),
+        ...(quizItem?.data?.quizzes ? { quiz: JSON.stringify(quizItem.data.quizzes) } : {}),
+        ...(chatJson ? { chat: chatJson } : {}),
+      };
+      await setDoc(doc(notesCol, sid), payload, { merge: true });
+    }
   } catch (error) {
     console.warn("Cloud sync write failed (kept locally):", error);
   }
+}
+
+// Web sourceType ("youtube"/"pdf"/…) → the iOS-style contentType the
+// canonical note schema carries.
+function webContentType(t: unknown): string {
+  const s = String(t ?? "").toLowerCase();
+  if (s.includes("youtube")) return "YouTube";
+  if (s.includes("pdf")) return "PDF";
+  if (s.includes("image") || s.includes("photo")) return "Image";
+  return "Text";
 }
 
 // localStorage first; if empty, pull the profile's cloud doc (e.g. data
@@ -193,7 +230,10 @@ export async function mergeIOSNotesIntoContent(
     let chatChanged = false;
     const newItems: any[] = [];
     for (const noteDoc of snap.docs) {
-      if (!noteDoc.id.startsWith("ios_")) continue;
+      // The legacy consolidated blob is handled by loadProfileContent;
+      // every other doc — ios origin or web — follows the canonical
+      // per-note schema and merges by sourceId.
+      if (noteDoc.id === "userContent") continue;
 
       const d = noteDoc.data() as Record<string, unknown>;
 
@@ -305,14 +345,13 @@ export async function mergeIOSNotesIntoContent(
   }
 }
 
-// Web-side delete of an app-origin note: tombstone the ios_<id> doc so
-// the note stays deleted on iOS too (restore pull skips tombstones).
+// Web-side delete: tombstone the note's cloud doc (any origin — ios or
+// web) so it stays deleted everywhere (restore/hydration skip tombstones).
 export async function tombstoneIOSNoteIfAny(
   profile: { id: number | string; email?: string },
   topicId: string
 ): Promise<void> {
   if (typeof window === "undefined") return;
-  if (!topicId.startsWith("ios_")) return;
   if (!isFirebaseConfigured() || !db || !auth?.currentUser) return;
 
   try {
@@ -320,14 +359,13 @@ export async function tombstoneIOSNoteIfAny(
     const ref = doc(db, "users", uid, "profiles", String(profile.id), "notes", topicId);
     await setDoc(ref, { deleted: true, deletedAt: new Date().toISOString() }, { merge: true });
   } catch (error) {
-    console.warn("iOS note tombstone failed:", error);
+    console.warn("Note tombstone failed:", error);
   }
 }
 
-// Per-visit web↔web chat delivery: fetches the consolidated userContent
-// doc and reconciles chat histories. Content items themselves still merge
-// only on the first-visit path — this is chat-only. Returns true when any
-// chat history was updated.
+// Per-visit web↔web chat delivery: reads each note doc's chat field
+// (JSON string of messages) and reconciles histories. Returns true when
+// any chat history was updated.
 export async function pullRemoteChats(
   profile: { id: number | string; email?: string }
 ): Promise<boolean> {
@@ -335,12 +373,20 @@ export async function pullRemoteChats(
 
   try {
     const uid = auth.currentUser.uid;
-    const ref = doc(db, "users", uid, "profiles", String(profile.id), "notes", "userContent");
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return false;
-    const raw = snap.data().content;
-    const items = typeof raw === "string" ? JSON.parse(raw) : raw;
-    if (!Array.isArray(items)) return false;
+    const snap = await getDocs(
+      collection(db, "users", uid, "profiles", String(profile.id), "notes")
+    );
+    const items: any[] = [];
+    for (const d of snap.docs) {
+      const chatRaw = d.data()?.chat;
+      if (typeof chatRaw !== "string" || !chatRaw) continue;
+      try {
+        items.push({ sourceId: d.id, chat: JSON.parse(chatRaw) });
+      } catch {
+        // not a JSON chat payload
+      }
+    }
+    if (!items.length) return false;
     return applyRemoteChats(profile.id, items);
   } catch (error) {
     console.warn("Chat pull failed:", error);
