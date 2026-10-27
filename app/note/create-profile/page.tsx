@@ -124,6 +124,17 @@ export default function CreateProfilePage() {
       const storedProfiles = localStorage.getItem("profiles");
       const profiles = storedProfiles ? JSON.parse(storedProfiles) : [];
 
+      // Same-name profiles are the same person (case-insensitive) — block
+      // creating a duplicate (mirrors the iOS name-based merge).
+      const duplicateName = profiles.some(
+        (p: { name?: string }) =>
+          (p.name ?? "").trim().toLowerCase() === (formData.name ?? "").trim().toLowerCase()
+      );
+      if (duplicateName) {
+        showToast("A profile with this name already exists.", "error");
+        return;
+      }
+
       // Plan-based profile caps (mirrors the iOS app): free/individual
       // plans include 1 profile of any kind — adding another is a Family
       // upsell. Family is 1 parent + up to 4 kids (a parent doesn't

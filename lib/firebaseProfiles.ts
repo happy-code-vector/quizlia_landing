@@ -107,8 +107,31 @@ export async function getProfilesFromFirebase(email: string): Promise<any[]> {
     // Sort by createdAt
     profiles.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-    console.log(`✅ Loaded ${profiles.length} profiles from Firebase`);
-    return profiles;
+    // Same-name profiles (case-insensitive) are the same person — e.g. an
+    // iOS "Kevin" doc beside a web "kevin" doc. Keep the oldest entry and
+    // fill missing fields from its duplicates, so one person shows once
+    // (same rule as the iOS app's name-based merge).
+    const byName = new Map<string, any>();
+    for (const p of profiles) {
+      const key = (p.name ?? "").trim().toLowerCase();
+      const existing = key ? byName.get(key) : undefined;
+      if (!key || !existing) {
+        byName.set(key || `__unnamed_${byName.size}`, p);
+        continue;
+      }
+      for (const field of ["avatar", "gradeLevel", "educationStatus", "age", "createdAt"] as const) {
+        if ((existing[field] === null || existing[field] === undefined) && p[field] != null) {
+          existing[field] = p[field];
+        }
+      }
+    }
+    const merged = Array.from(byName.values());
+
+    console.log(
+      `✅ Loaded ${merged.length} profiles from Firebase` +
+        (profiles.length > merged.length ? ` (${profiles.length} docs, same-name merged)` : "")
+    );
+    return merged;
   } catch (error) {
     console.error("❌ Failed to get profiles from Firebase:", error);
     return [];
