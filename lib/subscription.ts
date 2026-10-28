@@ -4,7 +4,7 @@
 import { isAdminUser } from "./admin";
 //
 // Plan lineup mirrors the iOS app (Release B) exactly:
-//   Weekly $7.00 (no trial, 1 profile)
+//   Weekly $7.99 (no trial, 1 profile)
 //   Individual Annual $49.99 (7-day trial, 1 profile)
 //   Family Annual $99.99 (7-day trial, 1 parent + up to 4 kids)
 // The iOS app sells the SAME lineup through reused ASC products:
@@ -67,7 +67,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: "weekly",
     name: "Weekly",
-    price: 7.0,
+    price: 7.99,
     interval: "week",
     features: [
       "5 AI generations per day",
