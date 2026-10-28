@@ -59,6 +59,7 @@ export default function PricingPage() {
 
   const isPaid = isPaidSubscription(profileId ?? -1);
   const saleablePlans = SUBSCRIPTION_PLANS.filter((p) => p.id !== "free");
+  const freePlan = SUBSCRIPTION_PLANS[0];
   const familyPlan = SUBSCRIPTION_PLANS.find((p) => p.id === "family_yearly")!;
 
   return (
@@ -174,6 +175,21 @@ export default function PricingPage() {
               </div>
             );
           })}
+        </div>
+
+        {/* Free tier */}
+        <div className="mt-8 max-w-5xl mx-auto bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 flex flex-col md:flex-row md:items-center gap-6">
+          <div className="flex-1">
+            <h3 className="font-bold text-gray-900 dark:text-white">
+              {freePlan.name} — {freePlan.freeGenerationsTotal} free note
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {freePlan.features.join(" · ")}
+            </p>
+          </div>
+          <span className="text-sm text-gray-400 dark:text-gray-500">
+            {currentPlan === "free" ? "Your current plan" : ""}
+          </span>
         </div>
 
         {/* FAQ Section */}
