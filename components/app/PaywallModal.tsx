@@ -17,7 +17,6 @@ export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId 
   if (!isOpen) return null;
 
   const paidPlans = SUBSCRIPTION_PLANS.filter((p) => p.id !== "free");
-  const freePlan = SUBSCRIPTION_PLANS[0];
 
   const handleSubscribe = async (plan: SubscriptionPlan) => {
     setIsLoading(true);
@@ -144,13 +143,6 @@ export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId 
               </div>
             );
           })}
-
-          {/* Free Plan Comparison */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-              Free plan: {freePlan.freeGenerationsTotal} note to try
-            </p>
-          </div>
         </div>
 
         {/* Footer */}
