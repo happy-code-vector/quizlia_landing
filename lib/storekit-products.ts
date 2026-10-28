@@ -2,15 +2,14 @@
 // ⚠ Values MUST match Appconstants.swift (isProduct*Id) and
 // planFromSubscriptions in lib/quota.ts. They are gitignored on the iOS
 // side, so they are mirrored here explicitly.
+//
+// The ASC lineup REUSES existing products (no com.quizliai.* IDs were
+// created): discountyearly IS Individual Annual, yearly IS Family Annual.
 export const PRODUCT_FIELD_BY_ID: Record<string, { field: string; plan: "individual" | "family" }> = {
-  // isProductFamilyYearlyId:
-  "com.quizliai.premium.family.yearly": { field: "family_yearly", plan: "family" },
-  // isProductYearlyId (legacy annual):
-  "com.test.QuickNote.premium.yearly": { field: "yearly", plan: "family" },
-  // isProductYearlyDiscountId:
-  "com.test.QuickNote.premium.discountyearly": { field: "yearlyOffer", plan: "family" },
-  // isProductIndividualYearlyId:
-  "com.quizliai.premium.individual.yearly": { field: "individual_yearly", plan: "individual" },
+  // isProductFamilyYearlyId (the reused yearly product):
+  "com.test.QuickNote.premium.yearly": { field: "family_yearly", plan: "family" },
+  // isProductIndividualYearlyId (the reused discountyearly product):
+  "com.test.QuickNote.premium.discountyearly": { field: "individual_yearly", plan: "individual" },
   // isProductLatestWeeklyId:
   "com.test.QuickNote.premium.weekly": { field: "weekly", plan: "individual" },
 };

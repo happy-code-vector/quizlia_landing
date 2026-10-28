@@ -11,11 +11,11 @@ export async function POST(request: NextRequest) {
     // branch below is its only consumer (no money moves in demo mode).
     const { priceId, profileId, planId: demoPlanId } = await request.json();
 
-    // Trial length by plan, mirroring the iOS intro offers (7-day trial
-    // on both annual plans, none on weekly).
+    // Trial length by plan, mirroring the iOS intro offers (discountyearly
+    // = 7-day Individual; yearly = 3-day Family; none on weekly).
     const trialDaysByPlan: Record<string, number> = {
       individual_yearly: 7,
-      family_yearly: 7,
+      family_yearly: 3,
     };
 
     // Check if Stripe secret key is configured and a real price ID was set
