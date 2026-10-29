@@ -41,6 +41,10 @@ interface TransactionPayload {
   productId: string;
   transactionId: string;
   originalTransactionId?: number | string; // stable across renewals — budget key (item 28)
+  inAppOwnershipType?: "PROPRIETARY" | "FAMILY_SHARED"; // FAMILY_SHARED receipts
+  // (a family member's copy of a shared purchase) are REJECTED — Kevin,
+  // 2026-10-30: family sharing is off, strictly; it undercuts the revenue
+  // model. Defense-in-depth while the ASC toggle is turned off.
   expiresDate: number; // ms since epoch
   revocationDate?: number | null;
   signedDate: number;
@@ -94,6 +98,7 @@ export function verifyStoreKitJws(jws: string): DeviceEntitlement | null {
 
     const payload: TransactionPayload = JSON.parse(b64urlToBuffer(p).toString("utf8"));
     if (payload.bundleId !== EXPECTED_BUNDLE_ID) return null;
+    if (payload.inAppOwnershipType === "FAMILY_SHARED") return null;
     if (payload.revocationDate != null) return null;
     if (payload.expiresDate <= Date.now()) return null;
 
