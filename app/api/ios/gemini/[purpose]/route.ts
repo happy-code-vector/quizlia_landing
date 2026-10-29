@@ -16,7 +16,7 @@ import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-co
 import { youtubeVideoId, getVideoDurationSeconds, getTranscript } from "@/lib/transcript";
 import { getCachedStudyPack, putCachedStudyPack } from "@/lib/pack-cache";
 import { timingLog } from "@/lib/timing";
-import { checkBudget, recordSpend, budgetKeyFor, estimateCents, type BudgetPlan } from "@/lib/budget";
+import { checkBudget, recordSpend, budgetKeyFor, resolveAccountBudget, estimateCents, type BudgetPlan } from "@/lib/budget";
 
 export const dynamic = "force-dynamic";
 
@@ -270,9 +270,27 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
   // 10 lifetime per device, paid 100/day). The app flips
   // ChatThread.serverTutorContract when this is live.
   if (body.question && body.source_text && !body.contents) {
+    // Item 25: daily pacing pauses chat; item 27: soft step-down trims the
+    // source to ~5K tokens past 75% of the period budget.
+    const budget = device?.entitlement
+      ? { key: budgetKeyFor(device.entitlement), plan: (device.entitlement.productField === "weekly" ? "weekly" : device.entitlement.plan) as BudgetPlan }
+      : caller
+        ? await resolveAccountBudget(caller.uid)
+        : null;
+    let source = String(body.source_text);
+    if (budget?.plan) {
+      const check = await checkBudget(budget.key, budget.plan, estimateCents("gemini-3.1-flash-lite", Math.ceil(source.length / 4), 500));
+      if (!check.ok) {
+        return NextResponse.json(
+          { error: { code: check.kind === "daily" ? "budget_reached" : "budget_reached", message: check.message }, resetAt: check.resetAt },
+          { status: 429 }
+        );
+      }
+      if (check.softStepDown) source = source.slice(0, 20000);
+    }
     const result = await tutorCore({
       question: String(body.question),
-      source_text: String(body.source_text),
+      source_text: source,
       source_kind: typeof body.source_kind === "string" ? body.source_kind : undefined,
       history: Array.isArray(body.history) ? body.history : undefined,
       profile_type: body.profile_type === "child" ? "child" : "adult",
@@ -284,17 +302,37 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
         { status: result.status }
       );
     }
+    if (budget && result.usage) {
+      await recordSpend(budget.key, budget.plan ?? "individual", "gemini-3.1-flash-lite", result.usage.inTokens, result.usage.cachedTokens, result.usage.outTokens);
+    }
     return NextResponse.json({ success: true, answer: result.answer });
   }
 
   // Chat with new shape: {question, context} → chatCore()
   if (body.question && body.context && !body.contents) {
+    const budget = device?.entitlement
+      ? { key: budgetKeyFor(device.entitlement), plan: (device.entitlement.productField === "weekly" ? "weekly" : device.entitlement.plan) as BudgetPlan }
+      : caller
+        ? await resolveAccountBudget(caller.uid)
+        : null;
+    if (budget?.plan) {
+      const check = await checkBudget(budget.key, budget.plan, estimateCents("gemini-3.1-flash-lite", Math.ceil(String(body.context).length / 4), 2048));
+      if (!check.ok) {
+        return NextResponse.json(
+          { error: { code: "budget_reached", message: check.message }, resetAt: check.resetAt },
+          { status: 429 }
+        );
+      }
+    }
     const result = await chatCore(body.question, body.context);
     if (!result.ok) {
       return NextResponse.json(
         { error: { code: result.status, message: result.message } },
         { status: result.status }
       );
+    }
+    if (budget && result.usage) {
+      await recordSpend(budget.key, budget.plan ?? "individual", "gemini-3.1-flash-lite", result.usage.inTokens, result.usage.cachedTokens, result.usage.outTokens);
     }
     return NextResponse.json({ success: true, answer: result.answer });
   }

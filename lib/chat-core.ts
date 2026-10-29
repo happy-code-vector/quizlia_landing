@@ -18,7 +18,7 @@ const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
 
 export type ChatResult =
-  | { ok: true; answer: string }
+  | { ok: true; answer: string; usage?: { inTokens: number; cachedTokens: number; outTokens: number } }
   | { ok: false; status: number; message: string };
 
 export async function chatCore(question: string, context: string): Promise<ChatResult> {
@@ -63,8 +63,17 @@ ${FREE_TEXT_FORMAT_CONTRACT}`;
   if (!output) {
     return { ok: false, status: 500, message: "No output from model" };
   }
+  const u = data.usageMetadata ?? {};
 
-  return { ok: true, answer: output.trim() };
+  return {
+    ok: true,
+    answer: output.trim(),
+    usage: {
+      inTokens: u.promptTokenCount ?? 0,
+      cachedTokens: 0,
+      outTokens: (u.candidatesTokenCount ?? 0) + (u.thoughtsTokenCount ?? 0),
+    },
+  };
 }
 
 // ---- tutor chat (item 6) ----
@@ -169,5 +178,13 @@ export async function tutorCore(input: TutorInput): Promise<ChatResult> {
     outputTokens: usage.candidatesTokenCount ?? 0,
     thoughtTokens: usage.thoughtsTokenCount ?? 0,
   });
-  return { ok: true, answer: output.trim() };
+  return {
+    ok: true,
+    answer: output.trim(),
+    usage: {
+      inTokens: usage.promptTokenCount ?? 0,
+      cachedTokens: 0,
+      outTokens: (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0),
+    },
+  };
 }

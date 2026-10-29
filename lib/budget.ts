@@ -116,16 +116,35 @@ async function readSpend(budgetKey: string, periodId: string, day: string): Prom
 }
 
 export type BudgetCheck =
-  | { ok: true }
-  | { ok: false; kind: "period" | "daily"; resetAt: string; message: string };
+  | { ok: true; softStepDown?: boolean }
+  | { ok: false; kind: "period" | "daily" | "kill_switch"; resetAt: string; message: string };
 
-/** Pre-call check (items 24 + 25): worst-case estimate against the period
- *  budget and today's pacing allowance. */
+/** Pre-call check (items 24, 25, 27, 29): worst-case estimate against the
+ *  period budget and today's pacing allowance; softStepDown at 75% (item
+ *  27); and the global kill switch — a config/killSwitch doc
+ *  {pausedUntil: ISO} set from the Firebase console pauses everything
+ *  without a deploy (item 29; the $ formula needs revenue data AR owns). */
 export async function checkBudget(
   budgetKey: string,
   plan: BudgetPlan,
   estCents: number
 ): Promise<BudgetCheck> {
+  try {
+    const db = await getAdminDb();
+    const kill = (await db.collection("config").doc("killSwitch").get()).data() as
+      | { pausedUntil?: string }
+      | undefined;
+    if (kill?.pausedUntil && Date.parse(kill.pausedUntil) > Date.now()) {
+      return {
+        ok: false,
+        kind: "kill_switch",
+        resetAt: kill.pausedUntil,
+        message: "Study generation is briefly paused for maintenance. Please try again soon.",
+      };
+    }
+  } catch {
+    // Kill-switch read failure must not block generation.
+  }
   const periodId = periodIdFor(plan);
   const { periodSpentCents = 0, daySpentCents = 0 } = await readSpend(budgetKey, periodId, todayUTC());
   if (periodSpentCents + estCents > BUDGETS[plan].cents) {
@@ -146,7 +165,7 @@ export async function checkBudget(
       message: "Daily study limit reached. It resets at midnight.",
     };
   }
-  return { ok: true };
+  return { ok: true, softStepDown: periodSpentCents > BUDGETS[plan].cents * 0.75 };
 }
 
 /** Records real usage (item 22) — transactional increment; never throws
