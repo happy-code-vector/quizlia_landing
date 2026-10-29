@@ -205,6 +205,7 @@ export async function recordSpend(
         ref,
         {
           updatedAt: new Date().toISOString(),
+          plan, // lets the nightly report compute % of budget per key
           [`periods.${periodId}`]: {
             spentCents: (period.spentCents ?? 0) + cents,
             byModel,
