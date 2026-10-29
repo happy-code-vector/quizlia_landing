@@ -22,6 +22,8 @@ export interface DeviceDoc {
   recentSets?: string[];
   chatUsed?: number;
   chatDate?: string;
+  scanUsed?: number;
+  scanDate?: string;
   entitlement?: DeviceEntitlement | null;
   linkedUid?: string;
 }
@@ -114,6 +116,33 @@ export async function meterDeviceChat(deviceId: string): Promise<QuotaResult> {
     chatUsed: (d.chatDate === today() ? d.chatUsed ?? 0 : 0) + 1,
   }));
   return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
+}
+
+/** Exam Lens scans (AR 2026-10-29): free devices 3/day, entitled 50/day —
+ *  the daily limit is the caller's decision, the counter is always the
+ *  device's. v1 keys the counter on devices/{deviceId}; when the dollar
+ *  budget lands (items 22-28) entitled scans move to the purchaser's
+ *  budgetKey — isolated here so that swap touches one function. */
+export async function meterDeviceScan(deviceId: string, limit: number): Promise<QuotaResult> {
+  const doc = await readDevice(deviceId);
+  const used = doc.scanDate === today() ? doc.scanUsed ?? 0 : 0;
+  if (used >= limit) {
+    return { ok: false, status: 429, message: "Daily scan limit reached. Resets at midnight." };
+  }
+  const ok = await patchDevice(deviceId, (d) => ({
+    scanDate: today(),
+    scanUsed: (d.scanDate === today() ? d.scanUsed ?? 0 : 0) + 1,
+  }));
+  return ok
+    ? { ok: true }
+    : { ok: false, status: 500, message: "Quota update conflict, try again." };
+}
+
+/** 503 busy must not consume a scan (item 42: errors are never metered). */
+export async function refundDeviceScan(deviceId: string): Promise<void> {
+  await patchDevice(deviceId, (d) => ({
+    scanUsed: Math.max(0, (d.scanDate === today() ? d.scanUsed ?? 0 : 0) - 1),
+  }));
 }
 
 export async function setDeviceEntitlement(
