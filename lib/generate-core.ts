@@ -27,7 +27,56 @@ export type GenerateType = "note" | "flashcard" | "quiz" | "study_pack";
 // Study-pack cache version (item 9). Bump when ANY prompt or output cap
 // changes — it keys lib/pack-cache entries, so a bump retires every
 // cached pack built with the old prompt instead of serving it.
-export const STUDY_PACK_PROMPT_VERSION = 1;
+// v2: section 6 question-count bands replace "maximum possible".
+export const STUDY_PACK_PROMPT_VERSION = 2;
+
+// Section 6 (locked by AR 2026-10-21): card/question counts scale with
+// source length, no flat cap. The server computes the band wherever it
+// can measure — transcript words for YouTube (~150 words per spoken
+// minute), content words for text; a single photo is band 0 by
+// definition. PDFs self-select from the same table in the prompt (the
+// model sees the page count; the server does not parse PDFs).
+const BANDS = [
+  { cards: "5 to 8", questions: "3 to 5" }, // <3 min / 1 photo / <300 words
+  { cards: "8 to 15", questions: "5 to 8" }, // 3-10 min / 1-3 pages
+  { cards: "15 to 25", questions: "8 to 12" }, // 10-30 min / 4-15 pages
+  { cards: "25 to 40", questions: "12 to 20" }, // >30 min / >15 pages
+] as const;
+
+function countWords(text: string): number {
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+/** 0-3 when the band is measurable, -1 when the prompt must carry the
+ *  whole table (PDF) for the model to self-select. */
+export function bandForSource(words: number, kind: "text" | "youtube" | "photo" | "pdf"): number {
+  if (kind === "photo") return 0;
+  if (kind === "pdf") return -1;
+  if (kind === "youtube") {
+    if (words < 450) return 0; // ~3 spoken minutes
+    if (words < 1500) return 1; // ~10 minutes
+    if (words < 4500) return 2; // ~30 minutes
+    return 3;
+  }
+  if (words < 300) return 0;
+  if (words < 1000) return 1;
+  if (words < 3500) return 2;
+  return 3;
+}
+
+/** Fills {CARDS}/{QUESTIONS} in a prompt template with the band's counts
+ *  (or the full table for PDFs). */
+function withBandTargets(prompt: string, band: number): string {
+  const cards =
+    band >= 0
+      ? `${BANDS[band].cards} flashcards`
+      : "flashcards scaled to the source length (single page or short text: 5 to 8; 1-3 pages: 8 to 15; 4-15 pages: 15 to 25; over 15 pages: 25 to 40)";
+  const questions =
+    band >= 0
+      ? `${BANDS[band].questions} multiple-choice questions`
+      : "multiple-choice questions scaled to the source length (single page or short text: 3 to 5; 1-3 pages: 5 to 8; 4-15 pages: 8 to 12; over 15 pages: 12 to 20)";
+  return prompt.replace("{CARDS}", cards).replace("{QUESTIONS}", questions);
+}
 
 export interface GenerateInput {
   type: GenerateType;
@@ -87,8 +136,7 @@ RESPONSE FORMAT (JSON only):
   flashcard: `You are QuicNotes, an AI that generates study flashcards from the provided content.
 
 TASK:
-Generate the maximum number of high-quality flashcards possible from the content.
-- No word count or time limit restrictions.
+Generate {CARDS} from the content — high quality, no filler.
 - Each flashcard should cover a unique and important concept.
 
 Each flashcard must include:
@@ -111,8 +159,8 @@ RESPONSE FORMAT (JSON only):
   quiz: `You are QuicNotes, an AI that generates multiple-choice quiz questions from the given content.
 
 TASK:
-Generate the maximum possible number of high-quality MCQs from the content.
-- Cover all important concepts with diverse, non-overlapping questions.
+Generate {QUESTIONS} from the content — high quality, no filler.
+- Cover the important concepts with diverse, non-overlapping questions.
 
 Each quiz must have:
 - question: string (under 25 words)
@@ -143,8 +191,8 @@ RESPONSE FORMAT (JSON only):
 TASK:
 Produce all three deliverables in ONE JSON response:
 1. Structured study notes (same schema as the "note" task below).
-2. Study flashcards — the maximum number of high-quality flashcards possible.
-3. Multiple-choice quiz questions — the maximum possible number of high-quality MCQs.
+2. Study flashcards — {CARDS}, high quality, no filler.
+3. Multiple-choice quiz questions — {QUESTIONS}, high quality, no filler.
 
 NOTE SCHEMA:
 - title: string (concise title of the content)
@@ -238,11 +286,14 @@ export async function generateCore(input: GenerateInput): Promise<GenerateResult
     }
 
     parts.push({
-      text: `${prompt}\n\nCONTENT (video transcript):\n${transcript.text.slice(0, MAX_TRANSCRIPT_CHARS)}\n\n${JSON_FORMAT_CONTRACT}`,
+      text: `${withBandTargets(prompt, bandForSource(countWords(transcript.text.slice(0, MAX_TRANSCRIPT_CHARS)), "youtube"))}\n\nCONTENT (video transcript):\n${transcript.text.slice(0, MAX_TRANSCRIPT_CHARS)}\n\n${JSON_FORMAT_CONTRACT}`,
     });
   } else {
     // Non-YouTube: prompt first, content second, optional inline file data
-    const fullPrompt = `${prompt}\n\nCONTENT:\n${input.content}\n\n${JSON_FORMAT_CONTRACT}`;
+    const band = input.fileData
+      ? bandForSource(0, (input.mimeType || "").startsWith("image/") ? "photo" : "pdf")
+      : bandForSource(countWords(input.content || ""), "text");
+    const fullPrompt = `${withBandTargets(prompt, band)}\n\nCONTENT:\n${input.content}\n\n${JSON_FORMAT_CONTRACT}`;
     parts.push({ text: fullPrompt });
 
     if (input.fileData) {
