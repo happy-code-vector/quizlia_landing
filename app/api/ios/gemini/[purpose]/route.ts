@@ -131,18 +131,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
         { status: 422 }
       );
     }
-    const preDuration = await getVideoDurationSeconds(preVideoId);
-    if (preDuration && preDuration > MAX_VIDEO_SECONDS) {
-      return NextResponse.json(
-        {
-          error: {
-            code: 422,
-            message: `This video is ${Math.round(preDuration / 60)} minutes long. Videos over 60 minutes are not supported.`,
-          },
-        },
-        { status: 422 }
-      );
-    }
+    // New-shape cost guard is the transcript itself (generateCore caps its
+    // length) — no duration lookup here. The old-shape loop above keeps its
+    // duration check: those bodies can carry real video URIs.
     const preTranscript = await getTranscript(preVideoId);
     if (!preTranscript) {
       return NextResponse.json(

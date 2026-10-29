@@ -47,7 +47,7 @@ async function fromSupadata(videoId: string): Promise<Transcript | null> {
   if (!SUPADATA_API_KEY) return null;
   const res = await fetch(
     `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&text=true`,
-    { headers: { "x-api-key": SUPADATA_API_KEY } }
+    { headers: { "x-api-key": SUPADATA_API_KEY }, signal: AbortSignal.timeout(20000) }
   );
   // 206 = no transcript available; 202 = async job (not used here).
   if (res.status !== 200) {
@@ -63,7 +63,7 @@ async function fromTranscriptApi(videoId: string): Promise<Transcript | null> {
   if (!TRANSCRIPTAPI_KEY) return null;
   const res = await fetch(
     `https://transcriptapi.com/api/v2/youtube/transcript?video_url=${videoId}&format=text&include_timestamp=false`,
-    { headers: { Authorization: `Bearer ${TRANSCRIPTAPI_KEY}` } }
+    { headers: { Authorization: `Bearer ${TRANSCRIPTAPI_KEY}` }, signal: AbortSignal.timeout(15000) }
   );
   if (res.status !== 200) {
     console.warn(`transcript: transcriptapi ${res.status} for ${videoId}`);

@@ -2,13 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { meterGeneration } from "@/lib/quota";
 import { resolveCaller } from "@/lib/token-verify";
 import { generateCore } from "@/lib/generate-core";
-import { youtubeVideoId, getTranscript, getVideoDurationSeconds } from "@/lib/transcript";
+import { youtubeVideoId, getTranscript } from "@/lib/transcript";
 
 export const dynamic = 'force-dynamic';
-
-// PRD item 3: a 60-minute video at default resolution is ~1.08M tokens;
-// longer videos are rejected with a clear error instead of billed.
-const MAX_VIDEO_SECONDS = 60 * 60;
 
 // generateCore reports failures as a generic {status, message}; the web UI
 // keys off route-level error codes. Map the YouTube 422s back to the codes
@@ -16,7 +12,6 @@ const MAX_VIDEO_SECONDS = 60 * 60;
 // Coupled to the message strings in lib/generate-core.ts.
 function youtubeErrorCode(message: string): string {
   if (message.includes("no captions")) return "no_captions";
-  if (message.includes("minutes long")) return "video_too_long";
   return "bad_link";
 }
 
@@ -65,26 +60,10 @@ export async function POST(request: NextRequest) {
     if (youtubeUrl) {
       const videoId = youtubeVideoId(youtubeUrl);
       if (videoId) {
-        const duration = await getVideoDurationSeconds(videoId);
-        if (duration !== null && duration > MAX_VIDEO_SECONDS) {
-          return NextResponse.json(
-            {
-              success: false,
-              error: "video_too_long",
-              message: `That video is ${Math.round(duration / 60)} minutes long — the limit is 60 minutes.`,
-            },
-            { status: 422 }
-          );
-        }
-      }
-    }
-
-    // Pre-metering transcript check: a caption-less video must not burn a
-    // credit (same principle as the duration guard above).
-    if (youtubeUrl) {
-      const preVideoId = youtubeVideoId(youtubeUrl);
-      if (preVideoId) {
-        const preTranscript = await getTranscript(preVideoId);
+        // Pre-metering rule: a caption-less video must not burn a credit.
+        // (No duration check — cost scales with the transcript, and
+        // generateCore caps its length.)
+        const preTranscript = await getTranscript(videoId);
         if (!preTranscript) {
           return NextResponse.json(
             { success: false, error: "no_captions", message: "This video has no captions we can read. Try another video or the sample." },

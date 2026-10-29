@@ -8,14 +8,18 @@
 // proved this approach works.
 
 import { JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
-import { youtubeVideoId, getTranscript, getVideoDurationSeconds } from "@/lib/transcript";
+import { youtubeVideoId, getTranscript } from "@/lib/transcript";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_API_URL =
   "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent";
 
-// PRD item 3: reject videos longer than 60 minutes with a clear error.
-const MAX_VIDEO_SECONDS = 60 * 60;
+// Transcript-size guard: cost scales with words spoken, not video minutes
+// (the old >60-min duration check was a cost guard from the era of sending
+// video to Gemini — ~1M tokens/hour; transcripts made cost linear in text).
+// ~120K chars ≈ a very long lecture; beyond it the transcript is
+// truncated, matching /api/ios/study-from-video.
+const MAX_TRANSCRIPT_CHARS = 120_000;
 
 export type GenerateType = "note" | "flashcard" | "quiz" | "study_pack";
 
@@ -191,17 +195,6 @@ export async function generateCore(input: GenerateInput): Promise<GenerateResult
       return { ok: false, status: 422, message: "Invalid YouTube link", code: "bad_link" };
     }
 
-    const duration = await getVideoDurationSeconds(videoId);
-    if (duration && duration > MAX_VIDEO_SECONDS) {
-      const mins = Math.round(duration / 60);
-      return {
-        ok: false,
-        status: 422,
-        message: `This video is ${mins} minutes long. Videos over 60 minutes are not supported.`,
-        code: "video_too_long",
-      };
-    }
-
     const transcript = await getTranscript(videoId);
     if (!transcript) {
       return {
@@ -213,7 +206,7 @@ export async function generateCore(input: GenerateInput): Promise<GenerateResult
     }
 
     parts.push({
-      text: `${prompt}\n\nCONTENT (video transcript):\n${transcript.text}\n\n${JSON_FORMAT_CONTRACT}`,
+      text: `${prompt}\n\nCONTENT (video transcript):\n${transcript.text.slice(0, MAX_TRANSCRIPT_CHARS)}\n\n${JSON_FORMAT_CONTRACT}`,
     });
   } else {
     // Non-YouTube: prompt first, content second, optional inline file data
