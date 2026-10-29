@@ -204,3 +204,35 @@ export async function recordSpend(
 export function budgetKeyFor(entitlement: { originalTransactionId?: string; transactionId: string }): string {
   return `otxn:${entitlement.originalTransactionId || entitlement.transactionId}`;
 }
+
+export interface AccountBudget {
+  key: string; // purchase key when known, else uid: (record-only)
+  plan: BudgetPlan | null; // null = no enforceable purchase yet
+}
+
+/** Resolves an account's budget from the users/{uid}.subscriptions mirror.
+ *  Enforcement only when a product carries originalTransactionId (written
+ *  since 2026-10-30); until then the account records uid-keyed. Weekly
+ *  maps to the weekly budget; family and legacy monthly/yearly to family;
+ *  individual_yearly to individual (planFromSubscriptions equivalences). */
+export async function resolveAccountBudget(uid: string): Promise<AccountBudget> {
+  try {
+    const db = await getAdminDb();
+    const snap = await db.collection("users").doc(uid).get();
+    const subs = ((snap.data() ?? {}).subscriptions ?? {}) as Record<
+      string,
+      { active?: boolean; originalTransactionId?: string }
+    >;
+    for (const [field, sub] of Object.entries(subs)) {
+      if (sub?.active && sub.originalTransactionId) {
+        const plan: BudgetPlan =
+          field === "weekly" ? "weekly" : field === "individual_yearly" ? "individual" : "family";
+        return { key: `otxn:${sub.originalTransactionId}`, plan };
+      }
+    }
+    return { key: "uid:" + uid, plan: null };
+  } catch (err) {
+    console.warn(`[budget] account resolve failed for ${uid.slice(0, 10)}:`, err);
+    return { key: "uid:" + uid, plan: null };
+  }
+}

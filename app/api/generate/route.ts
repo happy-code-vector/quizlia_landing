@@ -5,6 +5,7 @@ import { generateCore } from "@/lib/generate-core";
 import { youtubeVideoId, getTranscript } from "@/lib/transcript";
 import { getCachedStudyPack, putCachedStudyPack } from "@/lib/pack-cache";
 import { timingLog } from "@/lib/timing";
+import { checkBudget, recordSpend, resolveAccountBudget, estimateCents } from "@/lib/budget";
 
 export const dynamic = 'force-dynamic';
 
@@ -21,27 +22,30 @@ function youtubeErrorCode(message: string): string {
 // one linked account = one budget everywhere. No service account: the
 // caller's token is verified against Google's public certs (token-verify)
 // and the counter is written under tamper-proof rules with that same token.
-async function checkQuota(request: NextRequest, setId?: string): Promise<Response | null> {
+async function checkQuota(request: NextRequest, setId?: string): Promise<{ error: Response | null; uid: string | null }> {
   const caller = await resolveCaller(
     request.headers.get("authorization") || "",
     null
   );
   if (!caller) {
-    return NextResponse.json({ error: "Sign in to generate content" }, { status: 401 });
+    return { error: NextResponse.json({ error: "Sign in to generate content" }, { status: 401 }), uid: null };
   }
 
   try {
     const token = (request.headers.get("authorization") || "").slice(7);
     const result = await meterGeneration(token, caller.uid, setId);
-    if (result.ok) return null;
+    if (result.ok) return { error: null, uid: caller.uid };
 
-    return NextResponse.json(
-      { error: result.message, upgrade: true },
-      { status: result.status }
-    );
+    return {
+      error: NextResponse.json(
+        { error: result.message, upgrade: true },
+        { status: result.status }
+      ),
+      uid: caller.uid,
+    };
   } catch (error) {
     console.error("Quota check failed:", error);
-    return NextResponse.json({ error: "Could not verify generation quota" }, { status: 500 });
+    return { error: NextResponse.json({ error: "Could not verify generation quota" }, { status: 500 }), uid: null };
   }
 }
 
@@ -98,8 +102,27 @@ export async function POST(request: NextRequest) {
 
     // Server-side quota gate. The web sends one study_pack request per
     // generation; setId still dedupes metering against client re-fires.
-    const quotaError = await checkQuota(request, setId);
-    if (quotaError) return quotaError;
+    const quota = await checkQuota(request, setId);
+    if (quota.error) return quota.error;
+
+    // Margin floor (items 22-24), account path: enforce only when the
+    // subscription mirror carries a purchase id (item 28); always record.
+    const budget = await resolveAccountBudget(quota.uid!);
+    if (budget.plan) {
+      const estInput = Math.ceil((content?.length ?? 0) / 4) + (fileData ? 3000 : 0);
+      const est = estimateCents(
+        "gemini-3.1-flash-lite",
+        estInput,
+        type === "study_pack" || fileData || mimeType === "video/youtube" ? 65536 : 16384
+      );
+      const check = await checkBudget(budget.key, budget.plan, est);
+      if (!check.ok) {
+        return NextResponse.json(
+          { success: false, error: "budget_reached", message: check.message, resetAt: check.resetAt },
+          { status: 429 }
+        );
+      }
+    }
 
     if (!type || !content) {
       return NextResponse.json(
@@ -119,6 +142,18 @@ export async function POST(request: NextRequest) {
       fileData,
     });
 
+    if (result.ok && result.usage) {
+      // Item 22: record real spend — purchase-keyed when known, uid-keyed
+      // report-only otherwise. Cache hits returned before metering.
+      await recordSpend(
+        budget.key,
+        budget.plan ?? "individual",
+        "gemini-3.1-flash-lite",
+        result.usage.inTokens,
+        result.usage.cachedTokens,
+        result.usage.outTokens
+      );
+    }
     if (!result.ok) {
       // YouTube failures map back to this route's error codes
       // (video_too_long / no_captions / bad_link); everything else keeps

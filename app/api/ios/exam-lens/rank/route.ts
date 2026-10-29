@@ -90,6 +90,7 @@ async function accountPlan(uid: string): Promise<{ plan: PlanKind; admin: boolea
 }
 
 import { timingLog } from "@/lib/timing";
+import { checkBudget, budgetKeyFor, resolveAccountBudget, estimateCents, type BudgetPlan } from "@/lib/budget";
 
 export async function POST(request: NextRequest) {
   const requestStartedAt = Date.now();
@@ -191,6 +192,31 @@ export async function POST(request: NextRequest) {
         preVe1,
         resetAt: nextResetAt(),
       });
+    }
+  }
+
+  // Margin stop before the model call (item 42: budget_reached never
+  // fails over). Rank calls are sub-cent, so spend is enforced but not
+  // recorded per call — the usage lands in the [timing] rank lines.
+  const budget = device?.entitlement
+    ? {
+        key: budgetKeyFor(device.entitlement),
+        plan: (device.entitlement.productField === "weekly"
+          ? "weekly"
+          : device.entitlement.plan) as BudgetPlan,
+      }
+    : caller
+      ? await resolveAccountBudget(caller.uid)
+      : null;
+  if (budget?.plan) {
+    const est = estimateCents(
+      "gemini-3.1-flash-lite",
+      Math.ceil(sentences.reduce((n, s) => n + s.t.length, 0) / 4),
+      400
+    );
+    const check = await checkBudget(budget.key, budget.plan, est);
+    if (!check.ok) {
+      return errorResponse(429, "budget_reached", check.message, { resetAt: check.resetAt });
     }
   }
 

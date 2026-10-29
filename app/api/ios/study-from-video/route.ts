@@ -12,6 +12,7 @@ import {
 import { meterDeviceGeneration } from "@/lib/devices";
 import { getTranscript, youtubeVideoId } from "@/lib/transcript";
 import { timingLog } from "@/lib/timing";
+import { checkBudget, recordSpend, budgetKeyFor, resolveAccountBudget, estimateCents, type BudgetPlan } from "@/lib/budget";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -110,7 +111,9 @@ function parseResult(raw: string): StudyResult | null {
   }
 }
 
-async function callModel(prompt: string): Promise<StudyResult | null> {
+async function callModel(
+  prompt: string
+): Promise<{ result: StudyResult | null; usage: { in: number; out: number } }> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -126,11 +129,17 @@ async function callModel(prompt: string): Promise<StudyResult | null> {
   });
   if (!res.ok) {
     console.error("study-from-video: model", res.status, await res.text());
-    return null;
+    return { result: null, usage: { in: 0, out: 0 } };
   }
-  const data = (await res.json()) as { content?: { type: string; text?: string }[] };
+  const data = (await res.json()) as {
+    content?: { type: string; text?: string }[];
+    usage?: { input_tokens?: number; output_tokens?: number };
+  };
   const text = (data.content || []).filter((c) => c.type === "text").map((c) => c.text || "").join("");
-  return parseResult(text);
+  return {
+    result: parseResult(text),
+    usage: { in: data.usage?.input_tokens ?? 0, out: data.usage?.output_tokens ?? 0 },
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -197,10 +206,39 @@ export async function POST(request: NextRequest) {
     body.audience === "parent" ? "parent" : "student"
   );
 
+  // Margin floor (items 22-24) — this route's model is Haiku. Enforce on
+  // the purchase key (device entitlement or mirrored account); record all
+  // entitled callers.
+  const budget = device?.entitlement
+    ? { key: budgetKeyFor(device.entitlement), plan: (device.entitlement.productField === "weekly" ? "weekly" : device.entitlement.plan) as BudgetPlan }
+    : caller
+      ? await resolveAccountBudget(caller.uid)
+      : null;
+  if (budget?.plan) {
+    const check = await checkBudget(
+      budget.key,
+      budget.plan,
+      estimateCents("claude-haiku-5-5", Math.ceil(Math.min(transcript.text.length, MAX_TRANSCRIPT_CHARS) / 4), 4000)
+    );
+    if (!check.ok) {
+      timingLog("generation", {
+        source: "youtube", route: "study-from-video", ok: 0, error: "budget_reached",
+        transcriptMs, totalMs: Date.now() - startedAt,
+      });
+      return error(429, "budget_reached", check.message);
+    }
+  }
+
   // One retry on malformed output; the user never sees a made-up note.
   const modelStartedAt = Date.now();
-  const result = (await callModel(prompt)) ?? (await callModel(prompt));
+  const first = await callModel(prompt);
+  const second = first.result ? null : await callModel(prompt);
+  const result = first.result ?? second?.result ?? null;
+  const usage = second?.usage ?? first.usage;
   const modelMs = Date.now() - modelStartedAt;
+  if (budget && (usage.in || usage.out)) {
+    await recordSpend(budget.key, budget.plan ?? "family", "claude-haiku-5-5", usage.in, 0, usage.out);
+  }
   timingLog("generation", {
     source: "youtube",
     route: "study-from-video",

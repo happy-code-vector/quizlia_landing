@@ -56,6 +56,10 @@ export async function POST(request: NextRequest) {
             ...(entitlement.renewalDate && {
               [`subscriptions.${entitlement.productField}.renewalDate`]: entitlement.renewalDate,
             }),
+            ...(entitlement.originalTransactionId && {
+              [`subscriptions.${entitlement.productField}.originalTransactionId`]:
+                entitlement.originalTransactionId,
+            }),
           },
           { merge: true }
         );
