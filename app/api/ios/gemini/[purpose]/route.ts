@@ -11,7 +11,7 @@ import {
 } from "@/lib/caller";
 import { meterDeviceGeneration, meterDeviceChat } from "@/lib/devices";
 import { generateCore } from "@/lib/generate-core";
-import { chatCore } from "@/lib/chat-core";
+import { chatCore, tutorCore } from "@/lib/chat-core";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
 import { youtubeVideoId, getVideoDurationSeconds, getTranscript } from "@/lib/transcript";
 import { getCachedStudyPack, putCachedStudyPack } from "@/lib/pack-cache";
@@ -212,6 +212,28 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
       if (packVideoId) await putCachedStudyPack(packVideoId, result.data);
     }
     return NextResponse.json(result.data);
+  }
+
+  // Tutor chat (item 6): {question, source_text, history?, profile_type?,
+  // note_id?} → tutorCore. Metered above in the shared chat bucket (free:
+  // 10 lifetime per device, paid 100/day). The app flips
+  // ChatThread.serverTutorContract when this is live.
+  if (body.question && body.source_text && !body.contents) {
+    const result = await tutorCore({
+      question: String(body.question),
+      source_text: String(body.source_text),
+      source_kind: typeof body.source_kind === "string" ? body.source_kind : undefined,
+      history: Array.isArray(body.history) ? body.history : undefined,
+      profile_type: body.profile_type === "child" ? "child" : "adult",
+      note_id: typeof body.note_id === "string" ? body.note_id : undefined,
+    });
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: { code: result.status, message: result.message } },
+        { status: result.status }
+      );
+    }
+    return NextResponse.json({ success: true, answer: result.answer });
   }
 
   // Chat with new shape: {question, context} → chatCore()
