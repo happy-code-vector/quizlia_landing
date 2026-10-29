@@ -253,6 +253,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
       new ReadableStream({
         async start(controller) {
           const startedAt = Date.now();
+          // First byte immediately: Netlify's streaming gateway drops the
+          // body if the first write waits for the model (~15s here). The
+          // app ignores unknown part kinds.
+          controller.enqueue(encoder.encode(JSON.stringify({ part: "start" }) + "\\n"));
           try {
             const { parts, pack } = await generation;
             for (const p of parts) {
