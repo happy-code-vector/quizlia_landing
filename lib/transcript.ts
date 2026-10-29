@@ -43,15 +43,31 @@ export function youtubeVideoId(input: string): string | null {
   return null;
 }
 
+// Transient upstream states worth one retry before giving up on the
+// provider: 429 (rate limit), 202 (transcript still processing), 5xx, and
+// fetch timeouts. 206 (no transcript for this video) is definitive.
+class TransientTranscriptError extends Error {}
+
+function isRetryableTranscriptError(err: unknown): boolean {
+  return (
+    err instanceof TransientTranscriptError ||
+    (err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError"))
+  );
+}
+
 async function fromSupadata(videoId: string): Promise<Transcript | null> {
   if (!SUPADATA_API_KEY) return null;
   const res = await fetch(
     `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&text=true`,
     { headers: { "x-api-key": SUPADATA_API_KEY }, signal: AbortSignal.timeout(20000) }
   );
-  // 206 = no transcript available; 202 = async job (not used here).
+  // 206 = no transcript available (definitive); 202 = async job, 429/5xx =
+  // transient — thrown so getTranscript can retry once before falling back.
   if (res.status !== 200) {
     console.warn(`transcript: supadata ${res.status} for ${videoId}`);
+    if (res.status === 202 || res.status === 429 || res.status >= 500) {
+      throw new TransientTranscriptError(`supadata ${res.status}`);
+    }
     return null;
   }
   const data = (await res.json()) as { content?: unknown; lang?: string };
@@ -80,10 +96,23 @@ export async function getTranscript(videoId: string): Promise<Transcript | null>
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
   let transcript: Transcript | null = null;
+  // One retry on a transient Supadata failure (a one-off 429/202/5xx blip
+  // otherwise surfaces to users as 422 no_captions for a video that has
+  // captions). A definitive null (206, no key) skips straight to the
+  // fallback provider.
   try {
     transcript = await fromSupadata(videoId);
   } catch (e) {
-    console.warn("transcript: supadata error", e);
+    if (!isRetryableTranscriptError(e)) {
+      console.warn("transcript: supadata error", e);
+    } else {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      try {
+        transcript = await fromSupadata(videoId);
+      } catch (e2) {
+        if (!isRetryableTranscriptError(e2)) console.warn("transcript: supadata error", e2);
+      }
+    }
   }
   if (!transcript) {
     try {
