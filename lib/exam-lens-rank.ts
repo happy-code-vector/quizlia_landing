@@ -69,26 +69,27 @@ export function isMostlyNoise(sentences: RankSentence[]): boolean {
   return noise / stripped.length > MAX_NOISE_RATIO;
 }
 
-// ---- pageHash cache (item 45) — in-memory per warm instance, 7-day TTL.
-// The budgetKey-era store from item 9 can replace this without touching
-// the route (same get/set surface).
-const cache = new Map<string, { value: RankKeyPoint[]; language: string | null; at: number }>();
-const CACHE_MS = 7 * 24 * 60 * 60 * 1000;
-const MAX_CACHE = 500;
+// ---- pageHash cache (item 45): the shared Firestore generationCache
+// (lib/pack-cache.ts, the item 9 store) — one scan of a page serves every
+// instance and every student, 7-day TTL, hits unmetered. Never throws.
+import { readServerCache, writeServerCache } from "@/lib/pack-cache";
 
 export function cacheKey(input: RankInput): string {
   return `exam_lens:${input.pageHash}:${input.profileType}:${input.language ?? "auto"}`;
 }
 
-export function readCache(key: string): { keyPoints: RankKeyPoint[]; language: string | null } | null {
-  const hit = cache.get(key);
-  if (hit && Date.now() - hit.at < CACHE_MS) return { keyPoints: hit.value, language: hit.language };
-  return null;
+export async function readCache(
+  key: string
+): Promise<{ keyPoints: RankKeyPoint[]; language: string | null } | null> {
+  return readServerCache<{ keyPoints: RankKeyPoint[]; language: string | null }>(key);
 }
 
-export function writeCache(key: string, keyPoints: RankKeyPoint[], language: string | null): void {
-  if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value as string);
-  cache.set(key, { value: keyPoints, language, at: Date.now() });
+export async function writeCache(
+  key: string,
+  keyPoints: RankKeyPoint[],
+  language: string | null
+): Promise<void> {
+  await writeServerCache(key, { keyPoints, language });
 }
 
 // ---- prompt (item 43): the sentences a teacher would test, one question

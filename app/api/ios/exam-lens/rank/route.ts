@@ -89,7 +89,10 @@ async function accountPlan(uid: string): Promise<{ plan: PlanKind; admin: boolea
   }
 }
 
+import { timingLog } from "@/lib/timing";
+
 export async function POST(request: NextRequest) {
+  const requestStartedAt = Date.now();
   // Auth exactly as /api/ios/gemini/*: account tokens win, a signed-out
   // device authenticates via X-Device-ID (+ App Check, log-only until
   // APP_CHECK_ENFORCE=1). Every app call site sends X-Device-ID, so the
@@ -141,8 +144,9 @@ export async function POST(request: NextRequest) {
 
   // Cache hit: free, unmetered, cached:true (item 45).
   const key = cacheKey(input);
-  const hit = readCache(key);
+  const hit = await readCache(key);
   if (hit) {
+    timingLog("rank", { ok: 1, cache: 1, points: hit.keyPoints.length, totalMs: Date.now() - requestStartedAt });
     return NextResponse.json({ keyPoints: hit.keyPoints, language: hit.language, cached: true });
   }
 
@@ -200,6 +204,12 @@ export async function POST(request: NextRequest) {
     return errorResponse(503, "busy", "The scanner is busy right now. Try again in a moment.");
   }
 
-  writeCache(key, outcome.keyPoints, language);
+  await writeCache(key, outcome.keyPoints, language);
+  timingLog("rank", {
+    ok: 1,
+    cache: 0,
+    points: outcome.keyPoints.length,
+    totalMs: Date.now() - requestStartedAt,
+  });
   return NextResponse.json({ keyPoints: outcome.keyPoints, language, cached: false });
 }
