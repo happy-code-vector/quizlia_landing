@@ -230,8 +230,11 @@ def search_videos():
             if r.get("type") == "video" and r.get("id") and r["id"] not in pool:
                 pool[r["id"]] = r.get("title") or r["id"]
         time.sleep(1.0)
-    pool_cache.parent.mkdir(parents=True, exist_ok=True)
-    pool_cache.write_text(json.dumps(pool), encoding="utf-8")
+    # Never cache a failed search (Supadata limit-exceeded returns an empty
+    # pool — caching it would poison every later run, as it once did).
+    if len(pool) >= 10:
+        pool_cache.parent.mkdir(parents=True, exist_ok=True)
+        pool_cache.write_text(json.dumps(pool), encoding="utf-8")
     return pool
 
 
