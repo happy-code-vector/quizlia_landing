@@ -11,6 +11,7 @@ import {
 } from "@/lib/caller";
 import { meterDeviceGeneration } from "@/lib/devices";
 import { getTranscript, youtubeVideoId } from "@/lib/transcript";
+import { timingLog } from "@/lib/timing";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -133,6 +134,10 @@ async function callModel(prompt: string): Promise<StudyResult | null> {
 }
 
 export async function POST(request: NextRequest) {
+  // Item 65: this route has no pre-metering transcript check, so its
+  // transcriptMs is the real fetch cost (getTranscript also logs its own
+  // line). totalMs includes auth and metering — the user-perceived time.
+  const startedAt = Date.now();
   if (!ANTHROPIC_API_KEY) return error(500, "not_configured", "Model key not configured");
 
   // Account tokens win; signed-out devices fall through to the device path.
@@ -160,8 +165,18 @@ export async function POST(request: NextRequest) {
   const videoId = youtubeVideoId(body.url || "");
   if (!videoId) return error(422, "bad_link", "That doesn't look like a YouTube link.");
 
+  const transcriptStartedAt = Date.now();
   const transcript = await getTranscript(videoId);
+  const transcriptMs = Date.now() - transcriptStartedAt;
   if (!transcript) {
+    timingLog("generation", {
+      source: "youtube",
+      route: "study-from-video",
+      ok: 0,
+      error: "no_captions",
+      transcriptMs,
+      totalMs: Date.now() - startedAt,
+    });
     return error(422, "no_captions", "This video has no captions we can read. Try another video or the sample.");
   }
 
@@ -183,7 +198,17 @@ export async function POST(request: NextRequest) {
   );
 
   // One retry on malformed output; the user never sees a made-up note.
+  const modelStartedAt = Date.now();
   const result = (await callModel(prompt)) ?? (await callModel(prompt));
+  const modelMs = Date.now() - modelStartedAt;
+  timingLog("generation", {
+    source: "youtube",
+    route: "study-from-video",
+    ok: result ? 1 : 0,
+    transcriptMs,
+    modelMs,
+    totalMs: Date.now() - startedAt,
+  });
   if (!result) return error(502, "model_failed", "We couldn't build your notes this time. Please try again.");
 
   return NextResponse.json({ videoId, transcriptSource: transcript.source, ...result });

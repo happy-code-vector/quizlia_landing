@@ -6,6 +6,8 @@
 // Transcripts are cached in memory per server instance by video ID, so the
 // onboarding sample video is fetched once per warm instance.
 
+import { timingLog } from "@/lib/timing";
+
 const SUPADATA_API_KEY = process.env.SUPADATA_API_KEY;
 const TRANSCRIPTAPI_KEY = process.env.TRANSCRIPTAPI_KEY;
 
@@ -95,6 +97,11 @@ export async function getTranscript(videoId: string): Promise<Transcript | null>
   const hit = cache.get(videoId);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.value;
 
+  // Item 65: log the fetch (miss) cost — the pre-metering check in the
+  // routes pays this, so per-request transcript time lives on these lines.
+  const startedAt = Date.now();
+  let retried = false;
+
   let transcript: Transcript | null = null;
   // One retry on a transient Supadata failure (a one-off 429/202/5xx blip
   // otherwise surfaces to users as 422 no_captions for a video that has
@@ -106,6 +113,7 @@ export async function getTranscript(videoId: string): Promise<Transcript | null>
     if (!isRetryableTranscriptError(e)) {
       console.warn("transcript: supadata error", e);
     } else {
+      retried = true;
       await new Promise((resolve) => setTimeout(resolve, 1500));
       try {
         transcript = await fromSupadata(videoId);
@@ -122,6 +130,12 @@ export async function getTranscript(videoId: string): Promise<Transcript | null>
     }
   }
   if (transcript) {
+    timingLog("transcript", {
+      videoId,
+      ms: Date.now() - startedAt,
+      source: transcript.source,
+      ...(retried ? { retried: true } : {}),
+    });
     if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value as string);
     cache.set(videoId, { value: transcript, at: Date.now() });
   }

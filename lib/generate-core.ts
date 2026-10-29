@@ -9,6 +9,7 @@
 
 import { JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
 import { youtubeVideoId, getTranscript } from "@/lib/transcript";
+import { timingLog } from "@/lib/timing";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_API_URL =
@@ -33,6 +34,14 @@ export interface GenerateInput {
 export type GenerateResult =
   | { ok: true; data: any }
   | { ok: false; status: number; message: string; code?: string };
+
+// Item 65: source type for the timing lines — youtube (transcript path),
+// photo/pdf (inline fileData), or plain text.
+function sourceTypeOf(input: GenerateInput): "youtube" | "photo" | "pdf" | "text" {
+  if (input.mimeType === "video/youtube") return "youtube";
+  if (input.fileData) return (input.mimeType || "").startsWith("image/") ? "photo" : "pdf";
+  return "text";
+}
 
 // PROMPTS — moved verbatim from /api/generate/route.ts. Each prompt ends
 // with its RESPONSE FORMAT (JSON only) schema; the JSON_FORMAT_CONTRACT is
@@ -187,16 +196,34 @@ export async function generateCore(input: GenerateInput): Promise<GenerateResult
 
   const parts: any[] = [];
 
+  // Item 65: transcript fetch / model call / total, per source type. The
+  // transcript phase is usually a warm cache hit here — the routes'
+  // pre-metering check paid the real fetch (logged by getTranscript).
+  const startedAt = Date.now();
+  const source = sourceTypeOf(input);
+  let transcriptMs = 0;
+  let videoId: string | null = null;
+
   if (input.mimeType === "video/youtube" && input.content) {
     // YouTube: extract transcript text (Supadata → TranscriptAPI), send
     // TEXT to Gemini — not the video fileUri. ~500x cheaper.
-    const videoId = youtubeVideoId(input.content);
+    videoId = youtubeVideoId(input.content);
     if (!videoId) {
       return { ok: false, status: 422, message: "Invalid YouTube link", code: "bad_link" };
     }
 
+    const transcriptStartedAt = Date.now();
     const transcript = await getTranscript(videoId);
+    transcriptMs = Date.now() - transcriptStartedAt;
     if (!transcript) {
+      timingLog("generation", {
+        source,
+        type: input.type,
+        ok: 0,
+        error: "no_captions",
+        transcriptMs,
+        totalMs: Date.now() - startedAt,
+      });
       return {
         ok: false,
         status: 422,
@@ -223,6 +250,7 @@ export async function generateCore(input: GenerateInput): Promise<GenerateResult
     }
   }
 
+  const modelStartedAt = Date.now();
   const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -238,15 +266,41 @@ export async function generateCore(input: GenerateInput): Promise<GenerateResult
       },
     }),
   });
+  const modelMs = Date.now() - modelStartedAt;
 
   if (!response.ok) {
     const error = await response.text();
     console.error("generateCore: Gemini error:", error.slice(0, 200));
+    timingLog("generation", {
+      source,
+      type: input.type,
+      ok: 0,
+      error: "model",
+      http: response.status,
+      ...(source === "youtube" ? { transcriptMs } : {}),
+      modelMs,
+      totalMs: Date.now() - startedAt,
+    });
     return { ok: false, status: 500, message: "Failed to generate content" };
   }
 
   const data = await response.json();
   const output = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+  // Token counts (item 65 + the item 26 sizing pass): prompt vs output vs
+  // thinking. thoughtsTokenCount is the direct "is thinking on" signal.
+  const usage = data.usageMetadata ?? {};
+  timingLog("generation", {
+    source,
+    type: input.type,
+    ok: 1,
+    ...(source === "youtube" && videoId ? { transcriptMs, videoId } : {}),
+    modelMs,
+    totalMs: Date.now() - startedAt,
+    promptTokens: usage.promptTokenCount ?? 0,
+    outputTokens: usage.candidatesTokenCount ?? 0,
+    thoughtTokens: usage.thoughtsTokenCount ?? 0,
+  });
 
   if (!output) {
     return { ok: false, status: 500, message: "No output from model" };
