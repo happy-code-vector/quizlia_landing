@@ -10,7 +10,7 @@ import {
   type DeviceCaller,
 } from "@/lib/caller";
 import { meterDeviceGeneration, meterDeviceChat } from "@/lib/devices";
-import { generateCore } from "@/lib/generate-core";
+import { generateCore, streamStudyPack, bandForSource } from "@/lib/generate-core";
 import { chatCore, tutorCore } from "@/lib/chat-core";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
 import { youtubeVideoId, getVideoDurationSeconds, getTranscript } from "@/lib/transcript";
@@ -128,6 +128,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
   // Worst-case input estimate for the pre-call budget check (items 22-24):
   // content text, or the transcript once the pre-check below fetched it.
   let sourceEstTokens = Math.ceil((body.content?.length ?? 0) / 4) + (body.fileData ? 3000 : 0);
+  let sourceEstVideoId: string | null = null;
 
   // Pre-metering YouTube validation: a caption-less or over-60-min
   // video must not burn a credit (same guard as /api/generate 65e568d).
@@ -175,6 +176,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
       );
     }
     sourceEstTokens = Math.ceil(Math.min(preTranscript.text.length, 120000) / 4);
+    sourceEstVideoId = preVideoId;
   }
 
   if (device) {
@@ -230,6 +232,58 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
         );
       }
     }
+
+  // Item 62: streamed study packs. The app opts in with stream:true; old
+  // builds without it take the buffered path below. One request, one
+  // meter entry (metered above); the combined pack is cached at the end
+  // (item 9) even if the client drops mid-stream (item 66b).
+  if (isNewShape && body.stream === true && body.type === "study_pack" && !body.fileData) {
+    const streamSource =
+      body.mimeType === "video/youtube" && sourceEstVideoId
+        ? await getTranscript(sourceEstVideoId).then((t) => t?.text.slice(0, 120000) ?? "")
+        : String(body.content ?? "");
+    const words = streamSource.split(/\s+/).filter(Boolean).length;
+    const band =
+      body.mimeType === "video/youtube"
+        ? bandForSource(words, "youtube")
+        : bandForSource(words, "text");
+    const encoder = new TextEncoder();
+    const generation = streamStudyPack(streamSource, band);
+    return new NextResponse(
+      new ReadableStream({
+        async start(controller) {
+          const startedAt = Date.now();
+          try {
+            const { parts, pack } = await generation;
+            for (const p of parts) {
+              controller.enqueue(encoder.encode(JSON.stringify(p) + "\n"));
+            }
+            if (pack.note && sourceEstVideoId) {
+              await putCachedStudyPack(sourceEstVideoId, pack);
+            }
+            timingLog("generation", {
+              source: body.mimeType === "video/youtube" ? "youtube" : "text",
+              type: "study_pack",
+              ok: 1,
+              stream: 1,
+              ...(sourceEstVideoId ? { videoId: sourceEstVideoId } : {}),
+              totalMs: Date.now() - startedAt,
+              parts: parts.length,
+            });
+          } catch (err) {
+            console.error("stream pack error:", err);
+            try {
+              controller.enqueue(encoder.encode(JSON.stringify({ part: "error", message: "Generation failed" }) + "\n"));
+            } catch {}
+          } finally {
+            controller.close();
+          }
+        },
+      }),
+      { headers: { "Content-Type": "application/x-ndjson", "Cache-Control": "no-store" } }
+    );
+  }
+
 
     const result = await generateCore({
       type: body.type,

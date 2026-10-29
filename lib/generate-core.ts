@@ -237,6 +237,122 @@ function cleanJSONString(jsonString: string): string {
   return str.trim();
 }
 
+// ---- streaming study packs (item 62) and Tier-2 failover (item 34) ----
+
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+
+/** One Gemini call for a single-artifact prompt (streamed-pack parts). */
+async function geminiText(prompt: string, maxOutputTokens: number) {
+  const res = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: { maxOutputTokens },
+    }),
+  });
+  if (!res.ok) throw new Error(`gemini ${res.status}`);
+  const data = (await res.json()) as { candidates?: { content?: { parts?: { text?: string }[] } }[] };
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
+/** Tier 2 (item 34): Haiku 5.5, text-only sources, 16K output (4000
+ *  truncates a banded pack — eval finding 2026-10-30). Same JSON
+ *  contract; the caller parses identically. */
+async function haikuText(prompt: string, maxOutputTokens = 16384) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": ANTHROPIC_API_KEY as string,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-5-5",
+      max_tokens: maxOutputTokens,
+      messages: [{ role: "user", content: prompt }],
+    }),
+    signal: AbortSignal.timeout(45000),
+  });
+  if (!res.ok) throw new Error(`haiku ${res.status}`);
+  const data = (await res.json()) as { content?: { type: string; text?: string }[] };
+  return (data.content || []).filter((c) => c.type === "text").map((c) => c.text || "").join("");
+}
+
+/** geminiText with one Haiku retry on a capacity failure (429/5xx/
+ *  timeout). Text sources only — Tier 2 carries no inline file data. */
+export async function textWithFailover(prompt: string, maxOutputTokens: number): Promise<string> {
+  try {
+    return await geminiText(prompt, maxOutputTokens);
+  } catch (err) {
+    const msg = String(err);
+    if (!/gemini (429|5\d\d)/.test(msg) && !/timeout|fetch failed/i.test(msg)) throw err;
+    console.warn(`generateCore: tier-2 failover (${msg.slice(0, 40)})`);
+    return await haikuText(prompt);
+  }
+}
+
+function parseJsonLoose(text: string): any {
+  let s = text.trim();
+  if (s.startsWith("```")) s = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
+  const start = s.indexOf("{");
+  const end = s.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try {
+    return JSON.parse(s.slice(start, end + 1));
+  } catch {
+    return null;
+  }
+}
+
+export interface StreamedPart {
+  part: "note" | "flashcards" | "quizzes" | "done";
+  data?: any;
+}
+
+/** Item 62: emits note, then flashcards, then quizzes, then done — the
+ *  app opens the note after roughly a third of the wait. One request,
+ *  one meter entry (the route meters before calling); the combined pack
+ *  is returned for the item-9 cache so a dropped connection still pays
+ *  off for the next caller of the same source. */
+export async function streamStudyPack(
+  sourceText: string,
+  band: number
+): Promise<{ parts: StreamedPart[]; pack: any }> {
+  const cards =
+    band >= 0
+      ? `${BANDS[band].cards} flashcards`
+      : "flashcards scaled to the source length (single page or short text: 5 to 8; 1-3 pages: 8 to 15; 4-15 pages: 15 to 25; over 15 pages: 25 to 40)";
+  const questions =
+    band >= 0
+      ? `${BANDS[band].questions} multiple-choice questions`
+      : "multiple-choice questions scaled to the source length (single page or short text: 3 to 5; 1-3 pages: 5 to 8; 4-15 pages: 8 to 12; over 15 pages: 12 to 20)";
+  const parts: StreamedPart[] = [];
+
+  const note = parseJsonLoose(
+    await textWithFailover(`${PROMPTS.note}\n\nCONTENT:\n${sourceText}\n\n${JSON_FORMAT_CONTRACT}`, 16384)
+  );
+  parts.push({ part: "note", data: note });
+  const flashcards =
+    parseJsonLoose(
+      await textWithFailover(
+        `${PROMPTS.flashcard.replace("{CARDS}", cards)}\n\nCONTENT:\n${sourceText}\n\n${JSON_FORMAT_CONTRACT}`,
+        16384
+      )
+    )?.flashcards ?? [];
+  parts.push({ part: "flashcards", data: flashcards });
+  const quizzes =
+    parseJsonLoose(
+      await textWithFailover(
+        `${PROMPTS.quiz.replace("{QUESTIONS}", questions)}\n\nCONTENT:\n${sourceText}\n\n${JSON_FORMAT_CONTRACT}`,
+        16384
+      )
+    )?.quizzes ?? [];
+  parts.push({ part: "quizzes", data: quizzes });
+  parts.push({ part: "done" });
+  return { parts, pack: { note, flashcards, quizzes } };
+}
+
 export async function generateCore(input: GenerateInput): Promise<GenerateResult> {
   if (!GEMINI_API_KEY) {
     return { ok: false, status: 500, message: "Gemini API key not configured" };
