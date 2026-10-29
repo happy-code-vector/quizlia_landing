@@ -134,6 +134,26 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
         { status: 422 }
       );
     }
+
+    // Item 9: a cached pack serves FIRST — before the transcript fetch,
+    // before any metering, no model call (item 34 Tier 4: cached packs are
+    // free). A hit needs no transcript: the video had captions when the
+    // pack was generated and cached.
+    if (body.type === "study_pack") {
+      const cached = await getCachedStudyPack(preVideoId);
+      if (cached) {
+        timingLog("generation", {
+          source: "youtube",
+          type: "study_pack",
+          ok: 1,
+          cache: 1,
+          videoId: preVideoId,
+          totalMs: Date.now() - requestStartedAt,
+        });
+        return NextResponse.json(cached);
+      }
+    }
+
     // New-shape cost guard is the transcript itself (generateCore caps its
     // length) — no duration lookup here. The old-shape loop above keeps its
     // duration check: those bodies can carry real video URIs.
@@ -148,24 +168,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
         },
         { status: 422 }
       );
-    }
-
-    // Item 9: a cached pack for this video serves instantly, before any
-    // metering and with no model call (item 34 Tier 4: cached packs are
-    // free) — the caller's generation credit stays untouched.
-    if (body.type === "study_pack") {
-      const cached = await getCachedStudyPack(preVideoId);
-      if (cached) {
-        timingLog("generation", {
-          source: "youtube",
-          type: "study_pack",
-          ok: 1,
-          cache: 1,
-          videoId: preVideoId,
-          totalMs: Date.now() - requestStartedAt,
-        });
-        return NextResponse.json(cached);
-      }
     }
   }
 

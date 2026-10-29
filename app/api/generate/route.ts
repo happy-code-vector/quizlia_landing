@@ -63,18 +63,9 @@ export async function POST(request: NextRequest) {
     if (youtubeUrl) {
       const videoId = youtubeVideoId(youtubeUrl);
       if (videoId) {
-        // Pre-metering rule: a caption-less video must not burn a credit.
-        // (No duration check — cost scales with the transcript, and
-        // generateCore caps its length.)
-        const preTranscript = await getTranscript(videoId);
-        if (!preTranscript) {
-          return NextResponse.json(
-            { success: false, error: "no_captions", message: "This video has no captions we can read. Try another video or the sample." },
-            { status: 422 }
-          );
-        }
-        // Item 9: cached packs serve before metering, no model call —
-        // same shape the study_pack branch below returns.
+        // Item 9: cached packs serve FIRST — before the transcript fetch,
+        // before quota, no model call (item 34 Tier 4: cached packs are
+        // free). Same shape the study_pack branch below returns.
         if (type === "study_pack") {
           const cached = await getCachedStudyPack(videoId);
           if (cached) {
@@ -91,6 +82,16 @@ export async function POST(request: NextRequest) {
               data: { note: cached.note, flashcards: cached.flashcards ?? [], quizzes: cached.quizzes ?? [] },
             });
           }
+        }
+        // Pre-metering rule: a caption-less video must not burn a credit.
+        // (No duration check — cost scales with the transcript, and
+        // generateCore caps its length.)
+        const preTranscript = await getTranscript(videoId);
+        if (!preTranscript) {
+          return NextResponse.json(
+            { success: false, error: "no_captions", message: "This video has no captions we can read. Try another video or the sample." },
+            { status: 422 }
+          );
         }
       }
     }
