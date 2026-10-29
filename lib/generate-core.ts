@@ -86,7 +86,7 @@ export interface GenerateInput {
 }
 
 export type GenerateResult =
-  | { ok: true; data: any }
+  | { ok: true; data: any; usage?: { inTokens: number; cachedTokens: number; outTokens: number } }
   | { ok: false; status: number; message: string; code?: string };
 
 // Item 65: source type for the timing lines — youtube (transcript path),
@@ -366,7 +366,15 @@ export async function generateCore(input: GenerateInput): Promise<GenerateResult
   const cleaned = cleanJSONString(output);
   try {
     const parsed = JSON.parse(cleaned);
-    return { ok: true, data: parsed };
+    return {
+      ok: true,
+      data: parsed,
+      usage: {
+        inTokens: usage.promptTokenCount ?? 0,
+        cachedTokens: 0,
+        outTokens: (usage.candidatesTokenCount ?? 0) + (usage.thoughtsTokenCount ?? 0),
+      },
+    };
   } catch {
     // Some responses may be plain text — return as-is
     return { ok: true, data: { text: cleaned } };

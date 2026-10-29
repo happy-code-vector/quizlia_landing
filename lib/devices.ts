@@ -10,6 +10,7 @@ export interface DeviceEntitlement {
   productField: string; // subscriptions field name, e.g. "family_yearly"
   productId: string;
   transactionId: string;
+  originalTransactionId?: string; // budget key (item 28), stable across renewals
   expiresAt: string; // ISO
   renewalDate?: string; // ISO
   verifiedAt: string; // ISO — cache window anchors here (spec §5.4)

@@ -40,6 +40,7 @@ interface TransactionPayload {
   bundleId: string;
   productId: string;
   transactionId: string;
+  originalTransactionId?: number | string; // stable across renewals — budget key (item 28)
   expiresDate: number; // ms since epoch
   revocationDate?: number | null;
   signedDate: number;
@@ -104,6 +105,9 @@ export function verifyStoreKitJws(jws: string): DeviceEntitlement | null {
       productField: mapped.field,
       productId: payload.productId,
       transactionId: String(payload.transactionId),
+      ...(payload.originalTransactionId != null && {
+        originalTransactionId: String(payload.originalTransactionId),
+      }),
       expiresAt: new Date(payload.expiresDate).toISOString(),
       renewalDate: new Date(payload.expiresDate).toISOString(),
       verifiedAt: new Date().toISOString(),

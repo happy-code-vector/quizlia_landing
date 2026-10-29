@@ -16,6 +16,7 @@ import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-co
 import { youtubeVideoId, getVideoDurationSeconds, getTranscript } from "@/lib/transcript";
 import { getCachedStudyPack, putCachedStudyPack } from "@/lib/pack-cache";
 import { timingLog } from "@/lib/timing";
+import { checkBudget, recordSpend, budgetKeyFor, estimateCents, type BudgetPlan } from "@/lib/budget";
 
 export const dynamic = "force-dynamic";
 
@@ -124,6 +125,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
   // generation metering (final-review Important #1).
   const isNewShape = purpose === "generation" && Boolean(body.type && body.content && !body.contents);
 
+  // Worst-case input estimate for the pre-call budget check (items 22-24):
+  // content text, or the transcript once the pre-check below fetched it.
+  let sourceEstTokens = Math.ceil((body.content?.length ?? 0) / 4) + (body.fileData ? 3000 : 0);
+
   // Pre-metering YouTube validation: a caption-less or over-60-min
   // video must not burn a credit (same guard as /api/generate 65e568d).
   if (isNewShape && body.mimeType === "video/youtube" && body.content) {
@@ -169,6 +174,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
         { status: 422 }
       );
     }
+    sourceEstTokens = Math.ceil(Math.min(preTranscript.text.length, 120000) / 4);
   }
 
   if (device) {
@@ -193,6 +199,38 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
   }
 
   if (isNewShape) {
+    // Margin floor (items 22-24): paid callers get the dollar budget —
+    // worst-case estimate before the call, real usage after. The budget
+    // key is the PURCHASE (originalTransactionId, item 28); account
+    // spend without a mirrored purchase id is recorded uid-keyed for the
+    // report but not enforced. Free callers are governed by the counters
+    // above, not dollars.
+    const budgetKey = device?.entitlement
+      ? budgetKeyFor(device.entitlement)
+      : caller
+        ? "uid:" + caller.uid
+        : null;
+    const budgetPlan: BudgetPlan | null = device?.entitlement
+      ? device.entitlement.productField === "weekly"
+        ? "weekly"
+        : device.entitlement.plan
+      : null;
+
+    if (purpose === "generation" && budgetPlan && device?.entitlement) {
+      const est = estimateCents(
+        "gemini-3.1-flash-lite",
+        sourceEstTokens,
+        body.type === "study_pack" || body.fileData || body.mimeType === "video/youtube" ? 65536 : 16384
+      );
+      const check = await checkBudget(budgetKey!, budgetPlan, est);
+      if (!check.ok) {
+        return NextResponse.json(
+          { error: { code: "budget_reached", message: check.message }, resetAt: check.resetAt },
+          { status: 429 }
+        );
+      }
+    }
+
     const result = await generateCore({
       type: body.type,
       content: body.content,
@@ -203,6 +241,19 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
       return NextResponse.json(
         { error: { code: result.status, message: result.message } },
         { status: result.status }
+      );
+    }
+    // Item 22: record real spend for the report; enforcement stays
+    // purchase-keyed. Cache hits never reach here (free, item 34 T4).
+    if (budgetKey && result.usage) {
+      const recordPlan: BudgetPlan = budgetPlan ?? "individual"; // report-only keys use a permissive plan
+      await recordSpend(
+        budgetKey,
+        recordPlan,
+        "gemini-3.1-flash-lite",
+        result.usage.inTokens,
+        result.usage.cachedTokens,
+        result.usage.outTokens
       );
     }
     // Item 9: cache fresh YouTube study packs (validated shape only) for
