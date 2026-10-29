@@ -175,7 +175,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     const plan = devicePlan(device.entitlement);
     const meter = purpose === "generation"
       ? await meterDeviceGeneration(device.deviceId, plan)
-      : await meterDeviceChat(device.deviceId);
+      : await meterDeviceChat(device.deviceId, plan);
     if (!meter.ok) {
       return NextResponse.json(
         { error: { code: meter.status, message: meter.message } },

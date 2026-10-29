@@ -211,5 +211,13 @@ export async function POST(request: NextRequest) {
   });
   if (!result) return error(502, "model_failed", "We couldn't build your notes this time. Please try again.");
 
-  return NextResponse.json({ videoId, transcriptSource: transcript.source, ...result });
+  // Item 5: the app saves sourceText locally (never Firestore-synced —
+  // the 1 MiB doc limit, item 17) and uses it as the tutor's source_text.
+  return NextResponse.json({
+    videoId,
+    transcriptSource: transcript.source,
+    sourceText: transcript.text,
+    sourceKind: "transcript",
+    ...result,
+  });
 }

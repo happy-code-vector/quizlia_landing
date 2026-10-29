@@ -32,6 +32,7 @@ interface QuotaDoc {
   date?: string;
   used?: number;
   chatUsed?: number;
+  chatTotal?: number;
   freeUsed?: boolean;
   recentSets?: string[];
   updateTime?: string;
@@ -58,6 +59,7 @@ function parseDoc(fields: Record<string, any> | undefined, updateTime?: string):
   if (fields.date?.stringValue) out.date = fields.date.stringValue;
   if (fields.used?.integerValue) out.used = parseInt(fields.used.integerValue, 10);
   if (fields.chatUsed?.integerValue) out.chatUsed = parseInt(fields.chatUsed.integerValue, 10);
+  if (fields.chatTotal?.integerValue) out.chatTotal = parseInt(fields.chatTotal.integerValue, 10);
   if (typeof fields.freeUsed?.booleanValue === "boolean") out.freeUsed = fields.freeUsed.booleanValue;
   if (fields.recentSets?.arrayValue?.values) {
     out.recentSets = fields.recentSets.arrayValue.values.map((v: any) => v.stringValue);
@@ -173,15 +175,40 @@ export async function meterGeneration(
   return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
 }
 
-/** Chat/onboarding bucket: generous daily cap, separate from generations. */
+/** Chat/onboarding bucket. Paid: 100/day abuse ceiling. Free: 10 lifetime
+ *  messages total (AR 2026-10-29 — "allowed on the one free note only"),
+ *  tracked in chatTotal, which never resets. Onboarding samples share the
+ *  bucket on both plans. */
+export const FREE_CHAT_LIFETIME = 10;
+
 export async function meterChat(token: string, uid: string): Promise<QuotaResult> {
-  const { admin } = await readUser(token, uid);
+  const { plan, admin } = await readUser(token, uid);
 
   // Super admins chat without limits.
   if (admin) return { ok: true };
 
   const quota = (await getQuota(token, uid)) ?? {};
   const isToday = quota.date === today();
+
+  if (plan === "free") {
+    if ((quota.chatTotal ?? 0) >= FREE_CHAT_LIFETIME) {
+      return { ok: false, status: 429, message: "You've used your free chat messages. Upgrade to keep chatting." };
+    }
+    const ok = await patchWithRetry(token, uid, (q) => {
+      const day = q.date === today();
+      return {
+        date: today(),
+        chatTotal: (q.chatTotal ?? 0) + 1,
+        chatUsed: (day ? q.chatUsed ?? 0 : 0) + 1,
+        // The rules' create/update branches validate `used` on every write
+        // (tamper-proofing) — carry the current value (0 when starting clean)
+        // so a chat-first write on a fresh account passes them.
+        used: day ? q.used ?? 0 : 0,
+      };
+    });
+    return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
+  }
+
   const used = isToday ? quota.chatUsed ?? 0 : 0;
   if (used >= 100) {
     return { ok: false, status: 429, message: "Daily limit reached. Try again tomorrow." };

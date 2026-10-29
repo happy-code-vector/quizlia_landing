@@ -22,6 +22,7 @@ export interface DeviceDoc {
   recentSets?: string[];
   chatUsed?: number;
   chatDate?: string;
+  chatTotal?: number;
   scanUsed?: number;
   scanDate?: string;
   entitlement?: DeviceEntitlement | null;
@@ -104,9 +105,28 @@ export async function meterDeviceGeneration(
   return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
 }
 
-/** Mirrors meterChat() from lib/quota.ts for device callers (100/day). */
-export async function meterDeviceChat(deviceId: string): Promise<QuotaResult> {
+/** Mirrors meterChat() from lib/quota.ts for device callers. Paid keeps
+ *  the 100/day ceiling; free devices get 10 lifetime messages (AR
+ *  2026-10-29), tracked in chatTotal — never resets, survives reinstalls
+ *  with the Keychain UUID. */
+export async function meterDeviceChat(
+  deviceId: string,
+  plan: PlanKind = "free"
+): Promise<QuotaResult> {
   const doc = await readDevice(deviceId);
+
+  if (plan === "free") {
+    if ((doc.chatTotal ?? 0) >= 10) {
+      return { ok: false, status: 429, message: "You've used your free chat messages. Upgrade to keep chatting." };
+    }
+    const ok = await patchDevice(deviceId, (d) => ({
+      chatDate: today(),
+      chatUsed: (d.chatDate === today() ? d.chatUsed ?? 0 : 0) + 1,
+      chatTotal: (d.chatTotal ?? 0) + 1,
+    }));
+    return ok ? { ok: true } : { ok: false, status: 500, message: "Quota update conflict, try again." };
+  }
+
   const used = doc.chatDate === today() ? doc.chatUsed ?? 0 : 0;
   if (used >= 100) {
     return { ok: false, status: 429, message: "Daily limit reached. Try again tomorrow." };
