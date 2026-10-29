@@ -46,6 +46,15 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // Server generation cache (items 9, 45): study packs by video id and
+    // Exam Lens ranks by pageHash — model output only, no PII. Admin SDK
+    // only; Firestore default-denies unmatched paths, this block just
+    // documents the collection. (Rules deploy via Firebase CLI, not
+    // Netlify — deploying this file is optional.)
+    match /generationCache/{key} {
+      allow read, write: if false;
+    }
+
     // Stripe subscription → uid mapping used by the webhook (Task 8).
     match /stripeSubscriptions/{subscriptionId} {
       allow read, write: if false;

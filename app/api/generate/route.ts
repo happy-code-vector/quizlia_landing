@@ -3,6 +3,8 @@ import { meterGeneration } from "@/lib/quota";
 import { resolveCaller } from "@/lib/token-verify";
 import { generateCore } from "@/lib/generate-core";
 import { youtubeVideoId, getTranscript } from "@/lib/transcript";
+import { getCachedStudyPack, putCachedStudyPack } from "@/lib/pack-cache";
+import { timingLog } from "@/lib/timing";
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +46,7 @@ async function checkQuota(request: NextRequest, setId?: string): Promise<Respons
 }
 
 export async function POST(request: NextRequest) {
+  const requestStartedAt = Date.now();
   try {
     const { type, content, fileData, mimeType, setId } = await request.json();
 
@@ -69,6 +72,25 @@ export async function POST(request: NextRequest) {
             { success: false, error: "no_captions", message: "This video has no captions we can read. Try another video or the sample." },
             { status: 422 }
           );
+        }
+        // Item 9: cached packs serve before metering, no model call —
+        // same shape the study_pack branch below returns.
+        if (type === "study_pack") {
+          const cached = await getCachedStudyPack(videoId);
+          if (cached) {
+            timingLog("generation", {
+              source: "youtube",
+              type: "study_pack",
+              ok: 1,
+              cache: 1,
+              videoId,
+              totalMs: Date.now() - requestStartedAt,
+            });
+            return NextResponse.json({
+              success: true,
+              data: { note: cached.note, flashcards: cached.flashcards ?? [], quizzes: cached.quizzes ?? [] },
+            });
+          }
         }
       }
     }
@@ -185,6 +207,12 @@ export async function POST(request: NextRequest) {
           },
           { status: 500 }
         );
+      }
+      // Item 9: cache validated YouTube packs for the next caller of the
+      // same video. putCachedStudyPack never throws.
+      if (mimeType === "video/youtube" && youtubeUrl) {
+        const packVideoId = youtubeVideoId(youtubeUrl);
+        if (packVideoId) await putCachedStudyPack(packVideoId, { note, flashcards, quizzes });
       }
       return NextResponse.json({
         success: true,

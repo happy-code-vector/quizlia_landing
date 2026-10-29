@@ -24,6 +24,11 @@ const MAX_TRANSCRIPT_CHARS = 120_000;
 
 export type GenerateType = "note" | "flashcard" | "quiz" | "study_pack";
 
+// Study-pack cache version (item 9). Bump when ANY prompt or output cap
+// changes — it keys lib/pack-cache entries, so a bump retires every
+// cached pack built with the old prompt instead of serving it.
+export const STUDY_PACK_PROMPT_VERSION = 1;
+
 export interface GenerateInput {
   type: GenerateType;
   content: string;          // text, or YouTube URL when mimeType is video/youtube

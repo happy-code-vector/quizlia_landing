@@ -14,6 +14,8 @@ import { generateCore } from "@/lib/generate-core";
 import { chatCore } from "@/lib/chat-core";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
 import { youtubeVideoId, getVideoDurationSeconds, getTranscript } from "@/lib/transcript";
+import { getCachedStudyPack, putCachedStudyPack } from "@/lib/pack-cache";
+import { timingLog } from "@/lib/timing";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +57,7 @@ async function checkQuota(purpose: string, token: string, uid: string): Promise<
 }
 
 export async function POST(request: NextRequest, context: { params: Promise<{ purpose: string }> }) {
+  const requestStartedAt = Date.now();
   const { purpose } = await context.params;
   if (!["generation", "chat", "onboarding"].includes(purpose)) {
     return NextResponse.json({ error: { code: 404, message: "Unknown purpose" } }, { status: 404 });
@@ -146,6 +149,24 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
         { status: 422 }
       );
     }
+
+    // Item 9: a cached pack for this video serves instantly, before any
+    // metering and with no model call (item 34 Tier 4: cached packs are
+    // free) — the caller's generation credit stays untouched.
+    if (body.type === "study_pack") {
+      const cached = await getCachedStudyPack(preVideoId);
+      if (cached) {
+        timingLog("generation", {
+          source: "youtube",
+          type: "study_pack",
+          ok: 1,
+          cache: 1,
+          videoId: preVideoId,
+          totalMs: Date.now() - requestStartedAt,
+        });
+        return NextResponse.json(cached);
+      }
+    }
   }
 
   if (device) {
@@ -181,6 +202,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
         { error: { code: result.status, message: result.message } },
         { status: result.status }
       );
+    }
+    // Item 9: cache fresh YouTube study packs (validated shape only) for
+    // the next caller of the same video. putCachedStudyPack never throws.
+    if (body.type === "study_pack" && body.mimeType === "video/youtube" && result.data?.note) {
+      const packVideoId = youtubeVideoId(body.content);
+      if (packVideoId) await putCachedStudyPack(packVideoId, result.data);
     }
     return NextResponse.json(result.data);
   }
