@@ -113,9 +113,17 @@ export async function persistProfileContent(
         (typeof notesItem?.data?.sourceUrl === "string" && notesItem.data.sourceUrl) ||
         (looksLikeUrl(first.sourceName) ? String(first.sourceName) : "");
 
+      // The note payload carries the real title; the source URL was being
+      // written as the title for link/YouTube topics.
+      const noteTitle =
+        notesItem && typeof notesItem.data === "object" && notesItem.data !== null
+          ? (notesItem.data as { title?: unknown }).title
+          : null;
       const payload: Record<string, unknown> = {
         id: sid,
-        title: first.sourceName ?? first.title ?? "Web note",
+        title: typeof noteTitle === "string" && noteTitle.trim()
+          ? noteTitle
+          : (first.sourceName ?? first.title ?? "Web note"),
         contentType: webContentType(first.sourceType),
         contentPath,
         folderName: "",
@@ -135,14 +143,15 @@ export async function persistProfileContent(
   }
 }
 
-// Web sourceType ("youtube"/"pdf"/…) → the iOS-style contentType the
-// canonical note schema carries.
+// Web sourceType ("youtube"/"pdf"/…) → the note doc's contentType, in the
+// LOWERCASE vocabulary the iOS Documents table uses ("youtube"/"pdf"/…) —
+// capitalized values fell into iOS's PDF display default.
 function webContentType(t: unknown): string {
   const s = String(t ?? "").toLowerCase();
-  if (s.includes("youtube")) return "YouTube";
-  if (s.includes("pdf")) return "PDF";
-  if (s.includes("image") || s.includes("photo")) return "Image";
-  return "Text";
+  if (s.includes("youtube")) return "youtube";
+  if (s.includes("pdf")) return "pdf";
+  if (s.includes("image") || s.includes("photo")) return "image";
+  return "text";
 }
 
 // localStorage first; if empty, pull the profile's cloud doc (e.g. data
