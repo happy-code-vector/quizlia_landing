@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { verifyIdToken } from "@/lib/token-verify";
+import { resolveCaller } from "@/lib/token-verify";
 import { getAdminDb } from "@/lib/admin-firestore";
 
 export const dynamic = 'force-dynamic';
@@ -10,18 +10,21 @@ export const dynamic = 'force-dynamic';
 // validation semantics as the old client path (lib/firebaseSubscription
 // applyPromoCode): code doc exists, isActive, unexpired, one redemption
 // per user in usersUsed. Admin SDK bypasses rules, so the grant sticks.
+// Caller resolution accepts the web's Bearer ID token or the iOS proxy's
+// X-Firebase-Refresh header (same as every /api/ios route).
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("authorization") || "";
-  const idToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
-  const caller = idToken ? await verifyIdToken(idToken) : null;
+  const caller = await resolveCaller(
+    request.headers.get("authorization") || "",
+    request.headers.get("x-firebase-refresh")
+  );
   if (!caller) {
-    return NextResponse.json({ success: false, message: "Sign in to redeem a promo code." });
+    return NextResponse.json({ success: false, reason: "not_signed_in", message: "Sign in to redeem a promo code." });
   }
 
   const body = await request.json().catch(() => ({}));
   const code = String(body?.code ?? "").trim().toUpperCase();
   if (!code) {
-    return NextResponse.json({ success: false, message: "Enter a promo code." });
+    return NextResponse.json({ success: false, reason: "empty", message: "Enter a promo code." });
   }
 
   try {
@@ -31,19 +34,19 @@ export async function POST(request: NextRequest) {
     const codeRef = db.collection("promoCodes").doc(code);
     const codeSnap = await codeRef.get();
     if (!codeSnap.exists) {
-      return NextResponse.json({ success: false, message: "Invalid promo code." });
+      return NextResponse.json({ success: false, reason: "invalid", message: "Invalid promo code." });
     }
     const data = codeSnap.data() ?? {};
     if (data.isActive !== true) {
-      return NextResponse.json({ success: false, message: "This promo code is no longer active." });
+      return NextResponse.json({ success: false, reason: "inactive", message: "This promo code is no longer active." });
     }
     const expiration = typeof data.expirationDate === "string" ? new Date(data.expirationDate) : null;
     if (!expiration || expiration < new Date()) {
-      return NextResponse.json({ success: false, message: "This promo code has expired." });
+      return NextResponse.json({ success: false, reason: "expired", message: "This promo code has expired." });
     }
     const usersUsed: string[] = Array.isArray(data.usersUsed) ? data.usersUsed : [];
     if (usersUsed.includes(caller.uid)) {
-      return NextResponse.json({ success: false, message: "You have already used this promo code." });
+      return NextResponse.json({ success: false, reason: "already_used", message: "You have already used this promo code." });
     }
 
     // Grant one free month. getFirebaseSubscription reads freePlanActive +
@@ -68,9 +71,9 @@ export async function POST(request: NextRequest) {
       { merge: true }
     );
 
-    return NextResponse.json({ success: true, message: "Promo code applied! You have 1 month of Pro access." });
+    return NextResponse.json({ success: true, reason: "ok", message: "Promo code applied! You have 1 month of Pro access." });
   } catch (error: any) {
     console.error("Promo redemption error:", error?.message ?? error);
-    return NextResponse.json({ success: false, message: "Failed to apply promo code" });
+    return NextResponse.json({ success: false, reason: "error", message: "Failed to apply promo code" });
   }
 }
