@@ -329,10 +329,15 @@ export async function mergeIOSNotesIntoContent(
       const sourceType = mapType(d.contentType);
       // The original URL lives in contentPath (iOS writes it; the web does
       // too since the URL-loss fix). Legacy web docs stuffed it into title
-      // instead — a URL-shaped title is the fallback so old docs keep
-      // their video embed / source link across the round-trip.
+      // instead — and per-note-schema-era web docs kept the full URL inside
+      // the note JSON (noteData.sourceUrl) even when contentPath came back
+      // empty, so that's the backfill that heals them on fresh browsers.
+      // A URL-shaped title is the last resort either way.
       const remoteUrl =
         (typeof d.contentPath === "string" && d.contentPath) ||
+        (typeof note?.sourceUrl === "string" && /^https?:\/\//i.test(note.sourceUrl)
+          ? note.sourceUrl
+          : "") ||
         (/^https?:\/\//i.test(String(d.title ?? "")) ? String(d.title) : "");
       const base = {
         sourceId: noteDoc.id,
