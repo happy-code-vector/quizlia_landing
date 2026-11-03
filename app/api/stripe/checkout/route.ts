@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { verifyIdToken } from "@/lib/token-verify";
+import { getAdminDb } from "@/lib/admin-firestore";
 
 export const dynamic = 'force-dynamic';
 
@@ -59,6 +60,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unknown price" }, { status: 400 });
     }
 
+    // Trial dedupe: Stripe never limits trials per customer — cancel and
+    // resubscribe would earn another free week. Any prior subscription
+    // footprint on this account drops the trial (annual trials are for
+    // first-time buyers only). Fails open: a read error keeps the trial
+    // rather than blocking checkout.
+    let trialDays = trialDaysByPlan[planId] ?? 0;
+    if (trialDays > 0) {
+      try {
+        const db = await getAdminDb();
+        const snap = await db.collection("users").doc(caller.uid).get();
+        const subs = (snap.data() as Record<string, unknown> | undefined)?.subscriptions;
+        const hasPrior = !!subs && Object.values(subs).some((s) => s != null);
+        if (hasPrior) trialDays = 0;
+      } catch {
+        // keep the configured trial
+      }
+    }
+
     // Get the origin for redirect URLs
     const origin = request.headers.get("origin") || "http://localhost:3000";
 
@@ -71,9 +90,7 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      subscription_data: trialDaysByPlan[planId]
-        ? { trial_period_days: trialDaysByPlan[planId] }
-        : undefined,
+      subscription_data: trialDays ? { trial_period_days: trialDays } : undefined,
       success_url: `${origin}/note/subscription/success?session_id={CHECKOUT_SESSION_ID}&profile_id=${profileId}`,
       cancel_url: `${origin}/note?canceled=true`,
       metadata: {

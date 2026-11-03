@@ -5,7 +5,6 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  arrayUnion,
   serverTimestamp,
   Timestamp,
 } from "firebase/firestore";
@@ -204,61 +203,27 @@ export async function updateFirebaseSubscription(
 }
 
 
-// Apply promo code — validates against the promoCodes collection exactly
-// like the iOS app (isActive, expirationDate, one redemption per user in
-// usersUsed) before granting the free month.
+// Apply promo code — server-side since the rules lockdown. The route
+// (app/api/promo) validates against the promoCodes collection (isActive,
+// expirationDate, one redemption per user) and grants the free month via
+// the Admin SDK; clients can no longer write their own grant fields.
 export async function applyPromoCode(
   email: string,
   code: string
 ): Promise<{ success: boolean; message: string }> {
-  if (!isFirebaseConfigured() || !db) {
-    return { success: false, message: "Firebase not configured. Promo codes require Firebase setup." };
+  const user = auth?.currentUser;
+  if (!user) {
+    return { success: false, message: "Sign in to redeem a promo code." };
   }
-
   try {
-    // Validate the code document first (mirrors QuizliAiPromoManager).
-    const codeRef = doc(db, "promoCodes", code);
-    const codeSnap = await getDoc(codeRef);
-    if (!codeSnap.exists()) {
-      return { success: false, message: "Invalid promo code." };
-    }
-    const data = codeSnap.data();
-    if (data.isActive !== true) {
-      return { success: false, message: "This promo code is no longer active." };
-    }
-    const expiration = data.expirationDate instanceof Timestamp ? data.expirationDate.toDate() : null;
-    if (!expiration || expiration < new Date()) {
-      return { success: false, message: "This promo code has expired." };
-    }
-    const userId = auth?.currentUser?.uid || currentUserDocId(email);
-    const usersUsed = Array.isArray(data.usersUsed) ? data.usersUsed : [];
-    if (usersUsed.includes(userId)) {
-      return { success: false, message: "You have already used this promo code." };
-    }
-
-    const docId = currentUserDocId(email);
-    const userRef = doc(db, "users", docId);
-
-    const now = new Date();
-    const expiryDate = new Date(now);
-    expiryDate.setMonth(expiryDate.getMonth() + 1); // 1 month free
-
-    await updateDoc(userRef, {
-      promoApplied: code,
-      promoAppliedAt: now,
-      promoExpiresAt: expiryDate,
-      freePlanActive: true,
-      freePlanExpiresAt: expiryDate,
+    const token = await user.getIdToken();
+    const res = await fetch("/api/promo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ code }),
     });
-
-    // Mark the code used by this user (atomic append — no double redemption
-    // across tabs or platforms sharing the uid).
-    await updateDoc(codeRef, { usersUsed: arrayUnion(userId) });
-
-    console.log("✅ Promo code applied successfully");
-    return { success: true, message: "Promo code applied! You have 1 month of Pro access." };
-  } catch (error) {
-    console.error("❌ Failed to apply promo:", error);
+    return await res.json();
+  } catch {
     return { success: false, message: "Failed to apply promo code" };
   }
 }

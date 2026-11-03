@@ -4,20 +4,34 @@ import { getAdminDb } from "@/lib/admin-firestore";
 
 export const dynamic = 'force-dynamic';
 
+// Period end lives on the subscription ITEM in newer Stripe API versions
+// (top-level on older ones). Probe both so either shape works.
+function subscriptionPeriodEnd(
+  sub: Stripe.Subscription | Stripe.Response<Stripe.Subscription>
+): number | null {
+  const item = sub.items?.data?.[0] as { current_period_end?: number | null } | undefined;
+  const legacy = (sub as unknown as { current_period_end?: number | null }).current_period_end;
+  return item?.current_period_end ?? legacy ?? null;
+}
+
 // Server-authoritative subscription write (spec §5.6) — the ONLY writer
 // besides /api/ios/entitlements; clients lost write access in Task 6.
+// renewalDate is the subscription's REAL current_period_end when the
+// caller has it (weekly ≠ annual); +30d is only the defensive fallback.
 async function writeSubscription(
   subscriptionId: string,
   uid: string,
   planId: string,
-  active: boolean
+  active: boolean,
+  renewalDate?: string | null
 ): Promise<void> {
-  const renewalDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const renewal =
+    renewalDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
   const db = await getAdminDb();
   await db.collection("users").doc(uid).set(
     {
       [`subscriptions.${planId}.active`]: active,
-      ...(active && { [`subscriptions.${planId}.renewalDate`]: renewalDate }),
+      ...(active && { [`subscriptions.${planId}.renewalDate`]: renewal }),
     },
     { merge: true }
   );
@@ -66,7 +80,21 @@ export async function POST(request: NextRequest) {
           { uid, planId, updatedAt: new Date().toISOString() },
           { merge: true }
         );
-        await writeSubscription(String(session.subscription), uid, planId, true);
+        // Real period end from the subscription itself (weekly vs annual).
+        let periodEnd: number | null = null;
+        try {
+          const sub = await stripe.subscriptions.retrieve(String(session.subscription));
+          periodEnd = subscriptionPeriodEnd(sub);
+        } catch {
+          // writeSubscription falls back to +30d
+        }
+        await writeSubscription(
+          String(session.subscription),
+          uid,
+          planId,
+          true,
+          periodEnd ? new Date(periodEnd * 1000).toISOString() : null
+        );
         break;
       }
       case "customer.subscription.updated":
@@ -85,7 +113,16 @@ export async function POST(request: NextRequest) {
         const active =
           event.type === "customer.subscription.updated" &&
           (subscription.status === "active" || subscription.status === "trialing");
-        await writeSubscription(subscription.id, uid, planId, active);
+        await writeSubscription(
+          subscription.id,
+          uid,
+          planId,
+          active,
+          (() => {
+            const end = subscriptionPeriodEnd(subscription);
+            return end ? new Date(end * 1000).toISOString() : null;
+          })()
+        );
         break;
       }
       case "invoice.payment_failed": {

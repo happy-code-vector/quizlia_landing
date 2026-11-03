@@ -75,11 +75,28 @@ service cloud.firestore {
       // resource.data on a not-yet-existing doc errors in the engine and
       // denied every first-time user-doc create — seen live 2026-10-20.)
       // The console / Admin SDK bypass rules to set it.
+      //
+      // Entitlements are server-written ONLY (Stripe webhook, the promo
+      // route, /api/ios/ entitlements — all Admin SDK, which bypasses
+      // rules). A client write must not change the subscription map,
+      // free-plan grant, or promo fields: requiring the post-write value
+      // to equal the pre-write value lets unchanged merges pass while any
+      // change — e.g. subscriptions.family_yearly.active=true typed in
+      // devtools — is denied. Dropping a field is permitted (self-harm
+      // only; the webhook re-writes it on the next lifecycle event).
       allow create: if request.auth != null && request.auth.uid == userId
                     && request.resource.data.get('admin', false) == false;
       allow update: if request.auth != null && request.auth.uid == userId
                     && request.resource.data.get('admin', false)
-                       == resource.data.get('admin', false);
+                       == resource.data.get('admin', false)
+                    && request.resource.data.get('subscriptions', resource.data.get('subscriptions', null))
+                       == resource.data.get('subscriptions', null)
+                    && request.resource.data.get('freePlanActive', resource.data.get('freePlanActive', null))
+                       == resource.data.get('freePlanActive', null)
+                    && request.resource.data.get('freePlanExpiresAt', resource.data.get('freePlanExpiresAt', null))
+                       == resource.data.get('freePlanExpiresAt', null)
+                    && request.resource.data.get('promoApplied', resource.data.get('promoApplied', null))
+                       == resource.data.get('promoApplied', null);
 
       allow delete: if request.auth != null && request.auth.uid == userId;
 
