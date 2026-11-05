@@ -28,10 +28,21 @@ async function writeSubscription(
   const renewal =
     renewalDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
   const db = await getAdminDb();
+  // Nested map, NOT dotted field names: the Admin SDK treats
+  // `subscriptions.${planId}.active` as a LITERAL flat field name, while
+  // every reader (web client, /api/ios/entitlements checks, budget
+  // resolution) expects a nested subscriptions map — dotted writes were
+  // invisible (verified on prod 2026-11-04: users doc carried flat
+  // "subscriptions.x.active" keys and data.subscriptions stayed undefined).
+  // set + merge deep-merges the map, so other plans' entries survive.
   await db.collection("users").doc(uid).set(
     {
-      [`subscriptions.${planId}.active`]: active,
-      ...(active && { [`subscriptions.${planId}.renewalDate`]: renewal }),
+      subscriptions: {
+        [planId]: {
+          active,
+          ...(active && { renewalDate: renewal }),
+        },
+      },
     },
     { merge: true }
   );

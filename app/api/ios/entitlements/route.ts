@@ -50,16 +50,24 @@ export async function POST(request: NextRequest) {
     if (account) {
       const db = await getAdminDb();
       if (entitlement) {
+        // Nested map, NOT dotted keys — the Admin SDK treats dotted object
+        // keys as literal flat field names, so readers expecting a nested
+        // subscriptions map saw nothing (same bug as the Stripe webhook;
+        // verified on prod 2026-11-04). set + merge deep-merges, keeping
+        // other plans' entries intact.
         await db.collection("users").doc(account.uid).set(
           {
-            [`subscriptions.${entitlement.productField}.active`]: true,
-            ...(entitlement.renewalDate && {
-              [`subscriptions.${entitlement.productField}.renewalDate`]: entitlement.renewalDate,
-            }),
-            ...(entitlement.originalTransactionId && {
-              [`subscriptions.${entitlement.productField}.originalTransactionId`]:
-                entitlement.originalTransactionId,
-            }),
+            subscriptions: {
+              [entitlement.productField]: {
+                active: true,
+                ...(entitlement.renewalDate && {
+                  renewalDate: entitlement.renewalDate,
+                }),
+                ...(entitlement.originalTransactionId && {
+                  originalTransactionId: entitlement.originalTransactionId,
+                }),
+              },
+            },
           },
           { merge: true }
         );
