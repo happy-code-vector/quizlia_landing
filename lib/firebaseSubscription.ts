@@ -72,20 +72,12 @@ export async function createOrUpdateFirebaseUser(email: string): Promise<void> {
         isLocked: false,
         createdAt: serverTimestamp(),
         lastLoginAt: serverTimestamp(),
-        subscriptions: {
-          monthly: {
-            active: false,
-            renewalDate: null,
-          },
-          yearly: {
-            active: false,
-            renewalDate: null,
-          },
-          yearlyOffer: {
-            active: false,
-            renewalDate: null,
-          },
-        },
+        // Empty map — plan keys appear server-side on first purchase only.
+        // The legacy monthly/yearly/yearlyOffer placeholders stopped being
+        // seeded 2026-11-06 (dead pre-Release-B lineup; zero active legacy
+        // subscribers in the DB). QuizliSyncManager.swift seeds the identical
+        // shape on iOS — change both together.
+        subscriptions: {},
       };
 
       await setDoc(userRef, data);
@@ -130,13 +122,13 @@ export async function getFirebaseSubscription(email: string): Promise<UserSubscr
       }
     }
 
-    // Check subscriptions — new lineup first, then legacy plan fields
+    // Check subscriptions — current lineup only. Legacy
+    // monthly/yearly/yearlyOffer fields are ignored (lineup retired with
+    // Release B; DB audit 2026-11-06 found zero active legacy subscribers).
     const planFieldToPlanId: Record<string, string> = {
       family_yearly: "family_yearly",
       individual_yearly: "individual_yearly",
       weekly: "weekly",
-      yearly: "pro_yearly",   // legacy
-      monthly: "pro_monthly", // legacy
     };
 
     for (const [field, planId] of Object.entries(planFieldToPlanId)) {
@@ -279,15 +271,19 @@ export async function saveSubscriptionToFirebase(
         family_yearly: "family_yearly",
         individual_yearly: "individual_yearly",
         weekly: "weekly",
-        pro_yearly: "yearly",   // legacy
-        pro_monthly: "monthly", // legacy
       };
-      const type = planFieldByPlanId[subscription.planId] || "monthly";
-      const renewalDate = subscription.currentPeriodEnd
-        ? new Date(subscription.currentPeriodEnd)
-        : null;
+      const type = planFieldByPlanId[subscription.planId];
+      if (!type) {
+        // Unknown planId (e.g. stale localStorage) — never invent a
+        // legacy field, just keep the local mirror.
+        console.warn("Skipping Firebase mirror for unknown planId:", subscription.planId);
+      } else {
+        const renewalDate = subscription.currentPeriodEnd
+          ? new Date(subscription.currentPeriodEnd)
+          : null;
 
-      await updateFirebaseSubscription(email, type as any, true, renewalDate);
+        await updateFirebaseSubscription(email, type as any, true, renewalDate);
+      }
     } catch (error) {
       console.warn("Failed to sync to Firebase, saved locally only:", error);
     }

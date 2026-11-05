@@ -23,7 +23,8 @@ export const GENERATION_LIMITS = { individual: 5, family: 15 } as const;
 
 export function planFromSubscriptions(subs: Subs): PlanKind {
   if (subs.family_yearly?.active) return "family";
-  if (subs.yearly?.active || subs.monthly?.active || subs.yearlyOffer?.active) return "family";
+  // Legacy monthly/yearly/yearlyOffer dropped 2026-11-06: the pre-Release-B
+  // lineup is dead and the DB audit found zero active legacy subscribers.
   if (subs.individual_yearly?.active || subs.weekly?.active) return "individual";
   return "free";
 }
