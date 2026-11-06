@@ -8,10 +8,15 @@ interface RenameModalProps {
   onRename: (newTitle: string) => void;
   currentTitle: string;
   itemType: string;
+  /** Case-insensitive names that block the rename (folders only). The
+   *  current title itself is excluded — renaming to a case-variant of
+   *  yourself is a harmless no-op (spec 2026-11-06). */
+  conflictNames?: string[];
 }
 
-export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType }: RenameModalProps) {
+export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType, conflictNames }: RenameModalProps) {
   const [title, setTitle] = useState(currentTitle);
+  const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -22,6 +27,7 @@ export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType 
     } else {
       document.body.style.overflow = "unset";
     }
+    setError("");
     return () => {
       document.body.style.overflow = "unset";
     };
@@ -29,9 +35,20 @@ export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (title.trim() && title.trim() !== currentTitle) {
-      onRename(title.trim());
+    const next = title.trim();
+    if (!next || next === currentTitle) {
+      onClose();
+      return;
     }
+    const collides = conflictNames?.some(
+      (n) => n.trim().toLowerCase() !== currentTitle.trim().toLowerCase() &&
+        n.trim().toLowerCase() === next.toLowerCase()
+    );
+    if (collides) {
+      setError("A folder with this name already exists");
+      return;
+    }
+    onRename(next);
     onClose();
   };
 
@@ -55,11 +72,14 @@ export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType 
               ref={inputRef}
               type="text"
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); setError(""); }}
               placeholder="Enter new title..."
               className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoFocus
             />
+            {error && (
+              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
+            )}
           </div>
           <div className="border-t border-gray-200 dark:border-gray-800 px-6 py-4 flex justify-end gap-3">
             <button

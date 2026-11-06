@@ -538,6 +538,7 @@ function NotesExplorer() {
             isOpen={createFolderOpen}
             onClose={() => setCreateFolderOpen(false)}
             onCreateFolder={handleCreateFolder}
+            existingNames={folders.filter((f) => !f.deletedAt).map((f) => f.name)}
           />
           <RenameModal
             isOpen={!!renameFolderTarget}
@@ -545,6 +546,7 @@ function NotesExplorer() {
             onRename={handleRenameFolder}
             currentTitle={renameFolderTarget?.name || ""}
             itemType="folder"
+            conflictNames={folders.filter((f) => !f.deletedAt).map((f) => f.name)}
           />
           <RenameModal
             isOpen={!!renameTopicTarget}

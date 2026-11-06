@@ -6,6 +6,8 @@ interface CreateFolderModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreateFolder: (folderName: string, folderIcon: string) => void;
+  /** Existing folder names — a case-insensitive match blocks creation (spec 2026-11-06). */
+  existingNames?: string[];
 }
 
 const FOLDER_EMOJIS = [
@@ -17,7 +19,7 @@ const FOLDER_EMOJIS = [
   "⚽", "🏀", "🏈", "⚾", "🎾", "🏐", "🏉", "🎱",
 ];
 
-export function CreateFolderModal({ isOpen, onClose, onCreateFolder }: CreateFolderModalProps) {
+export function CreateFolderModal({ isOpen, onClose, onCreateFolder, existingNames }: CreateFolderModalProps) {
   const [folderName, setFolderName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("📁");
   const [error, setError] = useState("");
@@ -37,6 +39,14 @@ export function CreateFolderModal({ isOpen, onClose, onCreateFolder }: CreateFol
 
     if (trimmedName.length > 20) {
       setError("Folder name must not exceed 20 characters");
+      return;
+    }
+
+    // Spec 2026-11-06: folder names are case-insensitively unique
+    // ("History" == "history" == "hiSTory"); reserved names (General…)
+    // arrive through this same list.
+    if (existingNames?.some((n) => n.trim().toLowerCase() === trimmedName.toLowerCase())) {
+      setError("A folder with this name already exists");
       return;
     }
 
