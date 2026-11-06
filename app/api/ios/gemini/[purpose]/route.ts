@@ -14,7 +14,7 @@ import { generateCore, streamStudyPack, bandForSource } from "@/lib/generate-cor
 import { chatCore, tutorCore } from "@/lib/chat-core";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
 import { youtubeVideoId, getVideoDurationSeconds, getTranscript } from "@/lib/transcript";
-import { getCachedStudyPack, putCachedStudyPack } from "@/lib/pack-cache";
+import { getCachedStudyPack, getCachedStudyPackForLink, putCachedStudyPack, putCachedStudyPackForLink } from "@/lib/pack-cache";
 import { timingLog } from "@/lib/timing";
 import { checkBudget, recordSpend, budgetKeyFor, resolveAccountBudget, estimateCents, type BudgetPlan } from "@/lib/budget";
 
@@ -179,6 +179,30 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     sourceEstVideoId = preVideoId;
   }
 
+  // URL pack cache (dedupe spec §3): iOS website links are text/plain
+  // "Analyze the following link: <url>" — serve them from the cache like
+  // video packs, before any metering (free hit). A YouTube link in that
+  // shape maps onto the video keys via studyPackLinkKey.
+  if (
+    isNewShape &&
+    body.type === "study_pack" &&
+    body.mimeType !== "video/youtube" &&
+    typeof body.content === "string"
+  ) {
+    const stripped = body.content.replace(/^Analyze the following link:\s*/i, "").trim();
+    const cached = await getCachedStudyPackForLink(stripped);
+    if (cached) {
+      timingLog("generation", {
+        source: "url",
+        type: "study_pack",
+        ok: 1,
+        cache: 1,
+        totalMs: Date.now() - requestStartedAt,
+      });
+      return NextResponse.json(cached);
+    }
+  }
+
   if (device) {
     const plan = devicePlan(device.entitlement);
     const meter = purpose === "generation"
@@ -314,11 +338,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
         result.usage.outTokens
       );
     }
-    // Item 9: cache fresh YouTube study packs (validated shape only) for
-    // the next caller of the same video. putCachedStudyPack never throws.
-    if (body.type === "study_pack" && body.mimeType === "video/youtube" && result.data?.note) {
-      const packVideoId = youtubeVideoId(body.content);
-      if (packVideoId) await putCachedStudyPack(packVideoId, result.data);
+    // Item 9 + dedupe spec §3: cache fresh study packs (validated shape
+    // only) for the next caller of the same link — video id or normalized
+    // URL. No-ops for non-link text. Never throws.
+    if (body.type === "study_pack" && result.data?.note && typeof body.content === "string") {
+      const linkSource = body.content.replace(/^Analyze the following link:\s*/i, "").trim();
+      if (linkSource) await putCachedStudyPackForLink(linkSource, result.data);
     }
     return NextResponse.json(result.data);
   }
