@@ -3,6 +3,7 @@ import Image from "next/image"
 import { APP_STORE_URL } from "@/lib/constants"
 
 const links = [
+  { href: "/arcade", label: "Arcade" },
   { href: "#demo", label: "Try it" },
   { href: "#how-it-works", label: "How it works" },
   { href: "#faq", label: "FAQ" },
