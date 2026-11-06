@@ -29,11 +29,12 @@ function findExistingSourceItem(profileId: number | string, rawLink: string): Co
   } catch {
     return null;
   }
+  if (!Array.isArray(stored)) return null;
   const ytId = extractYouTubeId(rawLink);
   const norm = normalizeUrlForDedupe(rawLink);
   if (!ytId && !norm) return null;
   const matches = (item: ContentItem): boolean => {
-    if (!item.sourceUrl) return false;
+    if (!item?.sourceUrl) return false;
     if (ytId) return extractYouTubeId(item.sourceUrl) === ytId;
     return normalizeUrlForDedupe(item.sourceUrl) === norm;
   };
