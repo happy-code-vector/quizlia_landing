@@ -12,6 +12,7 @@ import { persistProfileContent, loadProfileContent, tombstoneIOSNoteIfAny } from
 import { db, auth } from "@/lib/firebase";
 import { doc, deleteDoc } from "firebase/firestore";
 import { isAdminUser, publishNoteToLibrary } from "@/lib/publishNote";
+import { recordQuizAttempt } from "@/lib/quizAttempts";
 import { Sidebar } from "@/components/app/Sidebar";
 import { RenameModal } from "@/components/app/RenameModal";
 import { MarkdownText } from "@/components/app/MarkdownText";
@@ -442,6 +443,11 @@ export default function TopicDetailPage() {
         quizzes={topic.quiz}
         topicTitle={topic.title}
         onClose={() => setStudyMode(null)}
+        onComplete={(result) => {
+          if (profile) {
+            void recordQuizAttempt(profile, { noteId: topicId, noteTitle: topic.title, ...result });
+          }
+        }}
       />
     );
   }

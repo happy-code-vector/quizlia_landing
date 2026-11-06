@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface Quiz {
   question: string;
@@ -9,10 +9,19 @@ interface Quiz {
   explanation: string;
 }
 
+export interface QuizRunResult {
+  total: number;
+  answers: Array<{ i: number; correct: boolean }>;
+  startedAt: Date;
+  finishedAt: Date;
+}
+
 interface QuizStudyModeProps {
   quizzes: Quiz[];
   topicTitle?: string;
   onClose: () => void;
+  /** Called once each time a run finishes (also after Try again). */
+  onComplete?: (result: QuizRunResult) => void;
 }
 
 interface Answer {
@@ -22,14 +31,27 @@ interface Answer {
   isCorrect: boolean;
 }
 
-export function QuizStudyMode({ quizzes, topicTitle, onClose }: QuizStudyModeProps) {
+export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: QuizStudyModeProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [showResult, setShowResult] = useState(false);
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [startTime] = useState(Date.now());
+  const [startTime, setStartTime] = useState(Date.now());
   const [showExplanation, setShowExplanation] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const reported = useRef(false);
+
+  // One report per finished run; Try again resets it.
+  useEffect(() => {
+    if (!isCompleted || reported.current || !onComplete) return;
+    reported.current = true;
+    onComplete({
+      total: quizzes.length,
+      answers: answers.map((a) => ({ i: a.questionIndex, correct: a.isCorrect })),
+      startedAt: new Date(startTime),
+      finishedAt: new Date(),
+    });
+  }, [isCompleted, onComplete, answers, quizzes.length, startTime]);
 
   const currentQuiz = quizzes[currentIndex];
   const progress = ((currentIndex + 1) / quizzes.length) * 100;
@@ -60,6 +82,8 @@ export function QuizStudyMode({ quizzes, topicTitle, onClose }: QuizStudyModePro
     setShowExplanation(false);
     setAnswers([]);
     setIsCompleted(false);
+    setStartTime(Date.now());
+    reported.current = false;
   };
 
   const getTimeTaken = () => {

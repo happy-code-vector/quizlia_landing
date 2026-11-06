@@ -112,6 +112,20 @@ service cloud.firestore {
         match /folders/{folderId} {
           allow read, write: if request.auth != null && request.auth.uid == userId;
         }
+
+        // Quiz attempts, one per quiz run (iOS and web). Schema:
+        // docs/superpowers/specs/2026-11-06-quiz-attempts-design.md
+        match /quizAttempts/{attemptId} {
+          allow read, delete: if request.auth != null && request.auth.uid == userId;
+          allow create, update: if request.auth != null && request.auth.uid == userId
+                        && request.resource.data.total is int
+                        && request.resource.data.total >= 1
+                        && request.resource.data.total <= 100
+                        && request.resource.data.correct is int
+                        && request.resource.data.correct >= 0
+                        && request.resource.data.correct <= request.resource.data.total
+                        && request.resource.data.clientOrigin in ['ios', 'web'];
+        }
       }
     }
 
