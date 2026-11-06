@@ -158,6 +158,10 @@ export interface ContentItem {
   sourceId?: string;
   sourceName?: string;
   sourceType?: string;
+  /** Full untruncated source URL for youtube/url items (dedupe spec
+   *  2026-11-06) — sourceName is display-cut to 50 chars and cannot be
+   *  used for matching. */
+  sourceUrl?: string;
   folderId?: string;
   renamedTitle?: string;
 }

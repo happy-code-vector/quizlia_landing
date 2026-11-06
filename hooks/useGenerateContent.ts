@@ -9,12 +9,35 @@ import { SHOW_APP_QR_EVENT, bumpGenerationCount, isOptedOut } from "@/lib/appPro
 import { auth } from "@/lib/firebase";
 import type { Profile, ContentItem, Topic } from "@/lib/types";
 import { isAdminUser, publishNoteToLibrary } from "@/lib/publishNote";
+import { extractYouTubeId, normalizeUrlForDedupe } from "@/lib/url-dedupe";
 
 interface UseGenerateContentOptions {
   profile: Profile | null;
   /** Folder the generated notes are filed into (undefined = Unsorted) */
   targetFolderId?: string;
   onGenerated?: (updatedContent: ContentItem[]) => void;
+}
+
+/** Dedupe (spec §2): an item this profile already generated from the same
+ *  video (any link form) or the same normalized URL. Legacy items without
+ *  sourceUrl never match. */
+function findExistingSourceItem(profileId: number | string, rawLink: string): ContentItem | null {
+  if (typeof window === "undefined") return null;
+  let stored: ContentItem[] = [];
+  try {
+    stored = JSON.parse(localStorage.getItem(`content_${profileId}`) || "[]");
+  } catch {
+    return null;
+  }
+  const ytId = extractYouTubeId(rawLink);
+  const norm = normalizeUrlForDedupe(rawLink);
+  if (!ytId && !norm) return null;
+  const matches = (item: ContentItem): boolean => {
+    if (!item.sourceUrl) return false;
+    if (ytId) return extractYouTubeId(item.sourceUrl) === ytId;
+    return normalizeUrlForDedupe(item.sourceUrl) === norm;
+  };
+  return stored.find(matches) ?? null;
 }
 
 export function useGenerateContent({ profile, targetFolderId, onGenerated }: UseGenerateContentOptions) {
@@ -38,6 +61,17 @@ export function useGenerateContent({ profile, targetFolderId, onGenerated }: Use
   const generateContent = async () => {
     if (!contentInput.trim() && !selectedFile) return;
     if (!profile) return;
+
+    // Dedupe (spec §2): a link this profile already generated from never
+    // fires a request — open the existing note instead.
+    if ((contentType === "youtube" || contentType === "url") && contentInput.trim()) {
+      const existing = findExistingSourceItem(profile.id, contentInput.trim());
+      if (existing) {
+        showToast("Already generated — opening your note", "info");
+        router.push(`/note/topic/${existing.sourceId ?? `legacy_${existing.id}`}`);
+        return;
+      }
+    }
 
     // Check usage limits
     const usageCheck = canGenerate(profile.id);
@@ -163,6 +197,9 @@ export function useGenerateContent({ profile, targetFolderId, onGenerated }: Use
           sourceId,
           sourceName,
           sourceType: contentType,
+          ...(contentType === "youtube" || contentType === "url"
+            ? { sourceUrl: contentInput.trim() }
+            : {}),
           folderId: targetFolderId,
         });
       } else {
@@ -180,6 +217,9 @@ export function useGenerateContent({ profile, targetFolderId, onGenerated }: Use
           sourceId,
           sourceName,
           sourceType: contentType,
+          ...(contentType === "youtube" || contentType === "url"
+            ? { sourceUrl: contentInput.trim() }
+            : {}),
           data: { flashcards: result.data.flashcards },
           folderId: targetFolderId,
         });
@@ -198,6 +238,9 @@ export function useGenerateContent({ profile, targetFolderId, onGenerated }: Use
           sourceId,
           sourceName,
           sourceType: contentType,
+          ...(contentType === "youtube" || contentType === "url"
+            ? { sourceUrl: contentInput.trim() }
+            : {}),
           data: { quizzes: result.data.quizzes },
           folderId: targetFolderId,
         });
