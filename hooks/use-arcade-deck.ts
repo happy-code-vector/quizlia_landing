@@ -31,7 +31,10 @@ export function useArcadeDeck(
     if (!stored) {
       // First visit on this device: pull the cloud copy, then reload so
       // the deck includes it (mirrors app/note/topic/[id] behavior).
-      loadProfileContent(profileData).then((cloud) => {
+      // Pull for the pid we actually READ — a URL profileId that differs
+      // from the current profile must populate content_{pid}, otherwise
+      // the reload re-runs this branch forever (final-review Important).
+      loadProfileContent({ ...profileData, id: pid }).then((cloud) => {
         if (cloud) window.location.reload();
         else setDeck(loadDeck(noteId, pid, mock));
       });
