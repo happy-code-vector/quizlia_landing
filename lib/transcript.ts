@@ -36,7 +36,7 @@ export function youtubeVideoId(input: string): string | null {
     if (host.endsWith("youtube.com")) {
       const v = url.searchParams.get("v");
       if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
-      const m = url.pathname.match(/^\/(?:shorts|embed|live|v)\/([A-Za-z0-9_-]{11})/);
+      const m = url.pathname.match(/^\/(?:shorts|embed|live|v)\/([A-Za-z0-9_-]{11})(?![A-Za-z0-9_-])/);
       if (m) return m[1];
     }
   } catch {

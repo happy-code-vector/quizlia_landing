@@ -25,6 +25,9 @@ test("extractYouTubeId is case-sensitive and rejects non-YouTube input", () => {
   assert.equal(extractYouTubeId("not a link"), null);
   assert.equal(extractYouTubeId(""), null);
   assert.equal(extractYouTubeId("ftp://youtu.be/dQw4w9WgXcQ"), null);
+  // never guess: a 12+ char segment is not an id, so it must not match by
+  // taking the first 11 chars (spec: anchored, exactly 11).
+  assert.equal(extractYouTubeId("https://youtube.com/shorts/aaaaaaaaaaaa"), null);
 });
 
 test("normalizeUrlForDedupe ignores scheme, www, trailing slash, fragment, param order", () => {
