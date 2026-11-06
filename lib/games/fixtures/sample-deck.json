@@ -1,0 +1,77 @@
+{
+  "noteId": "mock-note",
+  "profileId": "mock-profile",
+  "title": "Cellular Biology: Organelles & Energy",
+  "cards": [
+    {
+      "id": "c01",
+      "term": "Mitochondria",
+      "definition": "Membrane-bound organelle that generates most of the chemical energy needed to power the cell's biochemical reactions."
+    },
+    {
+      "id": "c02",
+      "term": "Ribosome",
+      "definition": "Macromolecular machine that synthesizes proteins by translating messenger RNA sequences."
+    },
+    {
+      "id": "c03",
+      "term": "Golgi apparatus",
+      "definition": "Organelle that modifies, sorts, and packages proteins and lipids for secretion or delivery to other cellular destinations."
+    },
+    {
+      "id": "c04",
+      "term": "Lysosome",
+      "definition": "Digestive vesicle containing hydrolytic enzymes that break down cellular waste."
+    },
+    {
+      "id": "c05",
+      "term": "Endoplasmic reticulum",
+      "definition": "Continuous membrane network involved in protein folding and lipid synthesis."
+    },
+    {
+      "id": "c06",
+      "term": "Chloroplast",
+      "definition": "Plant cell organelle that converts light energy into sugars via photosynthesis."
+    },
+    {
+      "id": "c07",
+      "term": "Nucleolus",
+      "definition": "Dense region inside the nucleus where ribosomal RNA is transcribed and assembled."
+    },
+    {
+      "id": "c08",
+      "term": "Peroxisome",
+      "definition": "Small organelle that oxidizes fatty acids and neutralizes hydrogen peroxide."
+    },
+    {
+      "id": "c09",
+      "term": "Cytoskeleton",
+      "definition": "Network of protein filaments that gives the cell shape and enables movement."
+    },
+    {
+      "id": "c10",
+      "term": "Plasma membrane",
+      "definition": "Selective phospholipid bilayer separating the cell interior from its environment."
+    },
+    {
+      "id": "c11",
+      "term": "Centrosome",
+      "definition": "Microtubule-organizing center that regulates cell division spindle formation."
+    },
+    {
+      "id": "c12",
+      "term": "Vacuole",
+      "definition": "Fluid-filled sac that maintains turgor pressure and stores nutrients or waste."
+    },
+    {
+      "id": "c13",
+      "term": "ATP synthase",
+      "definition": "Enzyme complex that synthesizes adenosine triphosphate using a proton gradient."
+    },
+    {
+      "id": "c14",
+      "term": "Chromatin",
+      "definition": "Complex of DNA and histone proteins that condenses to form chromosomes."
+    }
+  ]
+}
