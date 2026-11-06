@@ -27,6 +27,15 @@ export default function ArcadePage() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!pickerFor) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPickerFor(null);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [pickerFor]);
+
   if (!profile) return null;
 
   return (
@@ -77,8 +86,8 @@ export default function ArcadePage() {
       </div>
 
       {pickerFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setPickerFor(null)}>
-          <div className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
+        <div role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setPickerFor(null)}>
+          <div role="dialog" aria-modal="true" className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
             <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
               Play {GAMES.find((g) => g.slug === pickerFor)?.name} with…
             </h3>
@@ -100,6 +109,7 @@ export default function ArcadePage() {
                 ))}
               </ul>
             )}
+            <button onClick={() => setPickerFor(null)} className="mt-4 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">Cancel</button>
           </div>
         </div>
       )}
