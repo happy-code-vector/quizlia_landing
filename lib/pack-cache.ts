@@ -9,8 +9,10 @@
 // Cached results are served BEFORE metering in the routes and never touch
 // a model, so they cost the caller nothing (item 34 Tier 4: "cached study
 // packs are served at no cost"; same rule as scan cache hits, item 47).
+import { createHash } from "node:crypto";
 import { getAdminDb } from "@/lib/admin-firestore";
 import { STUDY_PACK_PROMPT_VERSION } from "@/lib/generate-core";
+import { extractYouTubeId, normalizeUrlForDedupe } from "@/lib/url-dedupe";
 
 const COLLECTION = "generationCache";
 const TTL_MS = 7 * 24 * 60 * 60 * 1000;
@@ -82,4 +84,27 @@ export async function putCachedStudyPack(
   variant: "adult" | "child" = "adult"
 ): Promise<void> {
   await writeServerCache(studyPackKey(videoId, variant), data);
+}
+
+// ---- link-keyed packs (dedupe spec 2026-11-06): a study pack sourced from
+// any link — YouTube id (maps onto the video keys above, so both ingestion
+// shapes share one entry) or a normalized web URL (hashed: Firestore doc
+// ids cannot contain "/"). null for non-link text — callers skip caching.
+export function studyPackLinkKey(link: string): string | null {
+  const videoId = extractYouTubeId(link);
+  if (videoId) return studyPackKey(videoId);
+  const norm = normalizeUrlForDedupe(link);
+  if (!norm) return null;
+  const hash = createHash("sha256").update(norm).digest("hex").slice(0, 32);
+  return `packurl:${hash}:v${STUDY_PACK_PROMPT_VERSION}`;
+}
+
+export async function getCachedStudyPackForLink(link: string): Promise<any | null> {
+  const key = studyPackLinkKey(link);
+  return key ? readServerCache(key) : null;
+}
+
+export async function putCachedStudyPackForLink(link: string, data: any): Promise<void> {
+  const key = studyPackLinkKey(link);
+  if (key) await writeServerCache(key, data);
 }
