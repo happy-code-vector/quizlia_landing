@@ -8,6 +8,7 @@ import { QuizStudyMode } from "@/components/app/QuizStudyMode";
 import { getStudyGuide, StudyGuide } from "@/lib/studyGuide";
 import { Topic, getSourceIcon } from "@/lib/types";
 import { MarkdownText } from "@/components/app/MarkdownText";
+import { sendChat } from "@/lib/chatClient";
 
 type TabType = "note" | "flashcards" | "quiz";
 
@@ -150,20 +151,11 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
 
     try {
       const context = buildContext();
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: userMessage.text, context }),
-      });
-
-      const result = await response.json();
+      const reply = await sendChat(userMessage.text, context);
       setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
 
-      if (result.success || result.answer) {
-        setMessages((prev) => [...prev, { id: Date.now().toString(), sender: "ai", text: result.answer }]);
-      } else {
-        setMessages((prev) => [...prev, { id: Date.now().toString(), sender: "ai", text: `Error: ${result.error || "Failed to get response"}` }]);
-      }
+      const text = reply.ok ? reply.answer : reply.message;
+      setMessages((prev) => [...prev, { id: Date.now().toString(), sender: "ai", text }]);
     } catch (error) {
       setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
       setMessages((prev) => [...prev, { id: Date.now().toString(), sender: "ai", text: "Error: Could not reach the assistant." }]);

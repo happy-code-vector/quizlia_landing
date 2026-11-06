@@ -16,6 +16,7 @@ import { recordQuizAttempt } from "@/lib/quizAttempts";
 import { Sidebar } from "@/components/app/Sidebar";
 import { RenameModal } from "@/components/app/RenameModal";
 import { MarkdownText } from "@/components/app/MarkdownText";
+import { sendChat } from "@/lib/chatClient";
 
 type TabType = "note" | "flashcards" | "quiz";
 
@@ -356,33 +357,15 @@ export default function TopicDetailPage() {
 
     try {
       const context = buildContext();
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: inputText,
-          context: context,
-        }),
-      });
-
-      const result = await response.json();
+      const reply = await sendChat(inputText, context);
       setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
 
-      if (result.success || result.answer) {
-        const aiMessage = {
-          id: Date.now().toString(),
-          sender: "ai" as const,
-          text: result.answer,
-        };
-        setMessages((prev) => [...prev, aiMessage]);
-      } else {
-        const errorMessage = {
-          id: Date.now().toString(),
-          sender: "ai" as const,
-          text: `Error: ${result.error || "Failed to get response"}`,
-        };
-        setMessages((prev) => [...prev, errorMessage]);
-      }
+      const aiMessage = {
+        id: Date.now().toString(),
+        sender: "ai" as const,
+        text: reply.ok ? reply.answer : reply.message,
+      };
+      setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
       console.error("Chat error:", error);
       setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
