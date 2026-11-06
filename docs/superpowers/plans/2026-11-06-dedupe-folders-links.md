@@ -714,6 +714,10 @@ git -C e:\Projects\Arasheed\QuickNote\QuickNote checkout -b feature/dedupe-folde
     func folderExists(profileId: Int, name: String, excludingFolderId: Int? = nil) -> Bool {
         let key = name.trimmingCharacters(in: .whitespaces).lowercased()
         guard !key.isEmpty else { return false }
+        // Reserved names count as taken even before the hidden General row
+        // is bootstrapped (fresh profile) — matches the web modals' rule
+        // (review finding 2026-11-06).
+        if key.hasPrefix("general") || key == "from web" { return true }
         return fetchFolders(forProfileId: profileId).contains {
             $0.id != excludingFolderId &&
             $0.folderName.trimmingCharacters(in: .whitespaces).lowercased() == key
