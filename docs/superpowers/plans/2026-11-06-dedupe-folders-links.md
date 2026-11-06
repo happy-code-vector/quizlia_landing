@@ -533,14 +533,16 @@ Reset error when the input changes (`onChange={(e) => { setTitle(e.target.value)
 `<CreateFolderModal>` (~line 537): add
 
 ```tsx
-            existingNames={folders.map((f) => f.name)}
+            existingNames={folders.filter((f) => !f.deletedAt).map((f) => f.name)}
 ```
 
 Folder `<RenameModal>` (~lines 543-548, the one with `itemType="folder"`): add
 
 ```tsx
-            conflictNames={folders.map((f) => f.name)}
+            conflictNames={folders.filter((f) => !f.deletedAt).map((f) => f.name)}
 ```
+
+(Exclude tombstones — `deletedAt` folders are hidden by the UI (`visibleFolders`, line 98) and must not ghost-block names.)
 
 (The topic RenameModal at ~549 stays unchanged.)
 
