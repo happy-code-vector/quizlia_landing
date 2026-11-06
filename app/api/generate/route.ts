@@ -3,7 +3,7 @@ import { meterGeneration } from "@/lib/quota";
 import { resolveCaller } from "@/lib/token-verify";
 import { generateCore } from "@/lib/generate-core";
 import { youtubeVideoId, getTranscript } from "@/lib/transcript";
-import { getCachedStudyPack, putCachedStudyPack } from "@/lib/pack-cache";
+import { getCachedStudyPack, getCachedStudyPackForLink, putCachedStudyPackForLink } from "@/lib/pack-cache";
 import { timingLog } from "@/lib/timing";
 import { checkBudget, recordSpend, resolveAccountBudget, estimateCents } from "@/lib/budget";
 
@@ -97,6 +97,29 @@ export async function POST(request: NextRequest) {
             { status: 422 }
           );
         }
+      }
+    }
+
+    // URL pack cache (dedupe spec §3): same precedence as the video cache
+    // above — a hit is free (no quota, no budget, no model call). Covers
+    // the web app's "url" tab (content arrives as "Analyze the following
+    // link: <url>", no mimeType); a YouTube link pasted there maps onto the
+    // video keys via studyPackLinkKey.
+    if (type === "study_pack" && !youtubeUrl && typeof content === "string") {
+      const stripped = content.replace(/^Analyze the following link:\s*/i, "").trim();
+      const cached = await getCachedStudyPackForLink(stripped);
+      if (cached) {
+        timingLog("generation", {
+          source: "url",
+          type: "study_pack",
+          ok: 1,
+          cache: 1,
+          totalMs: Date.now() - requestStartedAt,
+        });
+        return NextResponse.json({
+          success: true,
+          data: { note: cached.note, flashcards: cached.flashcards ?? [], quizzes: cached.quizzes ?? [] },
+        });
       }
     }
 
@@ -244,12 +267,15 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
-      // Item 9: cache validated YouTube packs for the next caller of the
-      // same video. putCachedStudyPack never throws.
-      if (mimeType === "video/youtube" && youtubeUrl) {
-        const packVideoId = youtubeVideoId(youtubeUrl);
-        if (packVideoId) await putCachedStudyPack(packVideoId, { note, flashcards, quizzes });
-      }
+      // Item 9 + dedupe spec §3: cache validated packs for the next caller
+      // of the same link — video id or normalized URL. No-ops for non-link
+      // text (studyPackLinkKey returns null). Never throws.
+      const linkSource =
+        youtubeUrl ??
+        (typeof content === "string"
+          ? content.replace(/^Analyze the following link:\s*/i, "").trim()
+          : "");
+      if (linkSource) await putCachedStudyPackForLink(linkSource, { note, flashcards, quizzes });
       return NextResponse.json({
         success: true,
         data: { note, flashcards, quizzes }
