@@ -289,6 +289,13 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
             if (pack.note && sourceEstVideoId) {
               await putCachedStudyPack(sourceEstVideoId, pack);
             }
+            // Dedupe spec §3: streamed website-link packs cache too — the
+            // write above covers video/youtube only. Non-link text no-ops
+            // inside putCachedStudyPackForLink.
+            if (pack.note && typeof body.content === "string" && body.mimeType !== "video/youtube") {
+              const streamLink = body.content.replace(/^Analyze the following link:\s*/i, "").trim();
+              if (streamLink) await putCachedStudyPackForLink(streamLink, pack);
+            }
             timingLog("generation", {
               source: body.mimeType === "video/youtube" ? "youtube" : "text",
               type: "study_pack",
