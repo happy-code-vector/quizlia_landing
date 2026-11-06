@@ -41,7 +41,7 @@ export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType,
       return;
     }
     const lower = next.toLowerCase();
-    if (lower.startsWith("general") || lower === "from web") {
+    if (conflictNames && (lower.startsWith("general") || lower === "from web")) {
       setError("This folder name is reserved");
       return;
     }
