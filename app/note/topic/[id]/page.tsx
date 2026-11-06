@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useToast } from "@/components/app/ToastContainer";
 import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
 import { QuizStudyMode } from "@/components/app/QuizStudyMode";
+import { GamePicker } from "@/components/app/GamePicker";
 import { Topic, getYouTubeThumbnail, getSourceIcon, getYouTubeEmbedUrl } from "@/lib/types";
 import { persistProfileContent, loadProfileContent, tombstoneIOSNoteIfAny } from "@/lib/notesSync";
 import { db, auth } from "@/lib/firebase";
@@ -35,6 +36,7 @@ export default function TopicDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("note");
   const [studyMode, setStudyMode] = useState<"flashcards" | "quiz" | null>(null);
+  const [playOpen, setPlayOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
@@ -692,13 +694,22 @@ export default function TopicDetailPage() {
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">
                     {topic.flashcards.length} Flashcards
                   </h2>
-                  <button
-                    onClick={() => setStudyMode("flashcards")}
-                    className="btn-primary flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined">school</span>
-                    Study Mode
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setPlayOpen(true)}
+                      className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                    >
+                      <span className="material-symbols-outlined">sports_esports</span>
+                      Play
+                    </button>
+                    <button
+                      onClick={() => setStudyMode("flashcards")}
+                      className="btn-primary flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined">school</span>
+                      Study Mode
+                    </button>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -874,6 +885,10 @@ export default function TopicDetailPage() {
           itemType="topic"
         />
       </main>
+
+      {playOpen && profile && (
+        <GamePicker noteId={topicId} profileId={profile.id} onClose={() => setPlayOpen(false)} />
+      )}
     </div>
   );
 }
