@@ -42,9 +42,16 @@ export function CreateFolderModal({ isOpen, onClose, onCreateFolder, existingNam
       return;
     }
 
+    // Spec 2026-11-06 §1: reserved names count as taken (the General bucket
+    // is a hardcoded tile on web and never appears in the folders array)
+    const lower = trimmedName.toLowerCase();
+    if (lower.startsWith("general") || lower === "from web") {
+      setError("This folder name is reserved");
+      return;
+    }
+
     // Spec 2026-11-06: folder names are case-insensitively unique
-    // ("History" == "history" == "hiSTory"); reserved names (General…)
-    // arrive through this same list.
+    // ("History" == "history" == "hiSTory").
     if (existingNames?.some((n) => n.trim().toLowerCase() === trimmedName.toLowerCase())) {
       setError("A folder with this name already exists");
       return;

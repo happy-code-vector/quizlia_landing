@@ -40,6 +40,11 @@ export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType,
       onClose();
       return;
     }
+    const lower = next.toLowerCase();
+    if (lower.startsWith("general") || lower === "from web") {
+      setError("This folder name is reserved");
+      return;
+    }
     const collides = conflictNames?.some(
       (n) => n.trim().toLowerCase() !== currentTitle.trim().toLowerCase() &&
         n.trim().toLowerCase() === next.toLowerCase()
