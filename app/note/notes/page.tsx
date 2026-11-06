@@ -17,7 +17,7 @@ import { ItemActionsMenu } from "@/components/app/ItemActionsMenu";
 import { GenerateContentSheet } from "@/components/app/GenerateContentSheet";
 import { FolderTile } from "@/components/app/notes/FolderTile";
 import { TopicCard } from "@/components/app/notes/TopicCard";
-import { Topic, ContentItem, Profile } from "@/lib/types";
+import { Topic, ContentItem, Profile, removeTopicItems } from "@/lib/types";
 
 interface Folder {
   id: string;
@@ -382,7 +382,7 @@ function NotesExplorer() {
     const storedContent = localStorage.getItem(`content_${profile.id}`);
     if (storedContent) {
       const content = JSON.parse(storedContent);
-      const updatedContent = content.filter((item: ContentItem) => item.sourceId !== topicId && `legacy_${item.id}` !== topicId);
+      const updatedContent = removeTopicItems(content, topicId);
       persistProfileContent(profile, updatedContent);
       // App-origin note: tombstone so it stays deleted on iOS too.
       tombstoneIOSNoteIfAny(profile, topicId);

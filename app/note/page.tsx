@@ -7,9 +7,9 @@ import { Tooltip } from "@/components/app/Tooltip";
 import { Sidebar } from "@/components/app/Sidebar";
 import { GenerateContentForm } from "@/components/app/GenerateContentForm";
 import { useToast } from "@/components/app/ToastContainer";
-import { loadProfileContent } from "@/lib/notesSync";
+import { loadProfileContent, persistProfileContent, tombstoneIOSNoteIfAny } from "@/lib/notesSync";
 import { syncSubscriptionFromFirebase, createOrUpdateFirebaseUser } from "@/lib/firebaseSubscription";
-import { Topic, getYouTubeThumbnail, getSourceIcon, migrateContentToTopics, ContentItem, Profile } from "@/lib/types";
+import { Topic, getYouTubeThumbnail, getSourceIcon, migrateContentToTopics, removeTopicItems, ContentItem, Profile } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 
 export default function NotePage() {
@@ -81,10 +81,17 @@ export default function NotePage() {
   const handleDeleteTopic = (topicId: string) => {
     if (!profile || typeof window === "undefined") return;
 
-    const updatedContent = content.filter((item) => item.sourceId !== topicId);
+    // Fresh read: a cloud merge may have updated localStorage since this
+    // component's state snapshot was taken.
+    const storedContent = localStorage.getItem(`content_${profile.id}`);
+    const updatedContent = removeTopicItems(storedContent ? JSON.parse(storedContent) : [], topicId);
     setContent(updatedContent);
     setTopics(migrateContentToTopics(updatedContent));
-    localStorage.setItem(`content_${profile.id}`, JSON.stringify(updatedContent));
+    // Write-through + cloud tombstone: without the tombstone the note's
+    // cloud doc survives and the iOS-notes merge re-imports the topic on
+    // the next notes-page visit (deleted topics "re-appearing").
+    persistProfileContent(profile, updatedContent);
+    tombstoneIOSNoteIfAny(profile, topicId);
     showToast("Topic deleted", "success");
   };
 

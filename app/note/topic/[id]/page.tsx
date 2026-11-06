@@ -7,7 +7,7 @@ import { useToast } from "@/components/app/ToastContainer";
 import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
 import { QuizStudyMode } from "@/components/app/QuizStudyMode";
 import { GamePicker } from "@/components/app/GamePicker";
-import { Topic, getYouTubeThumbnail, getSourceIcon, getYouTubeEmbedUrl } from "@/lib/types";
+import { Topic, getYouTubeThumbnail, getSourceIcon, getYouTubeEmbedUrl, removeTopicItems } from "@/lib/types";
 import { persistProfileContent, loadProfileContent, tombstoneIOSNoteIfAny } from "@/lib/notesSync";
 import { db, auth } from "@/lib/firebase";
 import { doc, deleteDoc } from "firebase/firestore";
@@ -164,7 +164,8 @@ export default function TopicDetailPage() {
     const storedContent = localStorage.getItem(`content_${profile.id}`);
     if (storedContent) {
       const content = JSON.parse(storedContent);
-      const updatedContent = content.filter((item: any) => item.sourceId !== topicId);
+      // Handles both sourceId-keyed and legacy_<id>-keyed items.
+      const updatedContent = removeTopicItems(content, topicId);
       persistProfileContent(profile, updatedContent);
       // App-origin note: tombstone so it stays deleted on iOS too.
       tombstoneIOSNoteIfAny(profile, topicId);

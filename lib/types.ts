@@ -86,12 +86,26 @@ export function getSourceIcon(sourceType: string): string {
   }
 }
 
+// The key a topic is grouped under: sourceId when present (per-note cloud
+// sync era), else the synthetic legacy_<id> key for pre-sync items.
+export function topicKey(item: { sourceId?: string; id: number | string }): string {
+  return item.sourceId || `legacy_${item.id}`;
+}
+
+// Remove every content item belonging to one topic — a topic's note,
+// flashcards, and quiz artifacts all share the topic key. Shared by every
+// delete surface so the filter can never diverge from the grouping.
+export function removeTopicItems(content: any[], topicId: string): any[] {
+  if (!Array.isArray(content)) return [];
+  return content.filter((item) => topicKey(item) !== topicId);
+}
+
 // Convert old ContentItem[] to new Topic[]
 export function migrateContentToTopics(content: any[]): Topic[] {
   const topicMap = new Map<string, Topic>();
 
   for (const item of content) {
-    const sourceId = item.sourceId || `legacy_${item.id}`;
+    const sourceId = topicKey(item);
 
     if (!topicMap.has(sourceId)) {
       topicMap.set(sourceId, {
