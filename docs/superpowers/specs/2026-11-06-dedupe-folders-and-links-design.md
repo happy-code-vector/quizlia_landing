@@ -41,11 +41,14 @@ name after `trim().lowercased()`. Reserved names count as taken: anything
 
 ### iOS
 
-- Add `folderExists(profileId:name:) -> Bool` to `DatabaseManger` — compares
-  `folderName.lowercased()` after trimming.
-- Guard four paths: `CreateFolderViewController`, `NoteMoreViewController.addFolder`,
-  `ListingFolderNoteViewController`, and rename in `EditFolderViewController`.
+- Add `folderExists(profileId:name:excludingFolderId:) -> Bool` to `DatabaseManger`
+  — compares `folderName.lowercased()` after trimming.
+- Guard three paths: `CreateFolderViewController`, `NoteMoreViewController.addFolder`,
+  and rename in `EditFolderViewController`.
   On collision: toast (localized), dialog stays open.
+  (Correction 2026-11-06: `ListingFolderNoteViewController` was first listed here —
+  its `insertFolder` call is the hidden-General bootstrap and already checks for
+  existence, so it needs no guard.)
 - **Sync paths untouched** — `QuizliSyncManager`'s merge already compares
   lowercased (lines ~1030, ~1138); `insertFolder` itself stays permissive so
   remote mirroring never breaks.
