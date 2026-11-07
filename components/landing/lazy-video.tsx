@@ -32,7 +32,7 @@ export function LazyVideo({ src, poster, label }: { src: string; poster: string;
       playsInline
       preload="metadata"
       aria-label={label}
-      className="aspect-[4/5] w-full rounded-[14px] bg-c-ink object-cover"
+      className="aspect-[4/5] w-full rounded-xl bg-control object-cover"
     />
   )
 }

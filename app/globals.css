@@ -204,6 +204,9 @@
   /* Type scale (W-6.3), iOS text styles at default Dynamic Type */
   --text-large-title: 2.125rem;
   --text-large-title--line-height: 1.2;
+  /* Landing hero h1 at 1024+ only (proposed in PR 6; no iOS counterpart). */
+  --text-display: 3.5rem;
+  --text-display--line-height: 1.1;
   --text-title: 1.75rem;
   --text-title--line-height: 1.2;
   --text-title2: 1.375rem;
@@ -222,18 +225,6 @@
   --text-footnote: 0.8125rem;
   --text-footnote--line-height: 1.4;
 
-
-  /* Landing page (direction C). Retired in PR 6 of 6 (landing); do not use outside components/landing. */
-  --color-c-page: #fbfaf7;
-  --color-c-ink: #16121f;
-  --color-c-brand: #964cee;
-  --color-c-brand-ink: #7a35d9;
-  --color-c-lime: oklch(0.9 0.17 128);
-  --color-c-soft: #f0ebfb;
-  --color-c-mint: #ecf8d8;
-  --color-c-peach: #fde9dc;
-  --color-c-muted: #625b70;
-  --color-c-wrong: #ffe1e1;
 
   --breakpoint-2xl: 1400px;
 
@@ -430,41 +421,6 @@
   .animate-confetti { display: none; }
 }
 
-/* Landing demo: flashcard flip. Reduced motion swaps faces instead of flipping. */
-.c-flip-in {
-  transform-style: preserve-3d;
-  transition: transform 0.55s cubic-bezier(0.3, 1.3, 0.5, 1);
-}
-.c-flip[data-flipped="true"] .c-flip-in {
-  transform: rotateY(180deg);
-}
-.c-face {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-.c-face-back {
-  transform: rotateY(180deg);
-}
-@media (prefers-reduced-motion: reduce) {
-  .c-flip-in {
-    transition: none;
-    transform-style: flat;
-  }
-  .c-flip[data-flipped="true"] .c-flip-in {
-    transform: none;
-  }
-  .c-face-back {
-    transform: none;
-    display: none;
-  }
-  .c-flip[data-flipped="true"] .c-face-front {
-    display: none;
-  }
-  .c-flip[data-flipped="true"] .c-face-back {
-    display: flex;
-  }
-}
-
 @keyframes demo-in {
   from {
     opacity: 0;
@@ -476,66 +432,13 @@
   }
 }
 
-/* Landing page motion: simple, opt-in only for users without reduced-motion. */
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes drift {
-  to {
-    transform: translate(24px, -18px);
-  }
-}
-@keyframes chip-pop {
-  from {
-    opacity: 0;
-    transform: rotate(0deg) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: rotate(-3deg) scale(1);
-  }
-}
+/* Game feedback pop (arcade games). The transform runs only without reduced motion (W-9.8). */
 @media (prefers-reduced-motion: no-preference) {
-  .anim-rise {
-    animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-    animation-delay: var(--d, 0s);
-  }
-  .anim-drift {
-    animation: drift 14s ease-in-out infinite alternate;
-  }
-  .anim-float {
-    animation: float 4.5s ease-in-out infinite;
-  }
-  .anim-wave {
-    transform-origin: 50% 90%;
-    animation: wave-tilt 2.8s ease-in-out infinite;
-  }
   .anim-pop {
-    animation: mascot-pop 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) backwards;
-  }
-  .anim-chip {
-    animation: chip-pop 0.6s 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
-  }
-  /* Scroll reveal without JS. Browsers without scroll-driven animations just show the content. */
-  @supports (animation-timeline: view()) {
-    .reveal {
-      animation: rise linear backwards;
-      animation-timeline: view();
-      animation-range: entry 0% entry 35%;
-    }
+    animation: mascot-pop 0.25s cubic-bezier(0.2, 0, 0, 1) backwards;
   }
 }
-
-@keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
-@keyframes wave-tilt { 0%,100% { transform: rotate(-2deg) } 50% { transform: rotate(3deg) } }
-@keyframes mascot-pop { from { transform: scale(0.3) translateY(20px); opacity: 0 } to { transform: none; opacity: 1 } }
+@keyframes mascot-pop { from { transform: scale(0.6); opacity: 0 } to { transform: none; opacity: 1 } }
 
 /* Study flashcard flip (W-9.7: 400 ms max). Reduced motion crossfades the faces instead (W-9.8). */
 .study-flip {

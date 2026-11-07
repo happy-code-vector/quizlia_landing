@@ -15,6 +15,8 @@ const sourceSerif = Source_Serif_4({
 });
 
 export const metadata: Metadata = {
+  // Absolute URLs for canonical, Open Graph and Twitter images (standards section 11).
+  metadataBase: new URL('https://quizliai.com'),
   title: 'QuizliAI - AI-Powered Note Taking & Study Assistant',
   description: 'Your smartest assistant. Get instant notes, transcripts, and study materials from anything. Never take notes again.',
   // Icons come from app/favicon.ico, app/icon.png and app/apple-icon.png
