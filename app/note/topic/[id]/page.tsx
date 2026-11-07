@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useToast } from "@/components/app/ToastContainer";
 import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
@@ -13,6 +13,7 @@ import { db, auth } from "@/lib/firebase";
 import { doc, deleteDoc } from "firebase/firestore";
 import { isAdminUser, publishNoteToLibrary } from "@/lib/publishNote";
 import { recordQuizAttempt } from "@/lib/quizAttempts";
+import { readStudyPosition, writeStudyPosition } from "@/lib/studyPosition";
 import { AppShell } from "@/components/app/shell/AppShell";
 import { RenameModal } from "@/components/app/RenameModal";
 import { MarkdownText } from "@/components/app/MarkdownText";
@@ -31,6 +32,7 @@ export default function TopicDetailPage() {
   const router = useRouter();
   const params = useParams();
   const topicId = params.id as string;
+  const searchParams = useSearchParams();
   const { showToast } = useToast();
 
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -38,6 +40,8 @@ export default function TopicDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabType>("note");
   const [studyMode, setStudyMode] = useState<"flashcards" | "quiz" | null>(null);
+  const [flashStart, setFlashStart] = useState(0);
+  const studyLinkHandled = useRef(false);
   const [playOpen, setPlayOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
@@ -159,6 +163,22 @@ export default function TopicDetailPage() {
       setLoading(false);
     }
   }, [router, topicId]);
+
+  // Home's Continue links here with ?study=flashcards: open study mode at the saved card.
+  useEffect(() => {
+    if (studyLinkHandled.current || !topic || !profile) return;
+    if (searchParams?.get("study") !== "flashcards" || !topic.flashcards?.length) return;
+    studyLinkHandled.current = true;
+    setFlashStart(readStudyPosition(profile.id, topicId)?.index ?? 0);
+    setActiveTab("flashcards");
+    setStudyMode("flashcards");
+  }, [topic, profile, searchParams, topicId]);
+
+  const closeStudy = () => {
+    setStudyMode(null);
+    setFlashStart(0);
+    if (searchParams?.get("study")) router.replace(`/note/topic/${topicId}`, { scroll: false });
+  };
 
   const handleDeleteTopic = () => {
     if (!profile || typeof window === "undefined") return;
@@ -432,7 +452,9 @@ export default function TopicDetailPage() {
     return (
       <FlashcardStudyMode
         flashcards={topic.flashcards}
-        onClose={() => setStudyMode(null)}
+        startIndex={flashStart}
+        onIndexChange={(i) => profile && writeStudyPosition(profile.id, topicId, i)}
+        onClose={closeStudy}
       />
     );
   }
@@ -483,7 +505,7 @@ export default function TopicDetailPage() {
                   </Link>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-md p-1.5">
+                      <div className="bg-rust-wash text-rust rounded-md p-1.5">
                         <Icon name={getSourceIcon(topic.sourceType)} />
                       </div>
                       <span className="text-sm text-gray-500 dark:text-gray-400 uppercase">{topic.sourceType}</span>
@@ -648,7 +670,7 @@ export default function TopicDetailPage() {
                               {section.keyTerms.map((term, tIndex) => (
                                 <span
                                   key={tIndex}
-                                  className="text-xs px-2 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300"
+                                  className="text-xs px-2 py-1 rounded-full bg-rust-wash text-label"
                                 >
                                   {term}
                                 </span>
@@ -703,7 +725,7 @@ export default function TopicDetailPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setPlayOpen(true)}
-                      className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+                      className="btn-secondary flex items-center gap-2"
                     >
                       <Icon name="sports_esports" />
                       Play
@@ -807,8 +829,8 @@ export default function TopicDetailPage() {
           {/* Chat Header */}
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-2">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-1.5">
-                <Icon name="smart_toy" className="text-white text-sm" />
+              <div className="bg-rust-wash text-rust rounded-full p-1.5">
+                <Icon name="smart_toy" className="text-sm" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">AI Assistant</h3>
@@ -825,13 +847,13 @@ export default function TopicDetailPage() {
                 className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
               >
                 {message.sender === "default" && (
-                  <div className="bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 rounded-xl p-3 max-w-[85%] border border-purple-200 dark:border-purple-800">
+                  <div className="bg-card rounded-xl p-3 max-w-[85%] border border-divider">
                     <p className="text-sm text-gray-900 dark:text-white text-center">{message.text}</p>
                   </div>
                 )}
 
                 {message.sender === "user" && (
-                  <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl rounded-br-sm p-3 max-w-[85%]">
+                  <div className="bg-primary rounded-xl rounded-br-sm p-3 max-w-[85%]">
                     <p className="text-sm text-white">{message.text}</p>
                   </div>
                 )}
@@ -865,14 +887,14 @@ export default function TopicDetailPage() {
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask a question..."
-                className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500 resize-none"
+                className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
                 rows={2}
                 disabled={isLoading}
               />
               <button
                 onClick={handleSend}
                 disabled={!inputText.trim() || isLoading}
-                className="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
+                className="px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
                 <Icon name="send" className="text-lg" />
               </button>

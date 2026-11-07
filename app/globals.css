@@ -30,6 +30,9 @@
   --card-shadow-raised: 0 2px 4px rgb(0 0 0 / 0.06), 0 10px 28px rgb(0 0 0 / 0.09);
   --paper: #FBF7EE;
   --on-paper: #1D1D1F;
+  --paper-back-1: #F7F2E6;             /* deck stack, second card */
+  --paper-back-2: #F3EDE0;             /* deck stack, third card */
+  --on-paper-supporting: #5A5A60;      /* 6.6:1 on paper */
   --divider: rgb(0 0 0 / 0.08);
 
   /* Text */
@@ -165,6 +168,9 @@
   --color-success: var(--success);
   --color-paper: var(--paper);
   --color-on-paper: var(--on-paper);
+  --color-paper-back-1: var(--paper-back-1);
+  --color-paper-back-2: var(--paper-back-2);
+  --color-on-paper-supporting: var(--on-paper-supporting);
   --color-divider: var(--divider);
   --color-card-stroke: var(--card-stroke);
   --color-hover-fill: var(--hover-fill);
@@ -312,6 +318,15 @@
     border-radius: 1rem;
     box-shadow: var(--card-shadow);
   }
+  /* W-4.2 clickable card: shadow one step up (light), stroke white 16% (dark), press 0.99. */
+  .ds-card-link {
+    transition: box-shadow 150ms var(--ease-standard), border-color 150ms var(--ease-standard), transform 150ms var(--ease-standard);
+  }
+  @media (hover: hover) {
+    .ds-card-link:hover { box-shadow: var(--card-shadow-raised); }
+    .dark .ds-card-link:hover { border-color: rgb(255 255 255 / 0.16); }
+  }
+  .ds-card-link:active { transform: scale(0.99); }
 }
 
 /* Buttons (W-4.2). These class names are used across the app; they now carry the lock styles. */

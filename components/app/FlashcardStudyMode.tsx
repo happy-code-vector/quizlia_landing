@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Icon } from "@/components/app/Icon";
 
 interface Flashcard {
@@ -11,10 +11,22 @@ interface Flashcard {
 interface FlashcardStudyModeProps {
   flashcards: Flashcard[];
   onClose: () => void;
+  /** Card to open on (Home's Continue passes the saved position). Clamped to the deck. */
+  startIndex?: number;
+  /** Called whenever the visible card changes, so the caller can save the position. */
+  onIndexChange?: (index: number) => void;
 }
 
-export function FlashcardStudyMode({ flashcards, onClose }: FlashcardStudyModeProps) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+export function FlashcardStudyMode({ flashcards, onClose, startIndex = 0, onIndexChange }: FlashcardStudyModeProps) {
+  const [currentIndex, setCurrentIndex] = useState(() =>
+    Math.min(Math.max(0, startIndex), Math.max(0, flashcards.length - 1)),
+  );
+
+  useEffect(() => {
+    onIndexChange?.(currentIndex);
+    // onIndexChange is a fresh closure each render; saving on index change is enough.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex]);
   const [isFlipped, setIsFlipped] = useState(false);
 
   const currentCard = flashcards[currentIndex];

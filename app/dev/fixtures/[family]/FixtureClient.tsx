@@ -5,18 +5,23 @@ import { ToastProvider } from "@/components/app/ToastContainer";
 import { AppShell, type Family } from "@/components/app/shell/AppShell";
 import { HomeView } from "@/components/app/home/HomeView";
 import { Button } from "@/components/ui/button";
-import { FIXTURE_FOLDERS, FIXTURE_NOW, FIXTURE_PROFILES, FIXTURE_TOPICS, type FixtureFamily } from "../sample-data";
+import {
+  FIXTURE_FOLDERS, FIXTURE_NOW, FIXTURE_POSITIONS, FIXTURE_PROFILES, FIXTURE_SKETCH, FIXTURE_TOPICS, type FixtureFamily,
+} from "../sample-data";
 
 const noop = () => {};
 
-export function FixtureClient({ family }: { family: FixtureFamily }) {
+export function FixtureClient({ family, state }: { family: FixtureFamily; state?: string }) {
   if (family === "home") {
+    const empty = state === "empty";
     return (
       <ToastProvider>
         <HomeView
           profile={FIXTURE_PROFILES[0]}
-          topics={FIXTURE_TOPICS}
-          onDeleteTopic={noop}
+          topics={empty ? [] : FIXTURE_TOPICS}
+          positions={empty ? {} : FIXTURE_POSITIONS}
+          sketch={FIXTURE_SKETCH}
+          sketchedEnabled={state !== "nosketch"}
           onGenerated={noop}
           now={FIXTURE_NOW}
           folders={FIXTURE_FOLDERS}
