@@ -3,11 +3,12 @@
 import { useEffect, useState, useRef } from "react";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { CircleAlert } from "lucide-react";
 import { useToast } from "@/components/app/ToastContainer";
 import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
 import { QuizStudyMode } from "@/components/app/QuizStudyMode";
 import { GamePicker } from "@/components/app/GamePicker";
-import { Topic, getYouTubeThumbnail, getSourceIcon, getYouTubeEmbedUrl, removeTopicItems } from "@/lib/types";
+import { Topic, removeTopicItems } from "@/lib/types";
 import { persistProfileContent, loadProfileContent, tombstoneIOSNoteIfAny } from "@/lib/notesSync";
 import { db, auth } from "@/lib/firebase";
 import { doc, deleteDoc } from "firebase/firestore";
@@ -15,11 +16,8 @@ import { isAdminUser, publishNoteToLibrary } from "@/lib/publishNote";
 import { recordQuizAttempt } from "@/lib/quizAttempts";
 import { readStudyPosition, writeStudyPosition } from "@/lib/studyPosition";
 import { AppShell } from "@/components/app/shell/AppShell";
-import { RenameModal } from "@/components/app/RenameModal";
-import { MarkdownText } from "@/components/app/MarkdownText";
-import { Icon } from "@/components/app/Icon";
-
-type TabType = "note" | "flashcards" | "quiz";
+import { NoteView } from "@/components/app/note/NoteView";
+import { useNoteChat } from "@/components/app/note/useNoteChat";
 
 interface Profile {
   id: number;
@@ -38,12 +36,10 @@ export default function TopicDetailPage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [topic, setTopic] = useState<Topic | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<TabType>("note");
   const [studyMode, setStudyMode] = useState<"flashcards" | "quiz" | null>(null);
   const [flashStart, setFlashStart] = useState(0);
   const studyLinkHandled = useRef(false);
   const [playOpen, setPlayOpen] = useState(false);
-  const [renameOpen, setRenameOpen] = useState(false);
   const [publishedSlug, setPublishedSlug] = useState<string | null>(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -55,36 +51,6 @@ export default function TopicDetailPage() {
     isAdminUser().then((v) => { if (!cancelled) setIsAdmin(v); });
     return () => { cancelled = true; };
   }, [adminUid]);
-
-  // Chat state
-  const [messages, setMessages] = useState<Array<{
-    id: string;
-    sender: "user" | "ai" | "typing" | "default";
-    text: string;
-  }>>([
-    { id: "default", sender: "default", text: "Ask me anything about this topic!" },
-  ]);
-  const [inputText, setInputText] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Persist chat history once there is a real conversation (skips the
-  // placeholder greeting and in-flight typing indicators).
-  useEffect(() => {
-    if (!profile || !topicId) return;
-    if (!messages.some((m) => m.sender === "user")) return;
-    const persistable = messages.filter((m) => m.sender === "user" || m.sender === "ai");
-    localStorage.setItem(`chat_${profile.id}_${topicId}`, JSON.stringify(persistable));
-  }, [messages, profile, topicId]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -137,26 +103,6 @@ export default function TopicDetailPage() {
 
           setTopic(constructedTopic);
 
-          // Restore this topic's chat history (persisted per profile).
-          const storedChat = localStorage.getItem(`chat_${profileData.id}_${topicId}`);
-          if (storedChat) {
-            try {
-              const parsedChat = JSON.parse(storedChat);
-              if (Array.isArray(parsedChat) && parsedChat.length > 0) {
-                setMessages(parsedChat);
-              }
-            } catch {
-              // keep the default greeting
-            }
-          }
-
-          if (constructedTopic.note) {
-            setActiveTab("note");
-          } else if (constructedTopic.flashcards) {
-            setActiveTab("flashcards");
-          } else if (constructedTopic.quiz) {
-            setActiveTab("quiz");
-          }
         }
       }
 
@@ -170,7 +116,6 @@ export default function TopicDetailPage() {
     if (searchParams?.get("study") !== "flashcards" || !topic.flashcards?.length) return;
     studyLinkHandled.current = true;
     setFlashStart(readStudyPosition(profile.id, topicId)?.index ?? 0);
-    setActiveTab("flashcards");
     setStudyMode("flashcards");
   }, [topic, profile, searchParams, topicId]);
 
@@ -193,7 +138,7 @@ export default function TopicDetailPage() {
       tombstoneIOSNoteIfAny(profile, topicId);
     }
 
-    showToast("Topic deleted successfully", "success");
+    showToast("Note deleted", "success");
     router.push("/note");
   };
 
@@ -211,7 +156,7 @@ export default function TopicDetailPage() {
       persistProfileContent(profile, updatedContent);
     }
     setTopic({ ...topic, title: newTitle });
-    showToast("Topic renamed", "success");
+    showToast("Note renamed", "success");
   };
 
   const handleShareTopic = async () => {
@@ -229,7 +174,7 @@ export default function TopicDetailPage() {
       await navigator.clipboard.writeText(text);
       showToast("Copied to clipboard", "success");
     } catch {
-      showToast("Couldn't share this topic", "error");
+      showToast("Sharing isn't available in this browser", "error");
     }
   };
 
@@ -293,142 +238,20 @@ export default function TopicDetailPage() {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
+  const chat = useNoteChat(profile?.id ?? null, topicId, topic);
 
-  // Chat functions
-  const buildContext = () => {
-    let context = "Here is the study material:\n\n";
-
-    if (topic) {
-      if (topic.title) {
-        context += `Title: ${topic.title}\n\n`;
-      }
-      if (topic.note) {
-        if (topic.note.quick_summary) {
-          context += `Summary:\n${topic.note.quick_summary}\n\n`;
-        }
-        if (topic.note.key_findings && topic.note.key_findings.length > 0) {
-          context += `Key Findings:\n${topic.note.key_findings.map((f: string) => `- ${f}`).join("\n")}\n\n`;
-        }
-        if (topic.note.detailed_notes) {
-          context += `Detailed Notes:\n${topic.note.detailed_notes}\n\n`;
-        }
-        if (topic.note.sections && topic.note.sections.length > 0) {
-          context += `Cheat Sheet Sections:\n`;
-          topic.note.sections.forEach((section) => {
-            context += `\n## ${section.title}\n${section.content}\n`;
-            if (section.keyTerms && section.keyTerms.length > 0) {
-              context += `Key terms: ${section.keyTerms.join(", ")}\n`;
-            }
-          });
-          context += "\n";
-        }
-        if (topic.note.important_notes && topic.note.important_notes.length > 0) {
-          context += `Important Notes:\n${topic.note.important_notes.map((n) => `- ${n}`).join("\n")}\n\n`;
-        }
-      }
-      if (topic.flashcards && topic.flashcards.length > 0) {
-        context += `Flashcards:\n`;
-        topic.flashcards.forEach((card, index) => {
-          context += `${index + 1}. Q: ${card.question}\n   A: ${card.answer}\n`;
-        });
-        context += "\n";
-      }
-      if (topic.quiz && topic.quiz.length > 0) {
-        context += `Quiz Questions:\n`;
-        topic.quiz.forEach((q, index) => {
-          context += `${index + 1}. ${q.question}\n`;
-          context += `   Correct Answer: ${q.correct_answer}\n`;
-        });
-      }
-    }
-
-    return context;
-  };
-
-  const handleSend = async () => {
-    if (!inputText.trim() || isLoading) return;
-
-    const userMessage = {
-      id: Date.now().toString(),
-      sender: "user" as const,
-      text: inputText,
-    };
-
-    setMessages((prev) => [...prev, userMessage]);
-    setInputText("");
-    setIsLoading(true);
-
-    const typingMessage = {
-      id: "typing",
-      sender: "typing" as const,
-      text: "",
-    };
-    setMessages((prev) => [...prev, typingMessage]);
-
-    try {
-      const context = buildContext();
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: inputText,
-          context: context,
-        }),
-      });
-
-      const result = await response.json();
-      setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
-
-      if (result.success || result.answer) {
-        const aiMessage = {
-          id: Date.now().toString(),
-          sender: "ai" as const,
-          text: result.answer,
-        };
-        setMessages((prev) => [...prev, aiMessage]);
-      } else {
-        const errorMessage = {
-          id: Date.now().toString(),
-          sender: "ai" as const,
-          text: `Error: ${result.error || "Failed to get response"}`,
-        };
-        setMessages((prev) => [...prev, errorMessage]);
-      }
-    } catch (error) {
-      console.error("Chat error:", error);
-      setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
-      const errorMessage = {
-        id: Date.now().toString(),
-        sender: "ai" as const,
-        text: "Error: Failed to send message. Please try again.",
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+  // The note's Flashcards chip resumes at the saved card too, same as Home's Continue.
+  const openFlashcards = () => {
+    if (!profile) return;
+    setFlashStart(readStudyPosition(profile.id, topicId)?.index ?? 0);
+    setStudyMode("flashcards");
   };
 
   if (loading || !profile) {
     return (
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-950 items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
+      <div className="flex h-dvh items-center justify-center">
+        <div aria-hidden="true" className="family-surface family-study" />
+        <p role="status" className="text-callout text-supporting">Loading the note…</p>
       </div>
     );
   }
@@ -436,12 +259,11 @@ export default function TopicDetailPage() {
   if (!topic) {
     return (
       <AppShell profile={profile} family="study">
-        <main id="main" className="flex-1 flex flex-col items-center justify-center gap-4">
-          <Icon name="error" className="text-6xl text-gray-400" />
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">Topic not found</h1>
-          <Link href="/note" className="text-blue-600 hover:underline">
-            Go back to dashboard
-          </Link>
+        <main id="main" className="flex flex-1 flex-col items-center justify-center gap-4 px-4 text-center">
+          <CircleAlert aria-hidden="true" strokeWidth={1.75} className="size-12 text-supporting" />
+          <h1 tabIndex={-1} className="text-title font-semibold">We couldn&apos;t find this note</h1>
+          <p className="text-callout text-supporting">It may have been deleted on another device.</p>
+          <Link href="/note" className="btn-primary">Go to Home</Link>
         </main>
       </AppShell>
     );
@@ -455,6 +277,8 @@ export default function TopicDetailPage() {
         startIndex={flashStart}
         onIndexChange={(i) => profile && writeStudyPosition(profile.id, topicId, i)}
         onClose={closeStudy}
+        deckTitle={topic.title}
+        onQuiz={topic.quiz?.length ? () => setStudyMode("quiz") : undefined}
       />
     );
   }
@@ -464,7 +288,7 @@ export default function TopicDetailPage() {
       <QuizStudyMode
         quizzes={topic.quiz}
         topicTitle={topic.title}
-        onClose={() => setStudyMode(null)}
+        onClose={closeStudy}
         onComplete={(result) => {
           if (profile) {
             void recordQuizAttempt(profile, { noteId: topicId, noteTitle: topic.title, ...result });
@@ -474,449 +298,27 @@ export default function TopicDetailPage() {
     );
   }
 
-  const youtubeEmbedUrl = topic.sourceType === "youtube" && topic.sourceUrl
-    ? getYouTubeEmbedUrl(topic.sourceUrl)
-    : null;
-
-  const tabs: { id: TabType; label: string; icon: string; available: boolean; count?: number }[] = [
-    { id: "note", label: "Notes", icon: "description", available: !!topic.note },
-    { id: "flashcards", label: "Flashcards", icon: "style", available: !!topic.flashcards, count: topic.flashcards?.length },
-    { id: "quiz", label: "Quiz", icon: "quiz", available: !!topic.quiz, count: topic.quiz?.length },
-  ];
-
-  const availableTabs = tabs.filter(t => t.available);
-
   return (
     <AppShell profile={profile} family="study">
-
-      <main id="main" className="flex-1 flex overflow-hidden">
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto">
-          {/* Header */}
-          <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
-            <div className="px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex items-start gap-4 flex-1 min-w-0">
-                  <Link
-                    href="/note"
-                    className="mt-1 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                  >
-                    <Icon name="arrow_back" className="text-gray-600 dark:text-gray-400" />
-                  </Link>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3 mb-2">
-                      <div className="bg-rust-wash text-rust rounded-md p-1.5">
-                        <Icon name={getSourceIcon(topic.sourceType)} />
-                      </div>
-                      <span className="text-sm text-gray-500 dark:text-gray-400 uppercase">{topic.sourceType}</span>
-                    </div>
-                    <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate">
-                      {topic.title}
-                    </h1>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      Created {formatDate(topic.createdAt)}
-                    </p>
-                  </div>
-                </div>
-                {publishedSlug ? (
-                  <>
-                    <button
-                      onClick={copyPublishedLink}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-green-600 rounded-lg transition-colors"
-                      title="Copy public link"
-                    >
-                      <Icon name="link" />
-                    </button>
-                    <button
-                      onClick={handleUnpublish}
-                      className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
-                      title="Unpublish"
-                    >
-                      <Icon name="visibility_off" />
-                    </button>
-                  </>
-                ) : isAdmin ? (
-                  <button
-                    onClick={handlePublish}
-                    disabled={isPublishing}
-                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors disabled:opacity-50"
-                    title="Publish to the public library"
-                  >
-                    <Icon name="public" />
-                  </button>
-                ) : null}
-                <button
-                  onClick={handleShareTopic}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
-                  title="Share topic"
-                >
-                  <Icon name="share" />
-                </button>
-                <button
-                  onClick={() => setRenameOpen(true)}
-                  className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
-                  title="Rename topic"
-                >
-                  <Icon name="edit" />
-                </button>
-                <button
-                  onClick={handleDeleteTopic}
-                  className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 rounded-lg transition-colors"
-                  title="Delete topic"
-                >
-                  <Icon name="delete" />
-                </button>
-              </div>
-
-              {/* YouTube Video Player */}
-              {youtubeEmbedUrl && (
-                <div className="mt-4 ml-14">
-                  <div className="rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 max-w-md">
-                    <iframe
-                      src={youtubeEmbedUrl}
-                      title="YouTube video player"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      className="w-full aspect-video"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Tabs */}
-            <div className="px-4 sm:px-6 lg:px-8 border-t border-gray-100 dark:border-gray-800">
-              <div className="flex items-center gap-1 overflow-x-auto">
-                {availableTabs.map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-4 py-3 border-b-2 transition-colors whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                        : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
-                    }`}
-                  >
-                    <Icon name={tab.icon} className="text-lg" />
-                    <span className="font-medium">{tab.label}</span>
-                    {tab.count !== undefined && (
-                      <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
-                        {tab.count}
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="p-4 sm:p-6 lg:p-8 max-w-4xl">
-            {/* Note Tab */}
-            {activeTab === "note" && topic.note && (
-              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                  {topic.note.title}
-                </h2>
-
-                {topic.note.quick_summary && (
-                  <div className="mb-6">
-                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                      Quick Summary
-                    </h3>
-                    <MarkdownText
-                      text={topic.note.quick_summary}
-                      className="text-gray-700 dark:text-gray-300 leading-relaxed"
-                    />
-                  </div>
-                )}
-
-                {topic.note.key_findings && topic.note.key_findings.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                      Key Findings
-                    </h3>
-                    <ul className="space-y-2">
-                      {topic.note.key_findings.map((finding, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Icon name="check_circle" className="text-blue-500 text-sm mt-1" />
-                          <span className="text-gray-700 dark:text-gray-300">{finding}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {topic.note.sections && topic.note.sections.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-3">
-                      Cheat Sheet
-                    </h3>
-                    <div className="space-y-4">
-                      {topic.note.sections.map((section, index) => (
-                        <div
-                          key={index}
-                          className="bg-gray-50 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
-                        >
-                          <h4 className="font-semibold text-gray-900 dark:text-white mb-2">
-                            {section.title}
-                          </h4>
-                          <MarkdownText
-                            text={section.content}
-                            className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed"
-                          />
-                          {section.keyTerms && section.keyTerms.length > 0 && (
-                            <div className="flex flex-wrap gap-2 mt-3">
-                              {section.keyTerms.map((term, tIndex) => (
-                                <span
-                                  key={tIndex}
-                                  className="text-xs px-2 py-1 rounded-full bg-rust-wash text-label"
-                                >
-                                  {term}
-                                </span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {topic.note.important_notes && topic.note.important_notes.length > 0 && (
-                  <div className="mb-6">
-                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                      Important Notes
-                    </h3>
-                    <ul className="space-y-2">
-                      {topic.note.important_notes.map((item, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <Icon name="priority_high" className="text-amber-500 text-sm mt-1" />
-                          <span className="text-gray-700 dark:text-gray-300">{item}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                {topic.note.detailed_notes && (
-                  <div>
-                    <h3 className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase mb-2">
-                      Detailed Notes
-                    </h3>
-                    <div className="prose dark:prose-invert max-w-none">
-                      <MarkdownText
-                        text={topic.note.detailed_notes}
-                        className="text-gray-700 dark:text-gray-300 leading-relaxed"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Flashcards Tab */}
-            {activeTab === "flashcards" && topic.flashcards && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    {topic.flashcards.length} Flashcards
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setPlayOpen(true)}
-                      className="btn-secondary flex items-center gap-2"
-                    >
-                      <Icon name="sports_esports" />
-                      Play
-                    </button>
-                    <button
-                      onClick={() => setStudyMode("flashcards")}
-                      className="btn-primary flex items-center gap-2"
-                    >
-                      <Icon name="school" />
-                      Study Mode
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {topic.flashcards.map((card, index) => (
-                    <div
-                      key={index}
-                      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4"
-                    >
-                      <div className="text-xs text-gray-400 mb-2">Card {index + 1}</div>
-                      <div className="font-medium text-gray-900 dark:text-white mb-3">
-                        {card.question}
-                      </div>
-                      <div className="border-t border-gray-200 dark:border-gray-700 pt-3">
-                        <div className="text-xs text-gray-400 mb-1">Answer</div>
-                        <div className="text-gray-700 dark:text-gray-300">
-                          {card.answer}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Quiz Tab */}
-            {activeTab === "quiz" && topic.quiz && (
-              <div>
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    {topic.quiz.length} Questions
-                  </h2>
-                  <button
-                    onClick={() => setStudyMode("quiz")}
-                    className="btn-primary flex items-center gap-2"
-                  >
-                    <Icon name="school" />
-                    Take Quiz
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {topic.quiz.map((question, qIndex) => (
-                    <div
-                      key={qIndex}
-                      className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-4"
-                    >
-                      <div className="flex items-start gap-3 mb-3">
-                        <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 text-sm font-medium px-2 py-1 rounded">
-                          Q{qIndex + 1}
-                        </span>
-                        <p className="font-medium text-gray-900 dark:text-white flex-1">
-                          {question.question}
-                        </p>
-                      </div>
-                      <div className="space-y-2 ml-8">
-                        {question.options.map((option, oIndex) => (
-                          <div
-                            key={oIndex}
-                            className={`p-3 rounded-lg text-sm ${
-                              option === question.correct_answer
-                                ? "bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-300 dark:border-green-700"
-                                : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300"
-                            }`}
-                          >
-                            <span className="font-medium mr-2">{String.fromCharCode(65 + oIndex)}.</span>
-                            {option}
-                            {option === question.correct_answer && (
-                              <Icon name="check" className="text-green-600 text-sm ml-2 align-middle" />
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      {question.explanation && (
-                        <div className="mt-3 ml-8 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-sm text-blue-800 dark:text-blue-200 [&_strong]:font-semibold">
-                          <span className="font-medium">Explanation:</span>
-                          <MarkdownText text={question.explanation} />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* AI Chat Panel */}
-        <div className="w-96 border-l border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex flex-col">
-          {/* Chat Header */}
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
-            <div className="flex items-center gap-2">
-              <div className="bg-rust-wash text-rust rounded-full p-1.5">
-                <Icon name="smart_toy" className="text-sm" />
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900 dark:text-white">AI Assistant</h3>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Ask about this topic</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
-              >
-                {message.sender === "default" && (
-                  <div className="bg-card rounded-xl p-3 max-w-[85%] border border-divider">
-                    <p className="text-sm text-gray-900 dark:text-white text-center">{message.text}</p>
-                  </div>
-                )}
-
-                {message.sender === "user" && (
-                  <div className="bg-primary rounded-xl rounded-br-sm p-3 max-w-[85%]">
-                    <p className="text-sm text-white">{message.text}</p>
-                  </div>
-                )}
-
-                {message.sender === "ai" && (
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-xl rounded-bl-sm p-3 max-w-[85%]">
-                    <MarkdownText text={message.text} className="text-sm text-gray-900 dark:text-white" />
-                  </div>
-                )}
-
-                {message.sender === "typing" && (
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-xl rounded-bl-sm p-3">
-                    <div className="flex gap-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }}></div>
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }}></div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Chat Input */}
-          <div className="p-4 border-t border-gray-200 dark:border-gray-800">
-            <div className="flex gap-2">
-              <textarea
-                ref={inputRef}
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask a question..."
-                className="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white resize-none"
-                rows={2}
-                disabled={isLoading}
-              />
-              <button
-                onClick={handleSend}
-                disabled={!inputText.trim() || isLoading}
-                className="px-3 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
-              >
-                <Icon name="send" className="text-lg" />
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
-              Press Enter to send
-            </p>
-          </div>
-        </div>
-
-        <RenameModal
-          isOpen={renameOpen}
-          onClose={() => setRenameOpen(false)}
-          onRename={handleRenameTopic}
-          currentTitle={topic.title || "Topic"}
-          itemType="topic"
-        />
-      </main>
-
-      {playOpen && profile && (
-        <GamePicker noteId={topicId} profileId={profile.id} onClose={() => setPlayOpen(false)} />
-      )}
+      <NoteView
+        topic={topic}
+        chat={chat}
+        onStudyFlashcards={openFlashcards}
+        onQuiz={() => setStudyMode("quiz")}
+        onPlay={() => setPlayOpen(true)}
+        menu={{
+          onShare: handleShareTopic,
+          onRename: handleRenameTopic,
+          onDelete: handleDeleteTopic,
+          publishedSlug,
+          isAdmin,
+          isPublishing,
+          onPublish: handlePublish,
+          onUnpublish: handleUnpublish,
+          onCopyLink: copyPublishedLink,
+        }}
+      />
+      <GamePicker noteId={topicId} profileId={profile.id} open={playOpen} onClose={() => setPlayOpen(false)} />
     </AppShell>
   );
 }

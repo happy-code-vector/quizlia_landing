@@ -1,49 +1,58 @@
 "use client";
-import { useEffect } from "react";
+
 import Link from "next/link";
-import { GAMES } from "@/lib/arcade";
+import { ChevronRight, Footprints, Grid2x2, Link2, Route, Scale, type LucideIcon } from "lucide-react";
+import { CardDialog } from "@/components/app/CardDialog";
+import { GAMES, type GameSlug } from "@/lib/arcade";
+
+/** One lucide icon per game (lock: no emoji or icon fonts). */
+export const GAME_ICONS: Record<GameSlug, LucideIcon> = {
+  match: Link2,
+  memory: Grid2x2,
+  run: Footprints,
+  snake: Route,
+  truefalse: Scale,
+};
+
+export function GameIcon({ slug, size = "md" }: { slug: GameSlug; size?: "md" | "lg" }) {
+  const Icon = GAME_ICONS[slug];
+  return (
+    <span aria-hidden="true" className={`flex shrink-0 items-center justify-center rounded-xl bg-rust-wash text-rust ${size === "lg" ? "size-12" : "size-10"}`}>
+      <Icon strokeWidth={1.75} className={size === "lg" ? "size-6" : "size-5"} />
+    </span>
+  );
+}
 
 export function GamePicker({
   noteId,
   profileId,
+  open = true,
   onClose,
 }: {
   noteId: string;
   profileId: number;
+  open?: boolean;
   onClose: () => void;
 }) {
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
   return (
-    <div role="presentation" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
-      <div role="dialog" aria-modal="true" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-gray-900" onClick={(e) => e.stopPropagation()}>
-        <h3 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">Play this note</h3>
-        <ul className="space-y-2">
-          {GAMES.map((game) => (
-            <li key={game.slug}>
-              <Link
-                href={`/note/play/${game.slug}?noteId=${encodeURIComponent(noteId)}&profileId=${profileId}`}
-                className="flex items-center gap-3 rounded-xl border border-gray-200 px-4 py-3 transition-colors hover:border-purple-400 hover:bg-purple-50 dark:border-gray-700 dark:hover:bg-purple-900/20"
-              >
-                <span className={`grid h-9 w-9 place-items-center rounded-lg bg-gradient-to-br ${game.accent} text-lg`}>
-                  {game.icon}
-                </span>
-                <span>
-                  <span className="block text-sm font-semibold text-gray-900 dark:text-white">{game.name}</span>
-                  <span className="block text-xs text-gray-500 dark:text-gray-400">{game.tagline}</span>
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-        <button onClick={onClose} className="mt-4 w-full rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">Cancel</button>
-      </div>
-    </div>
+    <CardDialog open={open} onOpenChange={(v) => !v && onClose()} title="Play this note" description="Each game uses this note's flashcards." wide>
+      <ul className="flex flex-col gap-2">
+        {GAMES.map((game) => (
+          <li key={game.slug}>
+            <Link
+              href={`/note/play/${game.slug}?noteId=${encodeURIComponent(noteId)}&profileId=${profileId}`}
+              className="flex min-h-16 items-center gap-3 rounded-2xl border border-divider bg-card px-4 py-3 hover:border-input"
+            >
+              <GameIcon slug={game.slug} />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-headline">{game.name}</span>
+                <span className="text-subheadline text-supporting">{game.tagline}</span>
+              </span>
+              <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-5 shrink-0 text-supporting" />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </CardDialog>
   );
 }

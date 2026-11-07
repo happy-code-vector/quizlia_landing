@@ -29,8 +29,10 @@ Source docs (claude.ai QuizliAI project): `claude/quizliai-visual-direction-lock
 | `--ring` | #9E4A12 | #D0702E | Focus outline |
 | `--input-border` | #7C7C80 | #8E8E93 | Inputs, checkboxes |
 | `--danger-text` | #C4161C | #FF6961 | Error text and error border |
+| `--success` / `--warning` | #248A3D / #C93400 | #30D158 / #FF9F0A | Got it and Review again marks: icons and borders only, never text on a tint (#C93400 is 4.29:1 on the study tint) |
+| `--success-on-paper` / `--warning-on-paper` | #248A3D / #C93400 | same | Swipe stamps on the paper card (icons and large bold text) |
 
-Tailwind names: `bg-card`, `text-label`, `text-supporting`, `text-rust`, `text-rust-on-tint`, `bg-rust-wash`, `text-danger`, `bg-paper`, `text-on-paper`, `border-divider`, `border-card-stroke`, `bg-hover-fill`, `bg-control`, `bg-track`, `shadow-card`; shadcn names (`bg-primary`, `text-muted-foreground`, `border-input`, `ring`) map onto these. Type: `text-large-title`, `text-title`, `text-title2`, `text-title3`, `text-headline`, `text-body`, `text-callout`, `text-subheadline` (content floor), `text-footnote` (metadata only). Fonts: `font-sans` (system-ui), `font-serif` (ui-serif, then Source Serif 4 via next/font).
+Tailwind names: `bg-card`, `text-label`, `text-supporting`, `text-rust`, `text-rust-on-tint`, `bg-rust-wash`, `text-danger`, `text-success`, `text-warning`, `bg-paper`, `text-on-paper`, `border-divider`, `border-card-stroke`, `bg-hover-fill`, `bg-control`, `bg-track`, `shadow-card`; shadcn names (`bg-primary`, `text-muted-foreground`, `border-input`, `ring`) map onto these. Type: `text-large-title`, `text-title`, `text-title2`, `text-title3`, `text-headline`, `text-body`, `text-callout`, `text-subheadline` (content floor), `text-footnote` (metadata only). Fonts: `font-sans` (system-ui), `font-serif` (ui-serif, then Source Serif 4 via next/font).
 
 ### Hard rules (yes/no checks)
 
@@ -45,4 +47,5 @@ Tailwind names: `bg-card`, `text-label`, `text-supporting`, `text-rust`, `text-r
 9. Motion 150 to 250 ms, `ease-[cubic-bezier(0.2,0,0,1)]`; under reduced motion nothing animates `transform`.
 10. A page that shows data takes it as props from a view component, so `/dev/fixtures/<family>` can render it with sample data. Fixture routes 404 in production.
 11. Before review: screenshots of the family fixture at 1440×900 and 390×844, light and dark; axe serious and critical 0; horizontal scroll at 320, 360, 390, 768, 1024, 1440: 0.
-12. Sketched on web is view-only (drawings made on iPhone). Never add a generate action on web. The nav item and Home card stay behind `NEXT_PUBLIC_SKETCHED_WEB=1` until the read route is confirmed.
+12. Study modes (`components/app/study/StudySurface.tsx`) are full-screen on the study tint, with `<main id="main">` and one `<h1>`. Single-key shortcuts go through the surface's `onKeyDown`, never a window listener (W-5.6). Every swipe has a button (W-5.7). Dialogs use `CardDialog`, which returns focus to the opener.
+13. Sketched on web is view-only (drawings made on iPhone). Never add a generate action on web. The nav item and Home card stay behind `NEXT_PUBLIC_SKETCHED_WEB=1` until the read route is confirmed.

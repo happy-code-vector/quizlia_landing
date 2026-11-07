@@ -5,6 +5,9 @@ import type { SketchPreview } from "@/components/app/home/SketchedCard";
 
 // W-10 sample data: three profiles, two folders, five notes, one quiz in progress.
 // Fixed dates and a fixed "now" keep screenshots deterministic.
+// Study family states for /dev/fixtures/study?state=...
+export const STUDY_STATES = ["note", "flashcards", "quiz", "arcade"] as const;
+
 export const FIXTURE_FAMILIES = ["home", "study", "people", "welcome", "paywall"] as const;
 export type FixtureFamily = (typeof FIXTURE_FAMILIES)[number];
 
@@ -34,6 +37,20 @@ export const FIXTURE_TOPICS: Topic[] = [
       title: "Photosynthesis basics",
       quick_summary: "Plants turn light, water and carbon dioxide into sugar and oxygen.",
       key_findings: ["Happens in chloroplasts", "Needs light, water and carbon dioxide", "Releases oxygen"],
+      sections: [
+        {
+          title: "Light reactions",
+          content: "Happen in the **thylakoid membranes**. Chlorophyll absorbs light, water is split and oxygen is released.",
+          keyTerms: ["Chlorophyll", "Thylakoid"],
+        },
+        {
+          title: "Calvin cycle",
+          content: "Happens in the **stroma**. The plant uses carbon dioxide and the energy from the light reactions to make glucose.",
+          keyTerms: ["Stroma", "Glucose"],
+        },
+      ],
+      important_notes: ["Most leaves look green because chlorophyll reflects green light.", "Stomata open and close to let gases in and out."],
+      detailed_notes: "Photosynthesis has two stages. The light reactions capture energy from sunlight. The Calvin cycle uses that energy to build sugar from carbon dioxide.",
     },
     flashcards: cards([
       ["What is photosynthesis?", "The process plants use to turn light energy into chemical energy stored in sugar"],
@@ -55,6 +72,24 @@ export const FIXTURE_TOPICS: Topic[] = [
         options: ["Oxygen", "Nitrogen", "Carbon dioxide", "Helium"],
         correct_answer: "Oxygen",
         explanation: "Water molecules are split and oxygen is released as a by-product.",
+      },
+      {
+        question: "Where in the cell does photosynthesis happen?",
+        options: ["Nucleus", "Chloroplast", "Mitochondrion", "Cell wall"],
+        correct_answer: "Chloroplast",
+        explanation: "Chloroplasts hold the chlorophyll that captures light.",
+      },
+      {
+        question: "Which pigment absorbs light for photosynthesis?",
+        options: ["Melanin", "Hemoglobin", "Chlorophyll", "Keratin"],
+        correct_answer: "Chlorophyll",
+        explanation: "Chlorophyll absorbs red and blue light and reflects green.",
+      },
+      {
+        question: "Where does the Calvin cycle happen?",
+        options: ["Stroma", "Thylakoid membrane", "Stomata", "Roots"],
+        correct_answer: "Stroma",
+        explanation: "The Calvin cycle runs in the stroma, the fluid around the thylakoids.",
       },
     ],
   },

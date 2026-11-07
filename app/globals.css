@@ -52,6 +52,9 @@
   --input-border: #7C7C80;
   --danger-text: #C4161C;
   --success: #248A3D;                  /* W-2.1: icons and borders only, never text on a tint */
+  --warning: #C93400;                  /* Review again mark: icons and borders only (5.28 white, 4.29 tint) */
+  --success-on-paper: #248A3D;         /* stamps on paper, both modes (4.11; icons and large bold text) */
+  --warning-on-paper: #C93400;         /* stamps on paper, both modes (4.94) */
 
   /* Neutral interaction fills (W-4.2) */
   --hover-fill: rgb(0 0 0 / 0.04);
@@ -120,6 +123,7 @@
   --input-border: #8E8E93;
   --danger-text: #FF6961;
   --success: #30D158;
+  --warning: #FF9F0A;                  /* 8.28 on #1C1C1E, 8.53 on study tint */
 
   --hover-fill: rgb(255 255 255 / 0.06);
   --control-fill: #2C2C2E;
@@ -166,6 +170,9 @@
   --color-rust-wash: var(--rust-wash);
   --color-danger: var(--danger-text);
   --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-success-on-paper: var(--success-on-paper);
+  --color-warning-on-paper: var(--warning-on-paper);
   --color-paper: var(--paper);
   --color-on-paper: var(--on-paper);
   --color-paper-back-1: var(--paper-back-1);
@@ -529,3 +536,23 @@
 @keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
 @keyframes wave-tilt { 0%,100% { transform: rotate(-2deg) } 50% { transform: rotate(3deg) } }
 @keyframes mascot-pop { from { transform: scale(0.3) translateY(20px); opacity: 0 } to { transform: none; opacity: 1 } }
+
+/* Study flashcard flip (W-9.7: 400 ms max). Reduced motion crossfades the faces instead (W-9.8). */
+.study-flip {
+  transform-style: preserve-3d;
+  transition: transform 400ms var(--ease-standard);
+}
+.study-flip[data-flipped="true"] { transform: rotateY(180deg); }
+.study-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.study-face-back { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .study-flip,
+  .study-flip[data-flipped="true"] { transform: none; transform-style: flat; }
+  .study-face { transition: opacity 150ms linear; }
+  .study-face-back { transform: none; opacity: 0; }
+  .study-flip[data-flipped="true"] .study-face-front { opacity: 0; }
+  .study-flip[data-flipped="true"] .study-face-back { opacity: 1; }
+}
