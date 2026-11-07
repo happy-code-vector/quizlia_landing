@@ -533,6 +533,7 @@ export default function MemoryFlip({ deck }: { deck: StudyDeck }) {
 
         <div
           role="progressbar"
+          aria-label="Progress"
           aria-valuenow={progressPct}
           aria-valuemin={0}
           aria-valuemax={100}

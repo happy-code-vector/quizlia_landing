@@ -19,6 +19,8 @@ import { SettingsView, type PlanSummary } from "@/components/app/people/Settings
 import { ForgotView, LoginView, SignupView } from "@/components/app/welcome/AuthViews";
 import { SubscriptionProcessingView, SubscriptionSuccessView } from "@/components/app/welcome/SubscriptionSuccessView";
 import { PricingView } from "@/components/app/welcome/PricingView";
+import { PublicArcade } from "@/components/app/arcade/PublicArcade";
+import { GAMES } from "@/lib/arcade";
 import { PaywallDialog } from "@/components/app/PaywallModal";
 import { SUBSCRIPTION_PLANS, getPlanById, resolveEffectivePlan } from "@/lib/subscription";
 import { PromoCodeInput } from "@/components/app/PromoCodeInput";
@@ -94,7 +96,7 @@ const FIXTURE_PLAN: PlanSummary = {
 
 /**
  * Welcome family: auth, subscription success.
- * ?state=login (default) | signup | forgot | forgot-sent | success | processing
+ * ?state=login (default) | signup | forgot | forgot-sent | success | processing | arcade (public /arcade)
  */
 function WelcomeFixture({ state }: { state?: string }) {
   if (state === "signup") return <SignupView googleAvailable onGoogle={authNoop} onEmail={authNoop} />;
@@ -102,6 +104,7 @@ function WelcomeFixture({ state }: { state?: string }) {
   if (state === "forgot-sent") return <ForgotView onSend={authNoop} initialSent="maya@example.com" />;
   if (state === "success") return <SubscriptionSuccessView planName="Family Annual" />;
   if (state === "processing") return <SubscriptionProcessingView />;
+  if (state === "arcade") return <PublicArcade games={GAMES} />;
   return <LoginView googleAvailable onGoogle={authNoop} onEmail={authNoop} />;
 }
 

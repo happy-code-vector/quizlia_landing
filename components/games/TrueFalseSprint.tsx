@@ -544,6 +544,7 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
 
           <div
             role="progressbar"
+            aria-label="Time remaining"
             aria-valuenow={Math.round(drainPct)}
             aria-valuemin={0}
             aria-valuemax={100}
