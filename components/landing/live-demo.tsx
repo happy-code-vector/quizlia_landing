@@ -2,7 +2,11 @@
 
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { Check, ChevronLeft, ChevronRight, FileText, Globe, PlayCircle, X } from "lucide-react";
 import { demoSamples, type Sample } from "@/content/demoSamples";
+
+// Landing demo (no backend): pick a sample, watch it turn into notes, flashcards and a quiz.
+// The bear appears only at state changes (generating, a right answer), never at rest.
 
 type Phase = "idle" | "loading" | "result";
 type Tab = "notes" | "cards" | "quiz";
@@ -14,8 +18,10 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "cards", label: "Flashcards" },
   { id: "quiz", label: "Quiz" },
 ];
+const ICONS = { video: PlayCircle, PDF: FileText, page: Globe } as const;
+const ease = "ease-[cubic-bezier(0.2,0,0,1)]";
 
-export function LiveDemo() {
+export function LiveDemo({ hero = false }: { hero?: boolean }) {
   const [selected, setSelected] = useState<Sample | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [step, setStep] = useState(0);
@@ -39,86 +45,82 @@ export function LiveDemo() {
     setRunKey((k) => k + 1);
     timers.current.push(setTimeout(() => setStep(2), STEP_MS));
     timers.current.push(setTimeout(() => setStep(3), STEP_MS * 2));
-    timers.current.push(
-      setTimeout(() => setPhase("result"), STEP_MS * 3 + FINISH_MS),
-    );
+    timers.current.push(setTimeout(() => setPhase("result"), STEP_MS * 3 + FINISH_MS));
   }
 
   const steps = selected
-    ? [
-        `Reading the ${selected.kind}…`,
-        "Writing your notes…",
-        "Making flashcards & a quiz…",
-      ]
+    ? [`Reading the ${selected.kind}`, "Writing your notes", "Making flashcards and a quiz"]
     : [];
 
   return (
-    <div className="relative z-10 mx-auto -mt-[110px] w-full max-w-[900px] rounded-[28px] bg-white p-4 shadow-[0_40px_80px_-40px_rgba(60,20,120,0.45),0_0_0_1px_rgba(22,18,31,0.06)] md:p-[26px]">
-      <div className="flex flex-col gap-2 rounded-[18px] bg-c-soft p-2 sm:flex-row sm:items-center sm:pl-5">
-        <label htmlFor="demo-link" className="sr-only">
-          Link to turn into a study set (demo)
-        </label>
+    <div className={`ds-card w-full p-4 md:p-6 ${hero ? "rounded-[1.375rem]" : ""}`}>
+      <label htmlFor="demo-link" className="text-subheadline font-semibold text-label">
+        Link or file <span className="font-normal text-supporting">(sample only)</span>
+      </label>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
         <input
           id="demo-link"
           type="text"
           readOnly
           value={selected?.url ?? ""}
-          placeholder="Paste a YouTube link, PDF or website…"
-          className="min-h-11 w-full min-w-0 flex-1 bg-transparent px-3 text-[17px] text-c-ink placeholder:text-c-muted focus:outline-none sm:px-0"
+          placeholder="Pick a sample below"
+          className="h-11 w-full min-w-0 flex-1 rounded-xl border border-input bg-card px-3 text-callout text-label placeholder:text-supporting"
         />
         <button
           type="button"
           onClick={() => run(selected ?? demoSamples[0])}
           disabled={phase === "loading"}
-          className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-full bg-c-ink px-6 text-[15px] font-bold text-white transition-transform duration-150 motion-safe:hover:scale-[1.03] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c-brand disabled:opacity-60"
+          className={`inline-flex h-11 shrink-0 items-center justify-center rounded-full border border-divider bg-card px-5 text-subheadline font-semibold text-label transition-[border-color,background-color] duration-150 ${ease} hover:border-input active:bg-hover-fill disabled:opacity-40`}
         >
           Make my study set
         </button>
       </div>
 
-      <div className="mt-3.5 flex flex-wrap items-center gap-2">
-        <span className="text-[13px] font-semibold text-c-muted">Try one:</span>
-        {demoSamples.map((s) => {
-          const on = selected?.id === s.id;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              aria-pressed={on}
-              disabled={phase === "loading"}
-              onClick={() => run(s)}
-              className={`min-h-11 rounded-full border-[1.5px] px-3 py-1.5 text-[13px] font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c-brand disabled:cursor-not-allowed ${
-                on
-                  ? "border-c-ink bg-c-ink text-white"
-                  : "border-[#e2dcee] text-c-ink hover:border-c-brand hover:text-c-brand-ink"
-              }`}
-            >
-              {s.label}
-            </button>
-          );
-        })}
-      </div>
+      <fieldset className="mt-4">
+        <legend className="text-subheadline text-supporting">Try one:</legend>
+        <div className="mt-2 flex flex-wrap gap-2">
+          {demoSamples.map((s) => {
+            const on = selected?.id === s.id;
+            const Icon = ICONS[s.kind];
+            return (
+              <button
+                key={s.id}
+                type="button"
+                aria-pressed={on}
+                disabled={phase === "loading"}
+                onClick={() => run(s)}
+                className={`relative inline-flex h-[2.125rem] items-center gap-1.5 rounded-full px-3 text-subheadline font-semibold text-label transition-colors duration-150 after:absolute after:-inset-y-[0.3125rem] after:inset-x-0 after:content-[""] disabled:opacity-40 ${
+                  on ? "border-[1.5px] border-rust bg-card" : "border border-divider bg-card hover:bg-hover-fill"
+                }`}
+              >
+                {on ? (
+                  <Check aria-hidden="true" strokeWidth={1.75} className="size-4 text-rust" />
+                ) : (
+                  <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 text-supporting" />
+                )}
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+      </fieldset>
 
-      <div className="mt-[22px] min-h-[330px] border-t border-[#eee8f5] pt-[22px]">
+      <div className="mt-5 min-h-[21rem] border-t border-divider pt-5">
         {phase === "idle" && (
-          <div className="flex min-h-[286px] flex-col items-center justify-center text-center">
-            <p className="text-[22px] font-bold text-c-ink">
-              Pick a sample to start ↑
-            </p>
-            <p className="mt-1 text-[15px] text-c-muted">
-              Takes about 3 seconds in this demo.
-            </p>
+          <div className="flex min-h-[19rem] flex-col items-center justify-center text-center">
+            <p className="text-title3 font-semibold text-label">Pick a sample to start</p>
+            <p className="mt-1 text-subheadline text-supporting">This demo takes about three seconds.</p>
           </div>
         )}
 
         {phase === "loading" && (
-          <div className="relative flex min-h-[286px] flex-col justify-center gap-4 pl-2">
+          <div className="relative flex min-h-[19rem] flex-col justify-center gap-4">
             <Image
               src="/mascot/quizliai_mascot_think.webp"
               alt=""
               width={284}
               height={640}
-              className="anim-float pointer-events-none absolute bottom-0 right-0 h-auto w-[83px] sm:w-[104px]"
+              className="pointer-events-none absolute bottom-0 right-0 h-auto w-[4.5rem] sm:w-24"
             />
             <div role="status" aria-live="polite" className="sr-only">
               {steps[Math.min(step, 3) - 1]}
@@ -130,16 +132,14 @@ export function LiveDemo() {
                 return (
                   <li
                     key={text}
-                    className={`flex items-center gap-3 text-[17px] font-semibold text-c-ink transition-opacity duration-300 ${
-                      lit ? "opacity-100" : "opacity-25"
-                    }`}
+                    className={`flex items-center gap-3 text-headline text-label transition-opacity duration-200 ${lit ? "opacity-100" : "opacity-30"}`}
                   >
                     {done ? (
-                      <span className="grid h-[22px] w-[22px] place-items-center">
-                        <span className="h-3 w-3 rounded-full bg-c-brand" />
+                      <span className="grid size-6 place-items-center rounded-full bg-rust-wash">
+                        <Check strokeWidth={2} className="size-4 text-rust" />
                       </span>
                     ) : (
-                      <span className="h-[22px] w-[22px] rounded-full border-[2.5px] border-[#e2dcee] border-t-c-brand motion-safe:animate-spin" />
+                      <span className="size-6 rounded-full border-2 border-track border-b-rust motion-safe:animate-spin" />
                     )}
                     {text}
                   </li>
@@ -150,53 +150,27 @@ export function LiveDemo() {
         )}
 
         {phase === "result" && selected && (
-          <ResultView
-            sample={selected}
-            tab={tab}
-            onTab={setTab}
-            runKey={runKey}
-          />
+          <ResultView sample={selected} tab={tab} onTab={setTab} runKey={runKey} />
         )}
       </div>
     </div>
   );
 }
 
-function ResultView({
-  sample,
-  tab,
-  onTab,
-  runKey,
-}: {
-  sample: Sample;
-  tab: Tab;
-  onTab: (t: Tab) => void;
-  runKey: number;
-}) {
-  const refs = useRef<Record<Tab, HTMLButtonElement | null>>({
-    notes: null,
-    cards: null,
-    quiz: null,
-  });
+function ResultView({ sample, tab, onTab, runKey }: { sample: Sample; tab: Tab; onTab: (t: Tab) => void; runKey: number }) {
+  const refs = useRef<Record<Tab, HTMLButtonElement | null>>({ notes: null, cards: null, quiz: null });
 
   function onKeyDown(e: React.KeyboardEvent, index: number) {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     e.preventDefault();
-    const next =
-      TABS[
-        (index + (e.key === "ArrowRight" ? 1 : -1) + TABS.length) % TABS.length
-      ].id;
+    const next = TABS[(index + (e.key === "ArrowRight" ? 1 : -1) + TABS.length) % TABS.length].id;
     onTab(next);
     refs.current[next]?.focus();
   }
 
   return (
-    <div className="animate-[demo-in_0.35s_ease-out] motion-reduce:animate-none">
-      <div
-        role="tablist"
-        aria-label="Study set"
-        className="inline-flex rounded-[14px] bg-c-soft p-[5px]"
-      >
+    <div className="animate-[demo-in_200ms_cubic-bezier(0.2,0,0,1)]">
+      <div role="tablist" aria-label="Study set" className="inline-flex rounded-full bg-control p-1">
         {TABS.map((t, i) => (
           <button
             key={t.id}
@@ -211,10 +185,8 @@ function ResultView({
             type="button"
             onClick={() => onTab(t.id)}
             onKeyDown={(e) => onKeyDown(e, i)}
-            className={`min-h-11 rounded-[10px] px-4 text-[14px] font-bold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c-brand ${
-              tab === t.id
-                ? "bg-white text-c-ink shadow-[0_2px_6px_rgba(60,20,120,0.1)]"
-                : "text-c-muted"
+            className={`min-h-9 rounded-full px-4 text-subheadline font-semibold transition-colors duration-150 ${
+              tab === t.id ? "bg-card text-label shadow-card" : "text-supporting hover:text-label"
             }`}
           >
             {t.label}
@@ -222,20 +194,10 @@ function ResultView({
         ))}
       </div>
 
-      <div
-        role="tabpanel"
-        id={`demo-panel-${tab}`}
-        aria-labelledby={`demo-tab-${tab}`}
-        tabIndex={0}
-        className="mt-5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-c-brand"
-      >
+      <div role="tabpanel" id={`demo-panel-${tab}`} aria-labelledby={`demo-tab-${tab}`} tabIndex={0} className="mt-5 rounded-lg">
         {tab === "notes" && <NotesPane sample={sample} />}
-        {tab === "cards" && (
-          <FlashcardsPane key={`${sample.id}-${runKey}`} sample={sample} />
-        )}
-        {tab === "quiz" && (
-          <QuizPane key={`${sample.id}-${runKey}`} sample={sample} />
-        )}
+        {tab === "cards" && <FlashcardsPane key={`${sample.id}-${runKey}`} sample={sample} />}
+        {tab === "quiz" && <QuizPane key={`${sample.id}-${runKey}`} sample={sample} />}
       </div>
     </div>
   );
@@ -244,20 +206,20 @@ function ResultView({
 function NotesPane({ sample }: { sample: Sample }) {
   return (
     <div>
-      <h3 className="text-[22px] font-bold text-c-ink">{sample.title}</h3>
-      <ul className="mt-3.5 space-y-2">
+      <h3 className="text-title3 font-semibold text-label">{sample.title}</h3>
+      <ul className="mt-3 space-y-2">
         {sample.notes.map(([label, text]) => (
-          <li
-            key={label}
-            className="rounded-xl border border-[#efeaf7] bg-[#faf8fd] px-4 py-3 text-[16px] leading-snug text-c-ink"
-          >
-            <b className="text-c-brand-ink">{label}:</b> {text}
+          <li key={label} className="rounded-xl border border-divider px-4 py-3 text-callout text-label">
+            <span className="font-semibold text-rust">{label}:</span> {text}
           </li>
         ))}
       </ul>
     </div>
   );
 }
+
+const roundIcon =
+  "relative grid size-[2.125rem] place-items-center rounded-full border border-divider bg-card text-label hover:border-input after:absolute after:-inset-[0.3125rem] after:content-['']";
 
 function FlashcardsPane({ sample }: { sample: Sample }) {
   const [i, setI] = useState(0);
@@ -267,53 +229,35 @@ function FlashcardsPane({ sample }: { sample: Sample }) {
     setFlipped(false);
     setI((n) => (n + d + sample.cards.length) % sample.cards.length);
   };
+  const face = "study-face absolute inset-0 flex flex-col items-center justify-center rounded-2xl bg-paper p-6 text-center text-on-paper shadow-card";
   return (
     <div className="flex flex-col items-center">
       <button
         type="button"
         aria-pressed={flipped}
+        aria-label={flipped ? `Answer: ${a}. Show question` : `Question: ${q}. Show answer`}
         onClick={() => setFlipped((f) => !f)}
-        data-flipped={flipped}
-        className="c-flip relative block h-[220px] w-full max-w-[460px] cursor-pointer rounded-[20px] [perspective:1000px] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-c-brand"
+        className="relative block h-52 w-full max-w-[28rem] rounded-2xl [perspective:1000px]"
       >
-        <span className="c-flip-in absolute inset-0 block">
-          <span
-            aria-hidden={flipped}
-            className="c-face c-face-front absolute inset-0 flex items-center justify-center rounded-[20px] bg-c-ink p-6 text-center text-[21px] font-bold leading-snug text-white"
-          >
-            {q}
+        <span data-flipped={flipped} className="study-flip absolute inset-0 block">
+          <span aria-hidden="true" className={`${face} study-face-front`}>
+            <span className="font-serif text-title3">{q}</span>
           </span>
-          <span
-            aria-hidden={!flipped}
-            className="c-face c-face-back absolute inset-0 flex items-center justify-center rounded-[20px] bg-c-lime p-6 text-center text-[21px] font-bold leading-snug text-c-ink"
-          >
-            <span className="sr-only">Answer: </span>
-            {a}
+          <span aria-hidden="true" className={`${face} study-face-back`}>
+            <span className="text-footnote font-semibold uppercase tracking-wide text-on-paper-supporting">Answer</span>
+            <span className="mt-1 text-title3 font-semibold">{a}</span>
           </span>
         </span>
       </button>
       <div className="mt-4 flex items-center gap-4">
-        <button
-          type="button"
-          aria-label="Previous card"
-          onClick={() => go(-1)}
-          className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-[#e2dcee] text-[17px] font-bold text-c-ink hover:border-c-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c-brand"
-        >
-          ←
+        <button type="button" aria-label="Previous card" onClick={() => go(-1)} className={roundIcon}>
+          <ChevronLeft aria-hidden="true" strokeWidth={1.75} className="size-5" />
         </button>
-        <span
-          className="text-[14px] font-semibold text-c-muted"
-          aria-live="polite"
-        >
-          {i + 1} / {sample.cards.length} · tap to flip
+        <span className="tabular text-subheadline text-supporting" aria-live="polite">
+          {i + 1} of {sample.cards.length}, select the card to flip
         </span>
-        <button
-          type="button"
-          aria-label="Next card"
-          onClick={() => go(1)}
-          className="grid h-11 w-11 place-items-center rounded-full border-[1.5px] border-[#e2dcee] text-[17px] font-bold text-c-ink hover:border-c-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c-brand"
-        >
-          →
+        <button type="button" aria-label="Next card" onClick={() => go(1)} className={roundIcon}>
+          <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-5" />
         </button>
       </div>
     </div>
@@ -326,7 +270,7 @@ function QuizPane({ sample }: { sample: Sample }) {
   const locked = picked !== null;
   return (
     <div>
-      <h3 className="text-[22px] font-bold text-c-ink">{q}</h3>
+      <h3 className="text-title3 font-semibold text-label">{q}</h3>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         {options.map((opt, j) => {
           const right = locked && j === answer;
@@ -338,38 +282,40 @@ function QuizPane({ sample }: { sample: Sample }) {
               disabled={locked}
               aria-pressed={picked === j}
               onClick={() => setPicked(j)}
-              className={`min-h-12 rounded-[14px] border-2 px-4 py-3.5 text-left text-[16px] font-semibold text-c-ink transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-c-brand ${
+              className={`flex min-h-12 items-center justify-between gap-2 rounded-xl px-4 py-3 text-left text-callout font-semibold text-label transition-colors duration-150 disabled:cursor-default ${
                 right
-                  ? "border-c-lime bg-c-lime"
+                  ? "border-2 border-success bg-card"
                   : wrong
-                    ? "border-[#ffc3c3] bg-c-wrong line-through"
-                    : "border-[#ebe5f5] bg-white enabled:hover:border-c-brand"
+                    ? "border-2 border-danger bg-card"
+                    : "border border-divider bg-card enabled:hover:border-input"
               }`}
             >
-              {opt}
-              {right && <span className="sr-only"> (correct answer)</span>}
+              <span>{opt}</span>
+              {right && (
+                <span className="inline-flex items-center gap-1 text-subheadline text-label">
+                  <Check aria-hidden="true" strokeWidth={2} className="size-4 text-success" />
+                  Correct
+                </span>
+              )}
               {wrong && (
-                <span className="sr-only"> (your answer, incorrect)</span>
+                <span className="inline-flex items-center gap-1 text-subheadline text-label">
+                  <X aria-hidden="true" strokeWidth={2} className="size-4 text-danger" />
+                  Your answer
+                </span>
               )}
             </button>
           );
         })}
       </div>
-      <div className="mt-4 flex min-h-[72px] items-center gap-3">
+      <div className="mt-4 flex min-h-[4.5rem] items-center gap-3">
         {locked && picked === answer && (
-          <Image
-            src="/mascot/quizliai_mascot_thumbs_up.webp"
-            alt=""
-            width={328}
-            height={640}
-            className="anim-pop h-auto w-[44px] shrink-0"
-          />
+          <Image src="/mascot/quizliai_mascot_thumbs_up.webp" alt="" width={328} height={640} className="h-auto w-11 shrink-0" />
         )}
-        <p className="text-[15px] font-semibold text-c-ink" aria-live="polite">
+        <p className="text-subheadline font-semibold text-label" aria-live="polite">
           {locked &&
             (picked === answer
-              ? "Nailed it. Imagine this on your own lecture notes."
-              : "Not quite. That's why we quiz you before the test.")}
+              ? "Right. Your own lessons get quizzed the same way."
+              : "Not this time. That is why the quiz comes before the test.")}
         </p>
       </div>
     </div>

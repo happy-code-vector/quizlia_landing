@@ -13,7 +13,8 @@ import { ProfileFace } from "./ProfileFace";
 import { EditProfileForm } from "./ProfileFields";
 import { DeleteProfileConfirm } from "./DeleteProfileConfirm";
 
-export const SUPPORT_EMAIL = "hello@quizliai.com";
+import { SUPPORT_EMAIL } from "@/lib/support";
+export { SUPPORT_EMAIL };
 
 export interface PlanSummary {
   name: string;

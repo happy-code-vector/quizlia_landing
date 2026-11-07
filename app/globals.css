@@ -204,6 +204,9 @@
   /* Type scale (W-6.3), iOS text styles at default Dynamic Type */
   --text-large-title: 2.125rem;
   --text-large-title--line-height: 1.2;
+  /* Landing hero h1 at 1024+ only (proposed in PR 6; no iOS counterpart). */
+  --text-display: 3.5rem;
+  --text-display--line-height: 1.1;
   --text-title: 1.75rem;
   --text-title--line-height: 1.2;
   --text-title2: 1.375rem;

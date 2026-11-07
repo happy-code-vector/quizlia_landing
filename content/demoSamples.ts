@@ -16,7 +16,7 @@ export type Sample = {
 export const demoSamples: Sample[] = [
   {
     id: "yt",
-    label: "▶ YouTube · Photosynthesis in 8 min",
+    label: "YouTube · Photosynthesis",
     url: "youtube.com/watch?v=photosynthesis-explained",
     kind: "video",
     title: "Photosynthesis, explained",
@@ -37,7 +37,7 @@ export const demoSamples: Sample[] = [
   },
   {
     id: "pdf",
-    label: "PDF · Econ 101, ch. 3",
+    label: "PDF · Supply and demand",
     url: "Econ101_Chapter3_Supply_Demand.pdf",
     kind: "PDF",
     title: "Supply & demand",
@@ -58,7 +58,7 @@ export const demoSamples: Sample[] = [
   },
   {
     id: "web",
-    label: "Website · The Roman Empire",
+    label: "Web page · The Roman Empire",
     url: "en.wikipedia.org/wiki/Roman_Empire",
     kind: "page",
     title: "The Roman Empire",
