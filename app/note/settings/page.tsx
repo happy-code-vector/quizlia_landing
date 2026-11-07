@@ -3,17 +3,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useTheme } from "@/components/app/ThemeProvider";
+import { ThemeSegmented } from "@/components/app/ThemeSegmented";
 import { getSubscription, getPlanById, SUBSCRIPTION_PLANS, UserSubscription, canGenerate, resolveEffectivePlan } from "@/lib/subscription";
 import { PromoCodeInput } from "@/components/app/PromoCodeInput";
 import { deleteProfileFromFirebase, saveProfileToFirebase } from "@/lib/firebaseProfiles";
 import { useToast } from "@/components/app/ToastContainer";
 import { useAuth } from "@/lib/auth";
+import { Icon } from "@/components/app/Icon";
 
 export default function SettingsPage() {
   const { showToast } = useToast();
   const router = useRouter();
-  const { theme, toggleTheme } = useTheme();
   const { user, signOut, getUserEmail, getUserName, isConfigured } = useAuth();
   const [profile, setProfile] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<"general" | "billing" | "account">("general");
@@ -120,7 +120,7 @@ export default function SettingsPage() {
             <p className="text-gray-600 dark:text-gray-400">Manage your account and preferences</p>
           </div>
           <Link href="/note" className="btn-secondary">
-            <span className="material-symbols-outlined text-base">arrow_back</span>
+            <Icon name="arrow_back" className="text-base" />
             Back to Dashboard
           </Link>
         </div>
@@ -137,7 +137,7 @@ export default function SettingsPage() {
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 }`}
               >
-                <span className="material-symbols-outlined">settings</span>
+                <Icon name="settings" />
                 <span className="font-medium">General</span>
               </button>
               <button
@@ -148,7 +148,7 @@ export default function SettingsPage() {
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 }`}
               >
-                <span className="material-symbols-outlined">credit_card</span>
+                <Icon name="credit_card" />
                 <span className="font-medium">Billing</span>
               </button>
               <button
@@ -159,7 +159,7 @@ export default function SettingsPage() {
                     : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
                 }`}
               >
-                <span className="material-symbols-outlined">person</span>
+                <Icon name="person" />
                 <span className="font-medium">Account</span>
               </button>
             </nav>
@@ -177,25 +177,12 @@ export default function SettingsPage() {
                     <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Customize how QuizliAI looks</p>
                   </div>
                   <div className="p-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-wrap items-center justify-between gap-4">
                       <div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">Theme</h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">Choose your preferred theme</p>
+                        <h3 id="appearance-label" className="font-semibold text-gray-900 dark:text-white">Theme</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">System follows your device setting</p>
                       </div>
-                      <button
-                        onClick={toggleTheme}
-                        className="relative inline-flex h-12 w-24 items-center rounded-full bg-gray-200 dark:bg-gray-700 transition-colors"
-                      >
-                        <span
-                          className={`flex h-10 w-10 transform rounded-full bg-white dark:bg-gray-900 shadow-lg transition-transform items-center justify-center ${
-                            theme === "dark" ? "translate-x-12" : "translate-x-1"
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-yellow-500 dark:text-blue-400">
-                            {theme === "dark" ? "dark_mode" : "light_mode"}
-                          </span>
-                        </span>
-                      </button>
+                      <ThemeSegmented labelledBy="appearance-label" />
                     </div>
                   </div>
                 </div>
@@ -218,9 +205,7 @@ export default function SettingsPage() {
                             {isPro ? "Unlimited learning potential" : "Perfect for getting started"}
                           </p>
                         </div>
-                        <span className="material-symbols-outlined text-5xl opacity-20">
-                          {isPro ? "workspace_premium" : "school"}
-                        </span>
+                        <Icon name={isPro ? "workspace_premium" : "school"} className="text-5xl opacity-20" />
                       </div>
                       <div className="flex items-baseline gap-2 mb-6">
                         <span className="text-4xl font-bold">${currentPlan.price}</span>
@@ -228,7 +213,7 @@ export default function SettingsPage() {
                       </div>
                       {isPro ? (
                         <div className="flex items-center gap-2 bg-white/20 rounded-lg px-4 py-2">
-                          <span className="material-symbols-outlined text-green-300">check_circle</span>
+                          <Icon name="check_circle" className="text-green-300" />
                           <span>Active until {subscription?.currentPeriodEnd ? new Date(subscription.currentPeriodEnd).toLocaleDateString() : "N/A"}</span>
                         </div>
                       ) : (
@@ -252,7 +237,7 @@ export default function SettingsPage() {
                       if (plan.id === "free") {
                         return (
                           <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                            <span className="material-symbols-outlined">note_stack</span>
+                            <Icon name="note_stack" />
                             <span className="font-medium">
                               {usage.allowed ? "1 free note remaining" : "Free note used — upgrade to keep generating"}
                             </span>
@@ -287,7 +272,7 @@ export default function SettingsPage() {
                   <div className="p-6 space-y-3">
                     {(getPlanById(subscription?.planId || "free") || SUBSCRIPTION_PLANS[0]).features.map((feature, idx) => (
                       <div key={idx} className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-green-600">check_circle</span>
+                        <Icon name="check_circle" className="text-green-600" />
                         <span className="text-gray-700 dark:text-gray-300">{feature}</span>
                       </div>
                     ))}
@@ -319,7 +304,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="p-6 space-y-3">
                     <Link href="/note/pricing" className="btn-secondary w-full flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined">compare</span>
+                      <Icon name="compare" />
                       View All Plans
                     </Link>
                     {subscription?.status === "active" && subscription?.planId !== "free" && (
@@ -353,7 +338,7 @@ export default function SettingsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
-                        <span className="material-symbols-outlined text-base">check_circle</span>
+                        <Icon name="check_circle" className="text-base" />
                         <span>Authenticated with Firebase</span>
                       </div>
                     </div>
@@ -392,7 +377,7 @@ export default function SettingsPage() {
                       disabled={isSavingProfile || (editName.trim() === profile.name && editType === profile.type)}
                       className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold py-3 rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                      <span className="material-symbols-outlined text-lg">save</span>
+                      <Icon name="save" className="text-lg" />
                       {isSavingProfile ? "Saving..." : "Save Changes"}
                     </button>
                   </div>
@@ -405,11 +390,11 @@ export default function SettingsPage() {
                   </div>
                   <div className="p-6 space-y-3">
                     <Link href="/note/profile-selection" className="btn-secondary w-full flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined">swap_horiz</span>
+                      <Icon name="swap_horiz" />
                       Switch Profile
                     </Link>
                     <Link href="/note/create-profile?add=1" className="btn-secondary w-full flex items-center justify-center gap-2">
-                      <span className="material-symbols-outlined">add</span>
+                      <Icon name="add" />
                       Create New Profile
                     </Link>
                   </div>
@@ -426,7 +411,7 @@ export default function SettingsPage() {
                       onClick={handleLogout}
                       className="w-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
-                      <span className="material-symbols-outlined">logout</span>
+                      <Icon name="logout" />
                       Log Out
                     </button>
                   </div>
@@ -443,7 +428,7 @@ export default function SettingsPage() {
                       onClick={handleDeleteProfile}
                       className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                     >
-                      <span className="material-symbols-outlined">delete_forever</span>
+                      <Icon name="delete_forever" />
                       Delete Profile
                     </button>
                   </div>

@@ -4,26 +4,28 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
 
+// W-4.2 states. Primary is the rust capsule (lock rule 4: one per screen above the fold).
 const buttonVariants = cva(
-  'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full text-subheadline font-semibold transition-[background-color,border-color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] disabled:cursor-not-allowed disabled:opacity-40',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        default:
+          'bg-primary text-primary-foreground hover:bg-primary-hover active:bg-primary-active active:scale-[0.98] disabled:active:scale-100',
         destructive:
-          'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+          'bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.98]',
         outline:
-          'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+          'border border-divider bg-card text-label hover:border-input active:bg-hover-fill',
         secondary:
-          'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        ghost: 'hover:bg-accent hover:text-accent-foreground',
-        link: 'text-primary underline-offset-4 hover:underline',
+          'border border-divider bg-card text-label hover:border-input active:bg-hover-fill',
+        ghost: 'text-label hover:bg-hover-fill active:bg-hover-fill',
+        link: 'rounded-none text-rust underline-offset-4 hover:underline',
       },
       size: {
-        default: 'h-10 px-4 py-2',
-        sm: 'h-9 rounded-md px-3',
-        lg: 'h-11 rounded-md px-8',
-        icon: 'h-10 w-10',
+        default: 'h-11 px-5',
+        sm: 'h-9 px-4',
+        lg: 'h-12 px-7 text-headline',
+        icon: 'size-[2.125rem] relative after:absolute after:-inset-[0.3125rem] after:content-[""]',
       },
     },
     defaultVariants: {

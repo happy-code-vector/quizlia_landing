@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { Icon } from "@/components/app/Icon";
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -72,9 +73,7 @@ export function ConfirmModal({
         <div className="p-6">
           <div className="flex items-start gap-4">
             <div className={`${colors.iconBg} rounded-full p-3 shrink-0`}>
-              <span className={`material-symbols-outlined ${colors.icon}`}>
-                {type === "danger" ? "warning" : type === "warning" ? "error" : "info"}
-              </span>
+              <Icon name={type === "danger" ? "warning" : type === "warning" ? "error" : "info"} className={`${colors.icon}`} />
             </div>
             <div className="flex-1">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">

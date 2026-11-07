@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import { syncProfilesFromFirebase, syncProfilesToFirebase } from "@/lib/firebaseProfiles";
+import { Icon } from "@/components/app/Icon";
 
 const avatarColors: Record<string, string> = {
   "avatar-1": "from-blue-400 to-purple-400",
@@ -103,7 +104,7 @@ export default function ProfileSelectionPage() {
         {user?.email && (
           <div className="text-center mb-6">
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-sm">
-              <span className="material-symbols-outlined text-sm">cloud_done</span>
+              <Icon name="cloud_done" className="text-sm" />
               Synced to {user.email}
             </span>
           </div>
@@ -140,9 +141,7 @@ export default function ProfileSelectionPage() {
           >
             <div className="relative w-full aspect-square mb-3">
               <div className="w-full h-full rounded-full border-2 border-dashed border-gray-300 dark:border-gray-700 flex items-center justify-center group-hover:border-[#964CEE] transition-colors bg-white dark:bg-gray-900">
-                <span className="material-symbols-outlined text-4xl text-gray-400 dark:text-gray-600 group-hover:text-[#964CEE] transition-colors">
-                  add
-                </span>
+                <Icon name="add" className="text-4xl text-gray-400 dark:text-gray-600 group-hover:text-[#964CEE] transition-colors" />
               </div>
             </div>
             <p className="font-bold text-lg text-[#964CEE]">Add Profile</p>
@@ -151,7 +150,7 @@ export default function ProfileSelectionPage() {
 
         <div className="flex justify-center gap-4">
           <Link href="/note/settings" className="btn-secondary flex items-center gap-2">
-            <span className="material-symbols-outlined">settings</span>
+            <Icon name="settings" />
             Manage Profiles
           </Link>
         </div>

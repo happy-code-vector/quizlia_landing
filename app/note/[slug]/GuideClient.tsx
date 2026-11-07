@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
-import { Sidebar } from "@/components/app/Sidebar";
+import { AppShell } from "@/components/app/shell/AppShell";
 import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
 import { QuizStudyMode } from "@/components/app/QuizStudyMode";
 import { getStudyGuide, StudyGuide } from "@/lib/studyGuide";
 import { Topic, getSourceIcon } from "@/lib/types";
 import { MarkdownText } from "@/components/app/MarkdownText";
+import { Icon } from "@/components/app/Icon";
 
 type TabType = "note" | "flashcards" | "quiz";
 
@@ -207,16 +208,15 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
 
   if (!topic) {
     return (
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
-        <Sidebar profile={profile} />
-        <main className="flex-1 flex flex-col items-center justify-center gap-4">
-          <span className="material-symbols-outlined text-6xl text-gray-400">error</span>
+      <AppShell profile={profile} family="study">
+        <main id="main" className="flex-1 flex flex-col items-center justify-center gap-4">
+          <Icon name="error" className="text-6xl text-gray-400" />
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Guide not found</h1>
           <Link href="/note" className="text-blue-600 hover:underline">
             Go back to dashboard
           </Link>
         </main>
-      </div>
+      </AppShell>
     );
   }
 
@@ -256,10 +256,9 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
   const availableTabs = tabs.filter((t) => t.available);
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
-      <Sidebar profile={profile} />
+    <AppShell profile={profile} family="study">
 
-      <main className="flex-1 flex overflow-hidden">
+      <main id="main" className="flex-1 flex overflow-hidden">
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto">
           {/* Header */}
@@ -271,12 +270,12 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
                     href="/note/notes"
                     className="mt-1 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                   >
-                    <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">arrow_back</span>
+                    <Icon name="arrow_back" className="text-gray-600 dark:text-gray-400" />
                   </Link>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-md p-1.5">
-                        <span className="material-symbols-outlined">{getSourceIcon(topic.sourceType)}</span>
+                        <Icon name={getSourceIcon(topic.sourceType)} />
                       </div>
                       <span className="text-xs font-medium text-purple-600 dark:text-purple-400 uppercase">
                         Public study guide
@@ -292,7 +291,7 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
                   title="Share guide"
                 >
-                  <span className="material-symbols-outlined">share</span>
+                  <Icon name="share" />
                 </button>
               </div>
 
@@ -315,7 +314,7 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 mt-2 text-sm text-purple-600 dark:text-purple-400 hover:underline"
                     >
-                      <span className="material-symbols-outlined text-base">open_in_new</span>
+                      <Icon name="open_in_new" className="text-base" />
                       Watch on YouTube
                     </a>
                   )}
@@ -336,7 +335,7 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
                         : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     }`}
                   >
-                    <span className="material-symbols-outlined text-lg">{tab.icon}</span>
+                    <Icon name={tab.icon} className="text-lg" />
                     <span className="font-medium">{tab.label}</span>
                     {tab.count !== undefined && (
                       <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
@@ -378,7 +377,7 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
                     <ul className="space-y-2">
                       {topic.note.key_findings.map((finding, index) => (
                         <li key={index} className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-blue-500 text-sm mt-1">check_circle</span>
+                          <Icon name="check_circle" className="text-blue-500 text-sm mt-1" />
                           <span className="text-gray-700 dark:text-gray-300">{finding}</span>
                         </li>
                       ))}
@@ -394,7 +393,7 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
                     <ul className="space-y-2">
                       {topic.note.important_notes.map((item, index) => (
                         <li key={index} className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-yellow-500 text-sm mt-1">warning</span>
+                          <Icon name="warning" className="text-yellow-500 text-sm mt-1" />
                           <span className="text-gray-700 dark:text-gray-300">{item}</span>
                         </li>
                       ))}
@@ -465,7 +464,7 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
                     onClick={() => setStudyMode("flashcards")}
                     className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
                   >
-                    <span className="material-symbols-outlined">style</span>
+                    <Icon name="style" />
                     Study Mode
                   </button>
                 </div>
@@ -494,7 +493,7 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
                     onClick={() => setStudyMode("quiz")}
                     className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg font-medium hover:opacity-90 transition-opacity flex items-center gap-2"
                   >
-                    <span className="material-symbols-outlined">quiz</span>
+                    <Icon name="quiz" />
                     Start Quiz
                   </button>
                 </div>
@@ -534,7 +533,7 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
           <div className="p-4 border-b border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-3">
               <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-2">
-                <span className="material-symbols-outlined text-white">smart_toy</span>
+                <Icon name="smart_toy" className="text-white" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">AI Assistant</h3>
@@ -598,7 +597,7 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
                 disabled={!inputText.trim() || isLoading}
                 className="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
               >
-                <span className="material-symbols-outlined text-lg">send</span>
+                <Icon name="send" className="text-lg" />
               </button>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
@@ -607,6 +606,6 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
           </div>
         </div>
       </main>
-    </div>
+    </AppShell>
   );
 }

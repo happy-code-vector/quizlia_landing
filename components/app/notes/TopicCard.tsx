@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ItemActionsMenu } from "@/components/app/ItemActionsMenu";
 import { Topic, getYouTubeThumbnail, getSourceIcon } from "@/lib/types";
+import { Icon } from "@/components/app/Icon";
 
 interface TopicCardProps {
   topic: Topic;
@@ -40,7 +41,7 @@ export function TopicCard({ topic, onDelete, onRename, onMove }: TopicCardProps)
           className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-red-500 hover:bg-red-600 text-white shadow-lg"
           title="Delete topic"
         >
-          <span className="material-symbols-outlined text-sm">delete</span>
+          <Icon name="delete" className="text-sm" />
         </button>
         <ItemActionsMenu
           onRename={() => onRename(topic)}
@@ -60,7 +61,7 @@ export function TopicCard({ topic, onDelete, onRename, onMove }: TopicCardProps)
         <div className="p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-md p-1.5">
-              <span className="material-symbols-outlined">{getSourceIcon(topic.sourceType)}</span>
+              <Icon name={getSourceIcon(topic.sourceType)} />
             </div>
             <span className="text-xs text-gray-500 dark:text-gray-400 uppercase">
               {topic.sourceType}
@@ -75,19 +76,19 @@ export function TopicCard({ topic, onDelete, onRename, onMove }: TopicCardProps)
           <div className="flex flex-wrap gap-2">
             {topic.note && (
               <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
-                <span className="material-symbols-outlined text-xs">description</span>
+                <Icon name="description" className="text-xs" />
                 Notes
               </span>
             )}
             {topic.flashcards && (
               <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300">
-                <span className="material-symbols-outlined text-xs">style</span>
+                <Icon name="style" className="text-xs" />
                 {topic.flashcards.length}
               </span>
             )}
             {topic.quiz && (
               <span className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300">
-                <span className="material-symbols-outlined text-xs">quiz</span>
+                <Icon name="quiz" className="text-xs" />
                 {topic.quiz.length}
               </span>
             )}
@@ -97,7 +98,7 @@ export function TopicCard({ topic, onDelete, onRename, onMove }: TopicCardProps)
         <div className="border-t border-gray-200 dark:border-gray-800 px-5 py-3 flex justify-between items-center">
           <span className="text-xs text-gray-600 dark:text-gray-400">{formatDate(topic.createdAt)}</span>
           <span className="text-sm font-medium text-blue-600 dark:text-blue-400 flex items-center gap-1">
-            View <span className="material-symbols-outlined text-sm">arrow_forward</span>
+            View <Icon name="arrow_forward" className="text-sm" />
           </span>
         </div>
       </Link>

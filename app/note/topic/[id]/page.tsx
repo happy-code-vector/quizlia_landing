@@ -13,9 +13,10 @@ import { db, auth } from "@/lib/firebase";
 import { doc, deleteDoc } from "firebase/firestore";
 import { isAdminUser, publishNoteToLibrary } from "@/lib/publishNote";
 import { recordQuizAttempt } from "@/lib/quizAttempts";
-import { Sidebar } from "@/components/app/Sidebar";
+import { AppShell } from "@/components/app/shell/AppShell";
 import { RenameModal } from "@/components/app/RenameModal";
 import { MarkdownText } from "@/components/app/MarkdownText";
+import { Icon } from "@/components/app/Icon";
 
 type TabType = "note" | "flashcards" | "quiz";
 
@@ -414,16 +415,15 @@ export default function TopicDetailPage() {
 
   if (!topic) {
     return (
-      <div className="flex h-screen bg-gray-50 dark:bg-gray-950">
-        <Sidebar profile={profile} />
-        <main className="flex-1 flex flex-col items-center justify-center gap-4">
-          <span className="material-symbols-outlined text-6xl text-gray-400">error</span>
+      <AppShell profile={profile} family="study">
+        <main id="main" className="flex-1 flex flex-col items-center justify-center gap-4">
+          <Icon name="error" className="text-6xl text-gray-400" />
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">Topic not found</h1>
           <Link href="/note" className="text-blue-600 hover:underline">
             Go back to dashboard
           </Link>
         </main>
-      </div>
+      </AppShell>
     );
   }
 
@@ -465,10 +465,9 @@ export default function TopicDetailPage() {
   const availableTabs = tabs.filter(t => t.available);
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
-      <Sidebar profile={profile} />
+    <AppShell profile={profile} family="study">
 
-      <main className="flex-1 flex overflow-hidden">
+      <main id="main" className="flex-1 flex overflow-hidden">
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto">
           {/* Header */}
@@ -480,12 +479,12 @@ export default function TopicDetailPage() {
                     href="/note"
                     className="mt-1 p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                   >
-                    <span className="material-symbols-outlined text-gray-600 dark:text-gray-400">arrow_back</span>
+                    <Icon name="arrow_back" className="text-gray-600 dark:text-gray-400" />
                   </Link>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-3 mb-2">
                       <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-md p-1.5">
-                        <span className="material-symbols-outlined">{getSourceIcon(topic.sourceType)}</span>
+                        <Icon name={getSourceIcon(topic.sourceType)} />
                       </div>
                       <span className="text-sm text-gray-500 dark:text-gray-400 uppercase">{topic.sourceType}</span>
                     </div>
@@ -504,14 +503,14 @@ export default function TopicDetailPage() {
                       className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-green-600 rounded-lg transition-colors"
                       title="Copy public link"
                     >
-                      <span className="material-symbols-outlined">link</span>
+                      <Icon name="link" />
                     </button>
                     <button
                       onClick={handleUnpublish}
                       className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
                       title="Unpublish"
                     >
-                      <span className="material-symbols-outlined">visibility_off</span>
+                      <Icon name="visibility_off" />
                     </button>
                   </>
                 ) : isAdmin ? (
@@ -521,7 +520,7 @@ export default function TopicDetailPage() {
                     className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors disabled:opacity-50"
                     title="Publish to the public library"
                   >
-                    <span className="material-symbols-outlined">public</span>
+                    <Icon name="public" />
                   </button>
                 ) : null}
                 <button
@@ -529,21 +528,21 @@ export default function TopicDetailPage() {
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
                   title="Share topic"
                 >
-                  <span className="material-symbols-outlined">share</span>
+                  <Icon name="share" />
                 </button>
                 <button
                   onClick={() => setRenameOpen(true)}
                   className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-lg transition-colors"
                   title="Rename topic"
                 >
-                  <span className="material-symbols-outlined">edit</span>
+                  <Icon name="edit" />
                 </button>
                 <button
                   onClick={handleDeleteTopic}
                   className="p-2 hover:bg-red-100 dark:hover:bg-red-900/20 text-red-600 rounded-lg transition-colors"
                   title="Delete topic"
                 >
-                  <span className="material-symbols-outlined">delete</span>
+                  <Icon name="delete" />
                 </button>
               </div>
 
@@ -576,7 +575,7 @@ export default function TopicDetailPage() {
                         : "border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
                     }`}
                   >
-                    <span className="material-symbols-outlined text-lg">{tab.icon}</span>
+                    <Icon name={tab.icon} className="text-lg" />
                     <span className="font-medium">{tab.label}</span>
                     {tab.count !== undefined && (
                       <span className="text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded-full">
@@ -618,7 +617,7 @@ export default function TopicDetailPage() {
                     <ul className="space-y-2">
                       {topic.note.key_findings.map((finding, index) => (
                         <li key={index} className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-blue-500 text-sm mt-1">check_circle</span>
+                          <Icon name="check_circle" className="text-blue-500 text-sm mt-1" />
                           <span className="text-gray-700 dark:text-gray-300">{finding}</span>
                         </li>
                       ))}
@@ -670,7 +669,7 @@ export default function TopicDetailPage() {
                     <ul className="space-y-2">
                       {topic.note.important_notes.map((item, index) => (
                         <li key={index} className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-amber-500 text-sm mt-1">priority_high</span>
+                          <Icon name="priority_high" className="text-amber-500 text-sm mt-1" />
                           <span className="text-gray-700 dark:text-gray-300">{item}</span>
                         </li>
                       ))}
@@ -706,14 +705,14 @@ export default function TopicDetailPage() {
                       onClick={() => setPlayOpen(true)}
                       className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-2.5 text-sm font-semibold text-white transition-opacity hover:opacity-90"
                     >
-                      <span className="material-symbols-outlined">sports_esports</span>
+                      <Icon name="sports_esports" />
                       Play
                     </button>
                     <button
                       onClick={() => setStudyMode("flashcards")}
                       className="btn-primary flex items-center gap-2"
                     >
-                      <span className="material-symbols-outlined">school</span>
+                      <Icon name="school" />
                       Study Mode
                     </button>
                   </div>
@@ -752,7 +751,7 @@ export default function TopicDetailPage() {
                     onClick={() => setStudyMode("quiz")}
                     className="btn-primary flex items-center gap-2"
                   >
-                    <span className="material-symbols-outlined">school</span>
+                    <Icon name="school" />
                     Take Quiz
                   </button>
                 </div>
@@ -784,7 +783,7 @@ export default function TopicDetailPage() {
                             <span className="font-medium mr-2">{String.fromCharCode(65 + oIndex)}.</span>
                             {option}
                             {option === question.correct_answer && (
-                              <span className="material-symbols-outlined text-green-600 text-sm ml-2 align-middle">check</span>
+                              <Icon name="check" className="text-green-600 text-sm ml-2 align-middle" />
                             )}
                           </div>
                         ))}
@@ -809,7 +808,7 @@ export default function TopicDetailPage() {
           <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-800">
             <div className="flex items-center gap-2">
               <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-full p-1.5">
-                <span className="material-symbols-outlined text-white text-sm">smart_toy</span>
+                <Icon name="smart_toy" className="text-white text-sm" />
               </div>
               <div>
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white">AI Assistant</h3>
@@ -875,7 +874,7 @@ export default function TopicDetailPage() {
                 disabled={!inputText.trim() || isLoading}
                 className="px-3 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center"
               >
-                <span className="material-symbols-outlined text-lg">send</span>
+                <Icon name="send" className="text-lg" />
               </button>
             </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
@@ -896,6 +895,6 @@ export default function TopicDetailPage() {
       {playOpen && profile && (
         <GamePicker noteId={topicId} profileId={profile.id} onClose={() => setPlayOpen(false)} />
       )}
-    </div>
+    </AppShell>
   );
 }

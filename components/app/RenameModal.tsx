@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Icon } from "@/components/app/Icon";
 
 interface RenameModalProps {
   isOpen: boolean;
@@ -66,7 +67,7 @@ export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType,
           <div className="p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="bg-blue-100 dark:bg-blue-900/30 rounded-full p-3">
-                <span className="material-symbols-outlined text-blue-600">edit</span>
+                <Icon name="edit" className="text-blue-600" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Rename {itemType}

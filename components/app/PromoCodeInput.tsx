@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { applyPromoCode } from "@/lib/firebaseSubscription";
 import { useToast } from "./ToastContainer";
+import { Icon } from "@/components/app/Icon";
 
 interface PromoCodeInputProps {
   email: string;
@@ -62,7 +63,7 @@ export function PromoCodeInput({ email, profileId, onSuccess }: PromoCodeInputPr
       >
         {isApplying ? (
           <>
-            <span className="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+            <Icon name="progress_activity" className="animate-spin text-sm" />
             Applying...
           </>
         ) : (

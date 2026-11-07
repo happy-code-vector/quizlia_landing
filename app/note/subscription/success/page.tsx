@@ -9,6 +9,7 @@ import {
   syncSubscriptionFromFirebase,
 } from "@/lib/firebaseSubscription";
 import Link from "next/link";
+import { Icon } from "@/components/app/Icon";
 
 function SuccessContent() {
   const router = useRouter();
@@ -66,9 +67,7 @@ function SuccessContent() {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
-          <span className="material-symbols-outlined text-5xl text-purple-600 animate-spin">
-            progress_activity
-          </span>
+          <Icon name="progress_activity" className="text-5xl text-purple-600 animate-spin" />
           <p className="mt-4 text-gray-600 dark:text-gray-400">Processing your subscription...</p>
         </div>
       </div>
@@ -80,7 +79,7 @@ function SuccessContent() {
       <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 text-center">
         <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
 
-        <span className="material-symbols-outlined text-5xl text-green-600">check_circle</span>
+        <Icon name="check_circle" className="text-5xl text-green-600" />
         </div>
 
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
@@ -94,19 +93,19 @@ function SuccessContent() {
           <h3 className="font-semibold text-purple-700 dark:text-purple-400 mb-2">What's included:</h3>
           <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 text-left">
             <li className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-green-500 text-sm">check</span>
+              <Icon name="check" className="text-green-500 text-sm" />
               Notes, quizzes, flashcards &amp; AI chat
             </li>
             <li className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-green-500 text-sm">check</span>
+              <Icon name="check" className="text-green-500 text-sm" />
               Priority AI processing
             </li>
             <li className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-green-500 text-sm">check</span>
+              <Icon name="check" className="text-green-500 text-sm" />
               Advanced content analysis
             </li>
             <li className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-green-500 text-sm">check</span>
+              <Icon name="check" className="text-green-500 text-sm" />
               Priority support
             </li>
           </ul>
@@ -116,7 +115,7 @@ function SuccessContent() {
           href="/note"
           className="inline-flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
         >
-          <span className="material-symbols-outlined">arrow_forward</span>
+          <Icon name="arrow_forward" />
           Go to Dashboard
         </Link>
       </div>
@@ -129,9 +128,7 @@ export default function SubscriptionSuccessPage() {
     <Suspense
       fallback={
         <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-          <span className="material-symbols-outlined text-5xl text-purple-600 animate-spin">
-            progress_activity
-          </span>
+          <Icon name="progress_activity" className="text-5xl text-purple-600 animate-spin" />
         </div>
       }
     >
