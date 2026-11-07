@@ -6,14 +6,12 @@ export const GAMES: {
   slug: GameSlug;
   name: string;
   tagline: string;
-  icon: string;
-  accent: string; // tailwind gradient classes for the card
 }[] = [
-  { slug: "match", name: "Match Rush", tagline: "Pair each term with its definition before the round timer runs out.", icon: "🎲", accent: "from-purple-600 to-fuchsia-500" },
-  { slug: "memory", name: "Memory Flip", tagline: "Flip tiles, remember positions, and clear every pair.", icon: "🃏", accent: "from-sky-500 to-indigo-500" },
-  { slug: "run", name: "Quiz Run", tagline: "A nonstop quiz sprint through your deck — one card at a time.", icon: "🏃", accent: "from-emerald-500 to-teal-500" },
-  { slug: "snake", name: "Answer Snake", tagline: "Steer the snake into the correct answer and keep growing.", icon: "🐍", accent: "from-lime-500 to-green-600" },
-  { slug: "truefalse", name: "True or False", tagline: "Snap judgments, statement by statement. How fast can you go?", icon: "⚡", accent: "from-amber-500 to-orange-500" },
+  { slug: "match", name: "Match Rush", tagline: "Pair each term with its definition before the round timer runs out." },
+  { slug: "memory", name: "Memory Flip", tagline: "Flip tiles, remember positions, and clear every pair." },
+  { slug: "run", name: "Quiz Run", tagline: "A nonstop quiz sprint through your deck, one card at a time." },
+  { slug: "snake", name: "Answer Snake", tagline: "Steer the snake into the correct answer and keep growing." },
+  { slug: "truefalse", name: "True or False", tagline: "Snap judgments, statement by statement. How fast can you go?" },
 ];
 
 export function isGameSlug(v: string): v is GameSlug {
