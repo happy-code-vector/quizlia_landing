@@ -16,7 +16,11 @@ interface UseGenerateContentOptions {
   /** Folder the generated notes are filed into (undefined = Unsorted) */
   targetFolderId?: string;
   onGenerated?: (updatedContent: ContentItem[]) => void;
+  /** Source the form opens on (Home's source buttons preselect it). */
+  initialType?: SourceType;
 }
+
+export type SourceType = "youtube" | "url" | "pdf" | "image";
 
 /** Dedupe (spec §2): an item this profile already generated from the same
  *  video (any link form) or the same normalized URL. Legacy items without
@@ -41,10 +45,10 @@ function findExistingSourceItem(profileId: number | string, rawLink: string): Co
   return stored.find(matches) ?? null;
 }
 
-export function useGenerateContent({ profile, targetFolderId, onGenerated }: UseGenerateContentOptions) {
+export function useGenerateContent({ profile, targetFolderId, onGenerated, initialType = "url" }: UseGenerateContentOptions) {
   const { showToast } = useToast();
   const router = useRouter();
-  const [contentType, setContentType] = useState("url");
+  const [contentType, setContentType] = useState<string>(initialType);
   const [contentInput, setContentInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);

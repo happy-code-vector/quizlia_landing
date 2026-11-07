@@ -3,19 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { HomeView } from "@/components/app/home/HomeView";
-import { useToast } from "@/components/app/ToastContainer";
-import { loadProfileContent, persistProfileContent, tombstoneIOSNoteIfAny } from "@/lib/notesSync";
+import { loadProfileContent } from "@/lib/notesSync";
+import { readStudyPositions, type StudyPositions } from "@/lib/studyPosition";
 import { syncSubscriptionFromFirebase, createOrUpdateFirebaseUser } from "@/lib/firebaseSubscription";
-import { Topic, migrateContentToTopics, removeTopicItems, ContentItem, Profile } from "@/lib/types";
+import { Topic, migrateContentToTopics, ContentItem, Profile } from "@/lib/types";
 import { useAuth } from "@/lib/auth";
 
 export default function NotePage() {
   const router = useRouter();
-  const { showToast } = useToast();
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [content, setContent] = useState<ContentItem[]>([]);
   const [topics, setTopics] = useState<Topic[]>([]);
+  const [positions, setPositions] = useState<StudyPositions>({});
 
   useEffect(() => {
     const initializeDashboard = async () => {
@@ -27,6 +26,7 @@ export default function NotePage() {
         }
         const profileData = JSON.parse(currentProfile);
         setProfile(profileData);
+        setPositions(readStudyPositions(profileData.id));
 
         const storedContent = localStorage.getItem(`content_${profileData.id}`);
         if (!storedContent) {
@@ -38,7 +38,6 @@ export default function NotePage() {
         }
         if (storedContent) {
           const parsedContent = JSON.parse(storedContent);
-          setContent(parsedContent);
           setTopics(migrateContentToTopics(parsedContent));
         }
       }
@@ -59,34 +58,14 @@ export default function NotePage() {
       .catch((error) => console.log("Firebase sync skipped:", error));
   }, [user, profile]);
 
-  const handleDeleteTopic = (topicId: string) => {
-    if (!profile || typeof window === "undefined") return;
-
-    // Fresh read: a cloud merge may have updated localStorage since this
-    // component's state snapshot was taken.
-    const storedContent = localStorage.getItem(`content_${profile.id}`);
-    const updatedContent = removeTopicItems(storedContent ? JSON.parse(storedContent) : [], topicId);
-    setContent(updatedContent);
-    setTopics(migrateContentToTopics(updatedContent));
-    // Write-through + cloud tombstone: without the tombstone the note's
-    // cloud doc survives and the iOS-notes merge re-imports the topic on
-    // the next notes-page visit (deleted topics "re-appearing").
-    persistProfileContent(profile, updatedContent);
-    tombstoneIOSNoteIfAny(profile, topicId);
-    showToast("Topic deleted", "success");
-  };
-
   if (!profile) return null;
 
   return (
     <HomeView
       profile={profile}
       topics={topics}
-      onDeleteTopic={handleDeleteTopic}
-      onGenerated={(updatedContent) => {
-        setContent(updatedContent);
-        setTopics(migrateContentToTopics(updatedContent));
-      }}
+      positions={positions}
+      onGenerated={(updatedContent: ContentItem[]) => setTopics(migrateContentToTopics(updatedContent))}
     />
   );
 }

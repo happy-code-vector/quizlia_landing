@@ -1,5 +1,7 @@
 import type { Profile, Topic } from "@/lib/types";
 import type { ShellFolder } from "@/components/app/shell/AppShell";
+import type { StudyPositions } from "@/lib/studyPosition";
+import type { SketchPreview } from "@/components/app/home/SketchedCard";
 
 // W-10 sample data: three profiles, two folders, five notes, one quiz in progress.
 // Fixed dates and a fixed "now" keep screenshots deterministic.
@@ -34,8 +36,18 @@ export const FIXTURE_TOPICS: Topic[] = [
       key_findings: ["Happens in chloroplasts", "Needs light, water and carbon dioxide", "Releases oxygen"],
     },
     flashcards: cards([
-      ["What gas do plants take in from the air during photosynthesis?", "Carbon dioxide"],
+      ["What is photosynthesis?", "The process plants use to turn light energy into chemical energy stored in sugar"],
       ["Where in the cell does photosynthesis happen?", "In the chloroplasts"],
+      ["Which pigment absorbs light for photosynthesis?", "Chlorophyll"],
+      ["What gas do plants take in from the air during photosynthesis?", "Carbon dioxide"],
+      ["Which gas do plants release during photosynthesis?", "Oxygen"],
+      ["Where do plants get the water they use?", "From the soil, through their roots"],
+      ["What sugar does photosynthesis make?", "Glucose"],
+      ["What are the two stages of photosynthesis?", "The light reactions and the Calvin cycle"],
+      ["Where do the light reactions happen?", "In the thylakoid membranes"],
+      ["Where does the Calvin cycle happen?", "In the stroma"],
+      ["What tiny pores let gases in and out of a leaf?", "Stomata"],
+      ["Why are most leaves green?", "Chlorophyll reflects green light"],
     ]),
     quiz: [
       {
@@ -57,7 +69,26 @@ export const FIXTURE_TOPICS: Topic[] = [
       quick_summary: "Key events from 1765 to 1783.",
       key_findings: ["Stamp Act 1765", "Declaration of Independence 1776", "Treaty of Paris 1783"],
     },
-    flashcards: cards([["When was the Declaration of Independence signed?", "1776"]]),
+    flashcards: cards([
+      ["When was the Declaration of Independence signed?", "1776"],
+      ["What tax did the Stamp Act of 1765 create?", "A tax on printed paper"],
+      ["What happened at the Boston Tea Party?", "Colonists dumped British tea into Boston Harbor"],
+      ["In what year was the Boston Tea Party?", "1773"],
+      ["Where were the first shots of the war fired?", "Lexington and Concord"],
+      ["Who led the Continental Army?", "George Washington"],
+      ["Who wrote most of the Declaration of Independence?", "Thomas Jefferson"],
+      ["Which battle is called the turning point of the war?", "Saratoga"],
+      ["Which country became an ally of the colonies after Saratoga?", "France"],
+      ["Where did the army spend the winter of 1777 to 1778?", "Valley Forge"],
+      ["Who wrote the pamphlet Common Sense?", "Thomas Paine"],
+      ["What were the Intolerable Acts?", "British laws that punished Massachusetts after the Tea Party"],
+      ["Where did the British surrender in 1781?", "Yorktown"],
+      ["Which treaty ended the war?", "The Treaty of Paris"],
+      ["In what year was the Treaty of Paris signed?", "1783"],
+      ["What did colonists mean by no taxation without representation?", "They had no vote in the Parliament that taxed them"],
+      ["Who rode to warn that the British were coming?", "Paul Revere"],
+      ["What was the Second Continental Congress?", "The colonies' governing body during the war"],
+    ]),
   },
   {
     id: "t-fractions",
@@ -69,7 +100,18 @@ export const FIXTURE_TOPICS: Topic[] = [
       quick_summary: "Find a common denominator, convert, then add the numerators.",
       key_findings: ["Use the least common multiple", "Simplify the result"],
     },
-    flashcards: cards([["What is 1/2 + 1/3?", "5/6"]]),
+    flashcards: cards([
+      ["What is 1/2 + 1/3?", "5/6"],
+      ["What is a common denominator?", "A number both denominators divide into"],
+      ["What is the least common multiple of 4 and 6?", "12"],
+      ["What is 1/4 + 1/6?", "5/12"],
+      ["What is 2/3 + 1/4?", "11/12"],
+      ["What is 3/5 + 1/10?", "7/10"],
+      ["Do you add the denominators?", "No, only the numerators once the denominators match"],
+      ["What is 1/3 + 1/6, simplified?", "1/2"],
+      ["What is 5/8 + 1/4?", "7/8"],
+      ["How do you simplify 6/8?", "Divide top and bottom by 2 to get 3/4"],
+    ]),
     quiz: [
       {
         question: "What is 1/4 + 1/6?",
@@ -99,3 +141,16 @@ export const FIXTURE_TOPICS: Topic[] = [
     flashcards: cards([["How do you say good morning?", "Buenos días"]]),
   },
 ];
+
+// Home hero: Maya stopped on card 4 of Photosynthesis basics this evening.
+export const FIXTURE_POSITIONS: StudyPositions = {
+  "t-photo": { index: 3, updatedAt: "2026-11-06T18:30:00Z" },
+};
+
+// Sketched card (view-only, made on iPhone). Static placeholder image for screenshots.
+export const FIXTURE_SKETCH: SketchPreview = {
+  noteId: "t-photo",
+  noteTitle: "Photosynthesis basics",
+  imageUrl: "/dev-fixtures/sketched-photosynthesis.svg",
+  count: 2,
+};

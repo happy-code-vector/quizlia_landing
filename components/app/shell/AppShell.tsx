@@ -59,7 +59,7 @@ const NAV: NavItem[] = [
   { href: "/note/arcade", label: "Arcade", Icon: Gamepad2, match: (p) => p.startsWith("/note/arcade") || p.startsWith("/note/play") },
 ];
 
-function readLocalFolders(profileId: number): ShellFolder[] {
+export function readLocalFolders(profileId: number): ShellFolder[] {
   try {
     const raw = JSON.parse(localStorage.getItem(localFoldersKey(profileId)) || "[]") as Array<{
       id: string; name: string; deletedAt?: string | null;
@@ -222,6 +222,7 @@ function NavBody({ expanded, pathname, profile, initial, folders, hideUsage, onT
   const showLabel = railBelowLg ? (expanded ? "hidden lg:inline" : "hidden") : "inline";
   const showBlock = railBelowLg ? (expanded ? "hidden lg:flex" : "hidden") : "flex";
   const tipHidden = railBelowLg ? (expanded ? "lg:hidden" : "") : "hidden";
+  const srWhenRail = railBelowLg ? (expanded ? "sr-only lg:hidden" : "sr-only") : "hidden";
 
   return (
     <div className="flex h-full w-full flex-col justify-between gap-4 overflow-y-auto px-3 py-5">
@@ -246,10 +247,11 @@ function NavBody({ expanded, pathname, profile, initial, folders, hideUsage, onT
         <Tip label={profile ? `Switch profile (${profile.name})` : "Choose a profile"} hiddenClass={tipHidden}>
           <Link
             href="/note/profile-selection"
-            aria-label={profile ? `Switch profile, current profile ${profile.name}` : "Choose a profile"}
             className="ds-card flex items-center justify-center gap-3 rounded-[0.875rem] p-2 hover:shadow-card-raised"
           >
             <Monogram initial={initial} />
+            {/* WCAG 2.5.3: name comes from the visible text; this span names the link only when that text is hidden (rail). */}
+            <span className={srWhenRail}>{profile ? `Switch profile, current profile ${profile.name}` : "Choose a profile"}</span>
             <span className={`${showBlock} min-w-0 flex-1 flex-col`}>
               <span className="truncate text-subheadline font-semibold">{profile?.name ?? "Profile"}</span>
               <span className="text-footnote text-supporting">Switch profile</span>
