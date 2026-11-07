@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "@/components/app/Icon";
 
 interface Quiz {
   question: string;
@@ -119,9 +120,7 @@ export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: Quiz
         <div className="flex-1 flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
           <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-2xl p-5 sm:p-8 max-w-md w-full text-center">
             <div className={`w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 rounded-full flex items-center justify-center ${scorePercentage >= 70 ? "bg-green-100" : scorePercentage >= 50 ? "bg-yellow-100" : "bg-red-100"}`}>
-              <span className={`material-symbols-outlined text-3xl sm:text-5xl ${scorePercentage >= 70 ? "text-green-600" : scorePercentage >= 50 ? "text-yellow-600" : "text-red-600"}`}>
-                {scorePercentage >= 70 ? "emoji_events" : scorePercentage >= 50 ? "thumb_up" : "refresh"}
-              </span>
+              <Icon name={scorePercentage >= 70 ? "emoji_events" : scorePercentage >= 50 ? "thumb_up" : "refresh"} className={`text-3xl sm:text-5xl ${scorePercentage >= 70 ? "text-green-600" : scorePercentage >= 50 ? "text-yellow-600" : "text-red-600"}`} />
             </div>
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
               {scorePercentage >= 70 ? "Great Job!" : scorePercentage >= 50 ? "Good Effort!" : "Keep Practicing!"}
@@ -148,7 +147,7 @@ export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: Quiz
                 Try Again
               </button>
               <button onClick={handleShareResult} className="w-full py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg sm:rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-lg">share</span>
+                <Icon name="share" className="text-lg" />
                 Share Result
               </button>
               <button onClick={onClose} className="w-full py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg sm:rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
@@ -165,7 +164,7 @@ export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: Quiz
     <div className="fixed inset-0 z-50 flex flex-col bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 overflow-hidden">
       <div className="flex items-center justify-between p-3 sm:p-4 text-white shrink-0">
         <button onClick={onClose} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-white/10 transition-colors" title="Exit Quiz">
-          <span className="material-symbols-outlined">close</span>
+          <Icon name="close" />
           <span className="text-sm font-medium hidden sm:inline">Exit Quiz</span>
         </button>
         <div className="text-center">
@@ -200,8 +199,8 @@ export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: Quiz
                     {String.fromCharCode(65 + index)}
                   </span>
                   <span className="flex-1 font-medium text-sm sm:text-base">{option}</span>
-                  {showCorrect && <span className="material-symbols-outlined text-lg sm:text-xl shrink-0">check_circle</span>}
-                  {showWrong && <span className="material-symbols-outlined text-lg sm:text-xl shrink-0">cancel</span>}
+                  {showCorrect && <Icon name="check_circle" className="text-lg sm:text-xl shrink-0" />}
+                  {showWrong && <Icon name="cancel" className="text-lg sm:text-xl shrink-0" />}
                 </button>
               );
             })}
@@ -210,7 +209,7 @@ export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: Quiz
           {showResult && currentQuiz.explanation && (
             <div className="mt-3 sm:mt-4">
               <button onClick={() => setShowExplanation(!showExplanation)} className="flex items-center gap-2 text-white/80 hover:text-white transition-colors" title={showExplanation ? "Hide Explanation" : "Show Explanation"}>
-                <span className="material-symbols-outlined text-sm">{showExplanation ? "expand_less" : "expand_more"}</span>
+                <Icon name={showExplanation ? "expand_less" : "expand_more"} className="text-sm" />
                 <span className="text-xs sm:text-sm font-medium">{showExplanation ? "Hide" : "Show"} Explanation</span>
               </button>
               {showExplanation && (
@@ -226,9 +225,9 @@ export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: Quiz
         <div className="p-3 sm:p-6 flex justify-center shrink-0">
           <button onClick={handleNext} className="px-6 sm:px-8 py-2.5 sm:py-3 bg-white text-purple-600 rounded-lg sm:rounded-xl font-bold hover:bg-gray-100 transition-colors flex items-center gap-2 text-sm sm:text-base">
             {currentIndex < quizzes.length - 1 ? (
-              <>Next Question<span className="material-symbols-outlined text-lg sm:text-xl">arrow_forward</span></>
+              <>Next Question<Icon name="arrow_forward" className="text-lg sm:text-xl" /></>
             ) : (
-              <>See Results<span className="material-symbols-outlined text-lg sm:text-xl">emoji_events</span></>
+              <>See Results<Icon name="emoji_events" className="text-lg sm:text-xl" /></>
             )}
           </button>
         </div>

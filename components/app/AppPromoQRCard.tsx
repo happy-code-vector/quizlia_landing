@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { APP_STORE_URL } from "@/lib/constants";
 import { SHOW_APP_QR_EVENT, isOptedOut, optOutQr, shouldShowSigninQr } from "@/lib/appPromo";
+import { Icon } from "@/components/app/Icon";
 
 // Floating App Store QR nudge: shown once per profile on first app visit,
 // on the 1st generation, and every 5th (event-driven — see useGenerateContent).
@@ -41,7 +42,7 @@ export function AppPromoQRCard() {
           aria-label="Hide for now"
           title="Hide for now"
         >
-          <span className="material-symbols-outlined text-base">close</span>
+          <Icon name="close" className="text-base" />
         </button>
         <a
           href={APP_STORE_URL}

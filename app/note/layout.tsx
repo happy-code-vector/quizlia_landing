@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { ToastProvider } from "@/components/app/ToastContainer";
-import { ThemeProvider } from "@/components/app/ThemeProvider";
+import { RouteFocus } from "@/components/app/shell/RouteFocus";
 import { AppPromoQRCard } from "@/components/app/AppPromoQRCard";
 import { watchAdminFlag } from "@/lib/admin";
 
@@ -44,14 +44,17 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#964CEE]"></div>
+      <div className="flex h-dvh items-center justify-center" role="status">
+        <div aria-hidden="true" className="family-surface family-home" />
+        <div aria-hidden="true" className="h-8 w-8 animate-spin rounded-full border-2 border-track border-b-rust"></div>
+        <span className="sr-only">Loading</span>
       </div>
     );
   }
 
   return (
     <>
+      <RouteFocus />
       <AppPromoQRCard />
       {children}
     </>
@@ -61,11 +64,9 @@ function AppLayoutContent({ children }: { children: React.ReactNode }) {
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
-      <ThemeProvider>
-        <ToastProvider>
-          <AppLayoutContent>{children}</AppLayoutContent>
-        </ToastProvider>
-      </ThemeProvider>
+      <ToastProvider>
+        <AppLayoutContent>{children}</AppLayoutContent>
+      </ToastProvider>
     </AuthProvider>
   );
 }

@@ -7,8 +7,8 @@ export function TldrSection({ items }: TldrSectionProps) {
     <div className="mb-12">
       <div className="flex items-center gap-2 mb-4">
         <span className="text-2xl">🚀</span>
-        <h2 className="text-xl font-semibold text-white font-rethink-sans">TL;DR</h2>
-        <span className="text-sm text-white/40 font-rethink-sans">30-Second Summary</span>
+        <h2 className="text-xl font-semibold text-white font-sans">TL;DR</h2>
+        <span className="text-sm text-white/40 font-sans">30-Second Summary</span>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -21,7 +21,7 @@ export function TldrSection({ items }: TldrSectionProps) {
               <span className="flex-shrink-0 w-6 h-6 rounded-full bg-[#964CEE]/20 flex items-center justify-center text-xs font-bold text-[#964CEE]">
                 {index + 1}
               </span>
-              <p className="text-white/80 text-sm leading-relaxed font-rethink-sans">
+              <p className="text-white/80 text-sm leading-relaxed font-sans">
                 {item}
               </p>
             </div>

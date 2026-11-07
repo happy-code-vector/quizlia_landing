@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Icon } from "@/components/app/Icon";
 
 interface FolderTileProps {
   href: string;
@@ -18,7 +19,7 @@ export function FolderTile({ href, name, count, icon, materialIcon }: FolderTile
     >
       <div className="w-14 h-14 rounded-2xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center group-hover:scale-105 transition-transform">
         {materialIcon ? (
-          <span className="material-symbols-outlined text-3xl text-purple-600">{materialIcon}</span>
+          <Icon name={materialIcon} className="text-3xl text-purple-600" />
         ) : (
           <span className="text-3xl">{icon}</span>
         )}

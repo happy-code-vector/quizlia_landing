@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { auth } from "@/lib/firebase";
 import { SUBSCRIPTION_PLANS, SubscriptionPlan } from "@/lib/subscription";
+import { Icon } from "@/components/app/Icon";
 
 interface PaywallModalProps {
   isOpen: boolean;
@@ -56,10 +57,10 @@ export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId 
         {/* Header */}
         <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 p-6 rounded-t-2xl text-white">
           <button onClick={onClose} className="absolute top-4 right-4 text-white/80 hover:text-white">
-            <span className="material-symbols-outlined">close</span>
+            <Icon name="close" />
           </button>
           <div className="text-center">
-            <span className="material-symbols-outlined text-5xl mb-2">rocket_launch</span>
+            <Icon name="rocket_launch" className="text-5xl mb-2" />
             <h2 className="text-2xl font-bold">Upgrade to Premium</h2>
             <p className="text-white/80 mt-1">Same plans as the QuizliAI iOS app</p>
           </div>
@@ -69,7 +70,7 @@ export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId 
         {remainingGenerations <= 0 && (
           <div className="mx-6 mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
             <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-              <span className="material-symbols-outlined text-lg">warning</span>
+              <Icon name="warning" className="text-lg" />
               <p className="text-sm font-medium">You&apos;ve reached your generation limit</p>
             </div>
           </div>
@@ -109,7 +110,7 @@ export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId 
                 <ul className="space-y-2 mb-4">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>
+                      <Icon name="check_circle" className="text-green-500 text-lg" />
                       <span className="text-sm">{feature}</span>
                     </li>
                   ))}
@@ -126,17 +127,17 @@ export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId 
                 >
                   {isLoading ? (
                     <>
-                      <span className="material-symbols-outlined animate-spin">progress_activity</span>
+                      <Icon name="progress_activity" className="animate-spin" />
                       Processing...
                     </>
                   ) : plan.trialDays > 0 ? (
                     <>
-                      <span className="material-symbols-outlined">bolt</span>
+                      <Icon name="bolt" />
                       Start {plan.trialDays}-Day Free Trial
                     </>
                   ) : (
                     <>
-                      <span className="material-symbols-outlined">bolt</span>
+                      <Icon name="bolt" />
                       Subscribe Now
                     </>
                   )}

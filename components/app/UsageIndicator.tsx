@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { canGenerate, getSubscription, isPaidSubscription } from "@/lib/subscription";
+import { Crown } from "lucide-react";
+import { canGenerate, isPaidSubscription } from "@/lib/subscription";
 
 interface UsageIndicatorProps {
   profileId: number;
@@ -15,8 +16,7 @@ export function UsageIndicator({ profileId, onUpgradeClick }: UsageIndicatorProp
 
   useEffect(() => {
     const checkUsage = () => {
-      const result = canGenerate(profileId);
-      setUsage(result);
+      setUsage(canGenerate(profileId));
       setIsPro(isPaidSubscription(profileId));
     };
     checkUsage();
@@ -25,60 +25,42 @@ export function UsageIndicator({ profileId, onUpgradeClick }: UsageIndicatorProp
     return () => clearInterval(interval);
   }, [profileId]);
 
-  // Pro users - show badge
   if (isPro) {
     return (
-      <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-full">
-        <span className="material-symbols-outlined text-purple-500 text-sm">workspace_premium</span>
-        <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Pro</span>
+      <div className="ds-card flex items-center gap-2 rounded-[0.875rem] px-3 py-2">
+        <Crown aria-hidden="true" strokeWidth={1.75} className="size-4 text-rust" />
+        <span className="text-subheadline font-semibold">Pro</span>
       </div>
     );
   }
 
-  // Free users - show usage
-  const percentage = usage.limit > 0 ? ((usage.limit - usage.remaining) / usage.limit) * 100 : 0;
-  const isLow = usage.remaining <= 1;
+  const used = usage.limit > 0 ? Math.min(100, ((usage.limit - usage.remaining) / usage.limit) * 100) : 0;
   const isEmpty = usage.remaining <= 0;
+  const label = isEmpty
+    ? "No free notes left"
+    : `${usage.remaining} of ${usage.limit} ${usage.limit === 1 ? "free note" : "free notes"} left`;
+  const upgradeClass = "text-footnote font-semibold text-rust hover:underline";
 
   return (
-    <div className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${
-      isEmpty
-        ? "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800"
-        : isLow
-          ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800"
-          : "bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-700"
-    }`}>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <span className={`text-xs font-medium ${isEmpty ? "text-red-600 dark:text-red-400" : "text-gray-600 dark:text-gray-400"}`}>
-
-         {isEmpty ? "No generations left" : `${usage.remaining}/${usage.limit} ${usage.limit === 1 ? "free note left" : "left today"}`}
-          </span>
-        </div>
-        <div className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-          <div
-            className={`h-full rounded-full transition-all ${
-              isEmpty ? "bg-red-500" : isLow ? "bg-amber-500" : "bg-green-500"
-            }`}
-            style={{ width: `${100 - percentage}%` }}
-          />
-        </div>
+    <div className="ds-card flex flex-col gap-2 rounded-[0.875rem] p-3">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="tabular text-footnote text-supporting">{label}</span>
+        {onUpgradeClick ? (
+          <button type="button" onClick={onUpgradeClick} className={upgradeClass}>Upgrade</button>
+        ) : (
+          <Link href="/note/pricing" className={upgradeClass}>Upgrade</Link>
+        )}
       </div>
-      {onUpgradeClick ? (
-        <button
-          onClick={onUpgradeClick}
-          className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 whitespace-nowrap"
-        >
-          Upgrade
-        </button>
-      ) : (
-        <Link
-          href="/note/pricing"
-          className="text-xs font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 whitespace-nowrap"
-        >
-          Upgrade
-        </Link>
-      )}
+      <div
+        role="progressbar"
+        aria-label="Free notes used"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(used)}
+        className="h-1.5 overflow-hidden rounded-full bg-track"
+      >
+        <div className="h-full rounded-full bg-primary" style={{ width: `${used}%` }} />
+      </div>
     </div>
   );
 }

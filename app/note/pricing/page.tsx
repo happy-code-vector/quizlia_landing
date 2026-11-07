@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/lib/firebase";
 import { SUBSCRIPTION_PLANS, getSubscription, isPaidSubscription, SubscriptionPlan } from "@/lib/subscription";
+import { Icon } from "@/components/app/Icon";
 
 export default function PricingPage() {
   const router = useRouter();
@@ -69,12 +70,12 @@ export default function PricingPage() {
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/note" className="flex items-center gap-2">
             <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-lg w-10 h-10 flex items-center justify-center">
-              <span className="material-symbols-outlined">auto_stories</span>
+              <Icon name="auto_stories" />
             </div>
             <span className="text-lg font-bold text-gray-900 dark:text-white">QuizliAI</span>
           </Link>
           <Link href="/note" className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white">
-            <span className="material-symbols-outlined">close</span>
+            <Icon name="close" />
           </Link>
         </div>
       </header>
@@ -137,9 +138,7 @@ export default function PricingPage() {
                 <ul className="space-y-4 mb-8 flex-1">
                   {plan.features.map((feature, idx) => (
                     <li key={idx} className="flex items-start gap-3">
-                      <span className={`material-symbols-outlined text-lg mt-0.5 ${isPopular ? "text-purple-500" : "text-gray-400"}`}>
-                        check_circle
-                      </span>
+                      <Icon name="check_circle" className={`text-lg mt-0.5 ${isPopular ? "text-purple-500" : "text-gray-400"}`} />
                       <span className="text-gray-700 dark:text-gray-300">{feature}</span>
                     </li>
                   ))}
@@ -158,12 +157,12 @@ export default function PricingPage() {
                 >
                   {isLoading === plan.id ? (
                     <>
-                      <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                      <Icon name="progress_activity" className="animate-spin text-lg" />
                       Processing...
                     </>
                   ) : isCurrent ? (
                     <>
-                      <span className="material-symbols-outlined text-lg">check_circle</span>
+                      <Icon name="check_circle" className="text-lg" />
                       Current Plan
                     </>
                   ) : plan.trialDays > 0 ? (
@@ -229,15 +228,15 @@ export default function PricingPage() {
         <div className="mt-12 text-center">
           <div className="flex items-center justify-center gap-6 text-gray-400 dark:text-gray-600">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined">lock</span>
+              <Icon name="lock" />
               <span className="text-sm">Secure Payment</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined">verified</span>
+              <Icon name="verified" />
               <span className="text-sm">SSL Encrypted</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined">support_agent</span>
+              <Icon name="support_agent" />
               <span className="text-sm">24/7 Support</span>
             </div>
           </div>

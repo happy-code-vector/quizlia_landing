@@ -15,7 +15,7 @@ export function StudyGuideHeader({ title, category, difficulty, sourceChannel }:
   return (
     <div className="mb-8">
       {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-white/50 mb-6 font-rethink-sans">
+      <nav className="flex items-center gap-2 text-sm text-white/50 mb-6 font-sans">
         <Link href="/" className="hover:text-white transition-colors">
           Home
         </Link>
@@ -28,7 +28,7 @@ export function StudyGuideHeader({ title, category, difficulty, sourceChannel }:
       </nav>
 
       {/* Title */}
-      <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 font-source-serif-4 tracking-tight">
+      <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 font-serif tracking-tight">
         {title}
       </h1>
 

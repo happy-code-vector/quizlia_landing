@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Sidebar } from "@/components/app/Sidebar";
+import { AppShell } from "@/components/app/shell/AppShell";
 import { useToast } from "@/components/app/ToastContainer";
 import { getAllStudyGuides, categoryColors, difficultyColors, StudyGuide } from "@/lib/studyGuide";
 import { persistProfileContent, loadProfileContent, mergeIOSNotesIntoContent, pullRemoteChats, tombstoneIOSNoteIfAny } from "@/lib/notesSync";
@@ -18,6 +18,7 @@ import { GenerateContentSheet } from "@/components/app/GenerateContentSheet";
 import { FolderTile } from "@/components/app/notes/FolderTile";
 import { TopicCard } from "@/components/app/notes/TopicCard";
 import { Topic, ContentItem, Profile, removeTopicItems } from "@/lib/types";
+import { Icon } from "@/components/app/Icon";
 
 interface Folder {
   id: string;
@@ -415,9 +416,8 @@ function NotesExplorer() {
       : "All Notes";
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
-      <Sidebar profile={profile} />
-      <main className="flex-1 overflow-y-auto">
+    <AppShell profile={profile} family="home">
+      <main id="main" className="flex-1 overflow-y-auto">
         <div className="px-4 sm:px-6 lg:px-10 py-8 w-full max-w-6xl mx-auto">
           {isRootView ? (
             <>
@@ -434,14 +434,14 @@ function NotesExplorer() {
                     onClick={() => setGenerateSheetOpen(true)}
                     className="btn-primary inline-flex items-center gap-2"
                   >
-                    <span className="material-symbols-outlined">add</span>
+                    <Icon name="add" />
                     Generate Content
                   </button>
                   <button
                     onClick={() => setCreateFolderOpen(true)}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-sm font-medium"
                   >
-                    <span className="material-symbols-outlined text-base">create_new_folder</span>
+                    <Icon name="create_new_folder" className="text-base" />
                     New Folder
                   </button>
                 </div>
@@ -480,7 +480,7 @@ function NotesExplorer() {
                   href="/note/notes"
                   className="inline-flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 mb-4"
                 >
-                  <span className="material-symbols-outlined text-base">arrow_back</span>
+                  <Icon name="arrow_back" className="text-base" />
                   My Notes
                 </Link>
                 <div className="flex items-center justify-between">
@@ -515,7 +515,7 @@ function NotesExplorer() {
                 </div>
               ) : (
                 <div className="text-center py-12 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 mb-12">
-                  <span className="material-symbols-outlined text-6xl text-gray-300 dark:text-gray-600 mb-4">description</span>
+                  <Icon name="description" className="text-6xl text-gray-300 dark:text-gray-600 mb-4" />
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
                     No notes {activeFolder ? `in ${activeFolder.name}` : "yet"}
                   </h2>
@@ -525,7 +525,7 @@ function NotesExplorer() {
                       : "Generate study materials to create your first topic"}
                   </p>
                   <button onClick={() => setGenerateSheetOpen(true)} className="btn-primary inline-flex items-center gap-2">
-                    <span className="material-symbols-outlined">add</span>
+                    <Icon name="add" />
                     Generate Content
                   </button>
                 </div>
@@ -580,7 +580,7 @@ function NotesExplorer() {
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-lg p-2">
-                    <span className="material-symbols-outlined">public</span>
+                    <Icon name="public" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Public Study Guides</h2>
@@ -655,7 +655,7 @@ function NotesExplorer() {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#964CEE]/20 to-[#964CEE]/5">
-                            <span className="material-symbols-outlined text-4xl text-[#964CEE]">menu_book</span>
+                            <Icon name="menu_book" className="text-4xl text-[#964CEE]" />
                           </div>
                         )}
                         {/* Play overlay */}
@@ -727,6 +727,6 @@ function NotesExplorer() {
           )}
         </div>
       </main>
-    </div>
+    </AppShell>
   );
 }

@@ -7,3 +7,42 @@ This version has breaking changes — APIs, conventions, and file structure may 
 This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
 
 <!-- END:nextjs-agent-rules -->
+
+## QuizliAI web design contract (binding for every UI change)
+
+Source docs (claude.ai QuizliAI project): `claude/quizliai-visual-direction-lock-2026-11-02.md` (palette, families, rules; do not reopen) and `claude/quizliai-web-design-standards-2026-11-06.md` (rule ids W-x.y; cite them in review comments). Approved desktop Home: Option A (canvas "QuizliAI Web Home Shell", 2026-11-06).
+
+### Tokens (app/globals.css is the only place colors live)
+
+| Token | Light | Dark | Use |
+|---|---|---|---|
+| `--home-top` / `--home-bottom` | #E4EEFB / #E6F4EA | #121A24 / #11201A | Home, folders, recent |
+| `--study-top` / `--study-bottom` | #E3F2E8 / #D9ECE2 | #0F1C16 / #0D1813 | Note, flashcards, quiz, games, arcade |
+| `--people-top` / `--people-bottom` | #ECE8F8 / #E2E0F5 | #171428 / #141224 | Profiles, settings |
+| `--welcome-top` / `--welcome-bottom` | #E4EEFB / #ECE6F7 | #121A24 / #171428 | Onboarding, paywall |
+| `--card` | #FFFFFF | #1C1C1E | Cards (16 radius; shadow light, 1px white 10% stroke dark) |
+| `--paper` / `--on-paper` | #FBF7EE / #1D1D1F | same | Index cards |
+| `--primary-fill` / hover / active | #B85818 / #A34E14 / #9E4A12 | same | Rust capsule, white text (W-2.3) |
+| `--rust` | #B85818 | #D0702E | Rust text and icons on cards |
+| `--rust-on-tint` | #9E4A12 | #D0702E | Rust text directly on a family tint |
+| `--text-supporting` | #5A5A60 | rgb(235 235 245 / .64) | Secondary text |
+| `--ring` | #9E4A12 | #D0702E | Focus outline |
+| `--input-border` | #7C7C80 | #8E8E93 | Inputs, checkboxes |
+| `--danger-text` | #C4161C | #FF6961 | Error text and error border |
+
+Tailwind names: `bg-card`, `text-label`, `text-supporting`, `text-rust`, `text-rust-on-tint`, `bg-rust-wash`, `text-danger`, `bg-paper`, `text-on-paper`, `border-divider`, `border-card-stroke`, `bg-hover-fill`, `bg-control`, `bg-track`, `shadow-card`; shadcn names (`bg-primary`, `text-muted-foreground`, `border-input`, `ring`) map onto these. Type: `text-large-title`, `text-title`, `text-title2`, `text-title3`, `text-headline`, `text-body`, `text-callout`, `text-subheadline` (content floor), `text-footnote` (metadata only). Fonts: `font-sans` (system-ui), `font-serif` (ui-serif, then Source Serif 4 via next/font).
+
+### Hard rules (yes/no checks)
+
+1. Hard-coded hex in `app/` or `components/`: 0. violet, purple or indigo classes: 0 (screens are cleaned in PRs 2 to 6; new code adds none). Landing-only `c-*` tokens are retired in PR 6.
+2. `#D0702E` is never a background behind white text. The capsule fill is `#B85818` in both modes.
+3. One rust primary capsule above the fold per screen. One serif line per screen. Radius 22 (`rounded-[1.375rem]`) only on the one hero object.
+4. Every route renders inside `AppShell` (`components/app/shell/AppShell.tsx`) with its family, or, for onboarding and paywall, a `family-surface family-<name>` layer. Pages render `<main id="main">` and exactly one `<h1>`.
+5. Icons: lucide-react, stroke 1.75, `aria-hidden` when decorative. `components/app/Icon.tsx` maps the old Material names for existing call sites; new code imports lucide directly. No icon fonts, no Google Fonts links.
+6. Theme: next-themes only (`defaultTheme="system"`). Never write the `dark` class yourself.
+7. Focus: never `outline-none` without the global `:focus-visible` outline taking over; no `focus:ring-*` replacements.
+8. Hover only through `hover:`; nothing reachable only on hover. Targets ≥ 24px (fine pointer), ≥ 44px under `pointer: coarse`.
+9. Motion 150 to 250 ms, `ease-[cubic-bezier(0.2,0,0,1)]`; under reduced motion nothing animates `transform`.
+10. A page that shows data takes it as props from a view component, so `/dev/fixtures/<family>` can render it with sample data. Fixture routes 404 in production.
+11. Before review: screenshots of the family fixture at 1440×900 and 390×844, light and dark; axe serious and critical 0; horizontal scroll at 320, 360, 390, 768, 1024, 1440: 0.
+12. Sketched on web is view-only (drawings made on iPhone). Never add a generate action on web. The nav item and Home card stay behind `NEXT_PUBLIC_SKETCHED_WEB=1` until the read route is confirmed.

@@ -2,7 +2,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Sidebar } from "@/components/app/Sidebar";
+import { AppShell } from "@/components/app/shell/AppShell";
 import { GAMES, topicsWithFlashcards, type ContentItem, type GameSlug } from "@/lib/arcade";
 import type { Profile } from "@/lib/types";
 
@@ -39,9 +39,8 @@ export default function ArcadePage() {
   if (!profile) return null;
 
   return (
-    <div className="flex h-screen bg-gray-50 dark:bg-gray-950 overflow-hidden">
-      <Sidebar profile={profile} />
-      <main className="flex-1 p-6 lg:p-10">
+    <AppShell profile={profile} family="study">
+      <main id="main" className="flex-1 p-6 lg:p-10">
         <div className="mx-auto max-w-5xl">
           <header className="mb-8">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -111,6 +110,6 @@ export default function ArcadePage() {
           </div>
         </div>
       )}
-    </div>
+    </AppShell>
   );
 }

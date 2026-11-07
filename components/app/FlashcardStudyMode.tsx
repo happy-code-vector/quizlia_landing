@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Icon } from "@/components/app/Icon";
 
 interface Flashcard {
   question: string;
@@ -59,7 +60,7 @@ export function FlashcardStudyMode({ flashcards, onClose }: FlashcardStudyModePr
           className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
           title="Exit Study Mode"
         >
-          <span className="material-symbols-outlined">close</span>
+          <Icon name="close" />
           <span className="text-sm font-medium hidden sm:inline">Exit Study</span>
         </button>
         <div className="text-center">
@@ -103,7 +104,7 @@ export function FlashcardStudyMode({ flashcards, onClose }: FlashcardStudyModePr
                 </p>
               </div>
               <div className="text-center text-gray-400 text-xs sm:text-sm mt-3 shrink-0">
-                <span className="material-symbols-outlined text-base sm:text-lg align-middle">touch_app</span>
+                <Icon name="touch_app" className="text-base sm:text-lg align-middle" />
                 {" "}Tap to reveal answer
               </div>
             </div>
@@ -121,7 +122,7 @@ export function FlashcardStudyMode({ flashcards, onClose }: FlashcardStudyModePr
                 </p>
               </div>
               <div className="text-center text-white/60 text-xs sm:text-sm mt-3 shrink-0">
-                <span className="material-symbols-outlined text-base sm:text-lg align-middle">touch_app</span>
+                <Icon name="touch_app" className="text-base sm:text-lg align-middle" />
                 {" "}Tap to see question
               </div>
             </div>
@@ -137,7 +138,7 @@ export function FlashcardStudyMode({ flashcards, onClose }: FlashcardStudyModePr
           className="flex items-center gap-1 sm:gap-2 px-3 sm:px-6 py-2 sm:py-3 bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed text-white rounded-lg sm:rounded-xl transition-colors"
           title="Previous Card"
         >
-          <span className="material-symbols-outlined text-lg sm:text-xl">arrow_back</span>
+          <Icon name="arrow_back" className="text-lg sm:text-xl" />
           <span className="hidden sm:inline">Previous</span>
         </button>
 
@@ -176,7 +177,7 @@ export function FlashcardStudyMode({ flashcards, onClose }: FlashcardStudyModePr
           title="Next Card"
         >
           <span className="hidden sm:inline">Next</span>
-          <span className="material-symbols-outlined text-lg sm:text-xl">arrow_forward</span>
+          <Icon name="arrow_forward" className="text-lg sm:text-xl" />
         </button>
       </div>
 

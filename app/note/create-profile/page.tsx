@@ -7,6 +7,7 @@ import { useToast } from "@/components/app/ToastContainer";
 import { saveProfileToFirebase, syncProfilesFromFirebase, getProfilesFromFirebase } from "@/lib/firebaseProfiles";
 import { getMaxProfiles, resolveEffectivePlan } from "@/lib/subscription";
 import { getFirebaseSubscription } from "@/lib/firebaseSubscription";
+import { Icon } from "@/components/app/Icon";
 
 const avatarColors = [
   "from-blue-400 to-purple-400",
@@ -227,7 +228,7 @@ export default function CreateProfilePage() {
         <div className="max-w-md w-full">
           <div className="text-center mb-8">
             <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <span className="material-symbols-outlined text-3xl">auto_stories</span>
+              <Icon name="auto_stories" className="text-3xl" />
             </div>
             <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Welcome to QuizliAI</h1>
             <p className="text-gray-600 dark:text-gray-400">
@@ -306,7 +307,7 @@ export default function CreateProfilePage() {
               >
                 {isLoading ? (
                   <>
-                    <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                    <Icon name="progress_activity" className="animate-spin text-lg" />
                     Processing...
                   </>
                 ) : isSignUp ? (
@@ -404,7 +405,7 @@ export default function CreateProfilePage() {
                     />
                     <div className="p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 peer-checked:border-[#964CEE] peer-checked:bg-purple-50 dark:peer-checked:bg-purple-950/30 transition-all bg-white dark:bg-gray-800">
                       <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-[#964CEE]">school</span>
+                        <Icon name="school" className="text-[#964CEE]" />
                         <div>
                           <p className="font-semibold text-gray-900 dark:text-white">Student</p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">For learners</p>
@@ -423,7 +424,7 @@ export default function CreateProfilePage() {
                     />
                     <div className="p-4 rounded-lg border-2 border-gray-200 dark:border-gray-700 peer-checked:border-[#964CEE] peer-checked:bg-purple-50 dark:peer-checked:bg-purple-950/30 transition-all bg-white dark:bg-gray-800">
                       <div className="flex items-center gap-3">
-                        <span className="material-symbols-outlined text-[#964CEE]">family_restroom</span>
+                        <Icon name="family_restroom" className="text-[#964CEE]" />
                         <div>
                           <p className="font-semibold text-gray-900 dark:text-white">Parent</p>
                           <p className="text-sm text-gray-600 dark:text-gray-400">For families</p>
@@ -462,12 +463,12 @@ export default function CreateProfilePage() {
               <button type="submit" disabled={isLoading} className="flex-1 btn-primary flex items-center justify-center gap-2">
                 {isLoading ? (
                   <>
-                    <span className="material-symbols-outlined animate-spin text-lg">progress_activity</span>
+                    <Icon name="progress_activity" className="animate-spin text-lg" />
                     Creating...
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-lg">person_add</span>
+                    <Icon name="person_add" className="text-lg" />
                     Create Profile
                   </>
                 )}

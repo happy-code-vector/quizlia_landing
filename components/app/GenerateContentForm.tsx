@@ -4,6 +4,7 @@ import { ProcessingModal } from "@/components/app/ProcessingModal";
 import { PaywallModal } from "@/components/app/PaywallModal";
 import { useGenerateContent } from "@/hooks/useGenerateContent";
 import type { Profile, ContentItem } from "@/lib/types";
+import { Icon } from "@/components/app/Icon";
 
 interface GenerateContentFormProps {
   profile: Profile | null;
@@ -42,7 +43,7 @@ export function GenerateContentForm({
 
       {targetFolderName && (
         <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-4">
-          <span className="material-symbols-outlined text-sm">folder</span>
+          <Icon name="folder" className="text-sm" />
           Saving to: {targetFolderName}
         </p>
       )}
@@ -64,7 +65,7 @@ export function GenerateContentForm({
                 : "text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
             }`}
           >
-            <span className="material-symbols-outlined text-lg">{icon}</span>
+            <Icon name={icon} className="text-lg" />
             <span className="hidden sm:inline">{label}</span>
           </button>
         ))}
@@ -94,7 +95,7 @@ export function GenerateContentForm({
               className="flex items-center justify-between w-full px-4 py-3 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:border-blue-500 cursor-pointer transition-colors"
             >
               <span className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-gray-400">upload_file</span>
+                <Icon name="upload_file" className="text-gray-400" />
                 <span className="text-sm">
                   {selectedFile ? selectedFile.name : `Click to upload ${contentType.toUpperCase()}`}
                 </span>
@@ -109,7 +110,7 @@ export function GenerateContentForm({
                   }}
                   className="text-red-500 hover:text-red-700"
                 >
-                  <span className="material-symbols-outlined text-sm">close</span>
+                  <Icon name="close" className="text-sm" />
                 </button>
               )}
             </label>
