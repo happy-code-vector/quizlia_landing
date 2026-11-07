@@ -29,6 +29,7 @@ export function Secondary({ href, children }: { href: string; children: React.Re
   return (
     <Link
       href={href}
+      prefetch={false}
       className="inline-flex h-12 items-center justify-center rounded-full border border-divider bg-card px-7 text-headline text-label transition-[border-color,background-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:border-input active:bg-hover-fill"
     >
       {children}

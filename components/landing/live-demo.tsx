@@ -64,7 +64,7 @@ export function LiveDemo({ hero = false }: { hero?: boolean }) {
           readOnly
           value={selected?.url ?? ""}
           placeholder="Pick a sample below"
-          className="h-11 w-full min-w-0 flex-1 rounded-xl border border-input bg-card px-3 text-callout text-label placeholder:text-supporting"
+          className="h-11 w-full min-w-0 rounded-xl border border-input sm:flex-1 bg-card px-3 text-callout text-label placeholder:text-supporting"
         />
         <button
           type="button"
@@ -132,14 +132,16 @@ export function LiveDemo({ hero = false }: { hero?: boolean }) {
                 return (
                   <li
                     key={text}
-                    className={`flex items-center gap-3 text-headline text-label transition-opacity duration-200 ${lit ? "opacity-100" : "opacity-30"}`}
+                    className={`flex items-center gap-3 text-headline transition-colors duration-200 ${lit ? "text-label" : "text-supporting"}`}
                   >
                     {done ? (
                       <span className="grid size-6 place-items-center rounded-full bg-rust-wash">
                         <Check strokeWidth={2} className="size-4 text-rust" />
                       </span>
-                    ) : (
+                    ) : lit ? (
                       <span className="size-6 rounded-full border-2 border-track border-b-rust motion-safe:animate-spin" />
+                    ) : (
+                      <span className="size-6 rounded-full border-2 border-track" />
                     )}
                     {text}
                   </li>

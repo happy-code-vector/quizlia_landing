@@ -9,6 +9,7 @@ const links = [
 ]
 
 // Public site header (landing, arcade). Solid welcome top stop (W-3.3) so it reads on any page behind it.
+// App routes are not prefetched: prefetching /note runs its Firebase chunks on the landing page (section 11 TBT budget).
 // One rust capsule per screen lives in the hero, so the header action is the secondary capsule (lock rule 4).
 export function SiteHeader() {
   return (
@@ -34,12 +35,14 @@ export function SiteHeader() {
         <div className="flex items-center gap-1">
           <Link
             href="/auth/login"
+            prefetch={false}
             className="hidden min-h-11 items-center rounded-full px-3 text-subheadline font-semibold text-label underline-offset-4 hover:underline sm:inline-flex"
           >
             Sign in
           </Link>
           <Link
             href="/note"
+            prefetch={false}
             className="inline-flex h-11 items-center rounded-full border border-divider bg-card px-4 text-subheadline font-semibold text-label transition-[border-color,background-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:border-input active:bg-hover-fill"
           >
             Continue on web

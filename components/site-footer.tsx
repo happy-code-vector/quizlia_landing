@@ -36,8 +36,8 @@ export function SiteFooter() {
 
         <Column title="Product">
           <li><Link href="/#how-it-works" className={linkClass}>How it works</Link></li>
-          <li><Link href="/note/pricing" className={linkClass}>Pricing</Link></li>
-          <li><Link href="/note" className={linkClass}>Continue on web</Link></li>
+          <li><Link href="/note/pricing" prefetch={false} className={linkClass}>Pricing</Link></li>
+          <li><Link href="/note" prefetch={false} className={linkClass}>Continue on web</Link></li>
           <li>
             <a href={APP_STORE_URL} target="_blank" rel="noopener noreferrer" className={linkClass}>
               iPhone app<span className="sr-only"> (opens the App Store)</span>
