@@ -2,74 +2,80 @@
 
 import { useState } from "react";
 import { applyPromoCode } from "@/lib/firebaseSubscription";
-import { useToast } from "./ToastContainer";
-import { Icon } from "@/components/app/Icon";
+import { Button } from "@/components/ui/button";
+import { Field, inputClass } from "@/components/app/people/FormKit";
 
 interface PromoCodeInputProps {
   email: string;
   profileId: number;
   onSuccess?: () => void;
+  /** Fixtures pass a stub so no request is made. */
+  apply?: (email: string, code: string) => Promise<{ success: boolean; message: string }>;
 }
 
-export function PromoCodeInput({ email, profileId, onSuccess }: PromoCodeInputProps) {
+/** One-field form (W-7): visible label, validate on submit, server message shown under the label. */
+export function PromoCodeInput({ email, onSuccess, apply = applyPromoCode }: PromoCodeInputProps) {
   const [code, setCode] = useState("");
-  const [isApplying, setIsApplying] = useState(false);
-  const { showToast } = useToast();
+  const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [checked, setChecked] = useState(false);
 
-  const handleApply = async () => {
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setChecked(true);
+    setDone(null);
     if (!code.trim()) {
-      showToast("Please enter a promo code", "error");
+      setError("Enter a promo code");
+      document.getElementById("promo-code")?.focus();
       return;
     }
-
-    setIsApplying(true);
+    setError(null);
+    setBusy(true);
     try {
-      const result = await applyPromoCode(email, code.trim().toUpperCase());
-
+      const result = await apply(email, code.trim().toUpperCase());
       if (result.success) {
-        showToast(result.message, "success");
+        setDone(result.message);
         setCode("");
         onSuccess?.();
-
-        // Reload page to refresh subscription
-        setTimeout(() => {
-          window.location.reload();
-        }, 1500);
+        // Reload so the shell and plan section read the new subscription.
+        setTimeout(() => window.location.reload(), 1500);
       } else {
-        showToast(result.message, "error");
+        setError(result.message || "That promo code did not work. Check it, then try again");
+        document.getElementById("promo-code")?.focus();
       }
-    } catch (error) {
-      showToast("Failed to apply promo code", "error");
+    } catch {
+      setError("The promo code was not applied. Try again in a minute");
     } finally {
-      setIsApplying(false);
+      setBusy(false);
     }
   };
 
   return (
-    <div className="flex gap-2">
-      <input
-        type="text"
-        value={code}
-        onChange={(e) => setCode(e.target.value.toUpperCase())}
-        placeholder="Enter promo code"
-        className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-        disabled={isApplying}
-        maxLength={20}
-      />
-      <button
-        onClick={handleApply}
-        disabled={isApplying || !code.trim()}
-        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-      >
-        {isApplying ? (
-          <>
-            <Icon name="progress_activity" className="animate-spin text-sm" />
-            Applying...
-          </>
-        ) : (
-          "Apply"
+    <form noValidate onSubmit={submit} className="flex flex-col gap-3" aria-label="Promo code">
+      <Field id="promo-code" label="Promo code" hint="Codes from QuizliAI emails and partners." error={error}>
+        {(aria) => (
+          <div className="flex gap-2">
+            <input
+              {...aria}
+              type="text"
+              autoComplete="off"
+              autoCapitalize="characters"
+              spellCheck={false}
+              maxLength={20}
+              value={code}
+              disabled={busy}
+              onChange={(e) => {
+                setCode(e.target.value.toUpperCase());
+                if (checked && error && e.target.value.trim()) setError(null);
+              }}
+              className={`${inputClass(!!error)} min-w-0 flex-1 uppercase`}
+            />
+            <Button type="submit" variant="secondary" disabled={busy}>{busy ? "Applying" : "Apply"}</Button>
+          </div>
         )}
-      </button>
-    </div>
+      </Field>
+      <p role="status" className="text-subheadline text-label">{done}</p>
+    </form>
   );
 }

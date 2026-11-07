@@ -21,7 +21,7 @@ export function ThemeSegmented({ labelledBy }: { labelledBy?: string }) {
     <div
       role="radiogroup"
       aria-labelledby={labelledBy}
-      className="inline-flex rounded-full bg-control p-1 gap-1"
+      className="flex w-full rounded-full bg-control p-1 gap-1 sm:inline-flex sm:w-auto"
       onKeyDown={(e) => {
         if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
         e.preventDefault();
@@ -42,13 +42,13 @@ export function ThemeSegmented({ labelledBy }: { labelledBy?: string }) {
             aria-checked={selected}
             tabIndex={selected ? 0 : -1}
             onClick={() => setTheme(value)}
-            className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-subheadline transition-colors duration-150 ${
+            className={`inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-full px-3 text-subheadline sm:flex-none sm:px-4 transition-colors duration-150 ${
               selected
                 ? "bg-card text-label font-semibold shadow-card border border-card-stroke"
                 : "text-supporting hover:text-label"
             }`}
           >
-            <Icon aria-hidden="true" strokeWidth={1.75} className="size-4" />
+            <Icon aria-hidden="true" strokeWidth={1.75} className="size-4 max-[399px]:hidden" />
             {label}
           </button>
         );

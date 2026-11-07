@@ -10,6 +10,12 @@ import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
 import { QuizStudyMode } from "@/components/app/QuizStudyMode";
 import { ArcadeView } from "@/components/app/arcade/ArcadeView";
 import { Button } from "@/components/ui/button";
+import { ProfilePickerView } from "@/components/app/people/ProfilePickerView";
+import { PeopleFrame } from "@/components/app/people/PeopleFrame";
+import { SignInPanel } from "@/components/app/people/SignInPanel";
+import { CreateProfileForm } from "@/components/app/people/CreateProfileForm";
+import { SettingsView, type PlanSummary } from "@/components/app/people/SettingsView";
+import { PromoCodeInput } from "@/components/app/PromoCodeInput";
 import {
   FIXTURE_FOLDERS, FIXTURE_NOW, FIXTURE_POSITIONS, FIXTURE_PROFILES, FIXTURE_SKETCH, FIXTURE_TOPICS, type FixtureFamily,
 } from "../sample-data";
@@ -37,31 +43,91 @@ export function FixtureClient({ family, state }: { family: FixtureFamily; state?
   }
 
   if (family === "study") return <StudyFixture state={state} />;
+  if (family === "people") return <PeopleFixture state={state} />;
 
   const surface: Family = family === "paywall" ? "welcome" : family;
-  const port = { people: "PR 4", welcome: "PR 5", paywall: "PR 5" }[family];
+  const port = { welcome: "PR 5", paywall: "PR 5" }[family];
 
   // Welcome and paywall have no app shell (onboarding and purchase are full-screen flows).
-  if (family === "welcome" || family === "paywall") {
+  return (
+    <>
+      <a href="#main" className="skip-link">Skip to content</a>
+      <div aria-hidden="true" className={`family-surface family-${surface}`} />
+      <main id="main" className="mx-auto w-full max-w-[30rem] px-4 py-10">
+        <Specimen family={family} port={port} />
+      </main>
+    </>
+  );
+}
+
+const asyncNoop = async () => {};
+const authNoop = async () => null;
+
+const FIXTURE_PLAN: PlanSummary = {
+  name: "Family Annual",
+  paid: true,
+  renewsOn: "2027-09-14T00:00:00Z",
+  features: ["Up to 4 kid profiles and a parent profile", "20 notes a day", "Flashcards, quizzes and games for every note"],
+  usage: { kind: "daily", used: 3, limit: 20 },
+};
+
+/**
+ * People family: profile picker, sign in, create profile, settings.
+ * ?state=picker (default) | edit | signin | create | settings
+ */
+function PeopleFixture({ state }: { state?: string }) {
+  const [maya] = FIXTURE_PROFILES;
+  if (state === "signin") {
     return (
-      <>
-        <a href="#main" className="skip-link">Skip to content</a>
-        <div aria-hidden="true" className={`family-surface family-${surface}`} />
-        <main id="main" className="mx-auto w-full max-w-[30rem] px-4 py-10">
-          <Specimen family={family} port={port} />
-        </main>
-      </>
+      <PeopleFrame>
+        <SignInPanel googleAvailable onGoogle={authNoop} onEmail={authNoop} onSkip={noop} />
+      </PeopleFrame>
     );
   }
-
+  if (state === "create") {
+    return (
+      <PeopleFrame backHref="/dev/fixtures/people" backLabel="Profiles">
+        <CreateProfileForm
+          profiles={FIXTURE_PROFILES}
+          maxProfiles={4}
+          accountEmail="parent@example.com"
+          cancelHref="/dev/fixtures/people"
+          onCreate={asyncNoop}
+        />
+      </PeopleFrame>
+    );
+  }
+  if (state === "settings") {
+    return (
+      <ToastProvider>
+        <SettingsView
+          profile={maya}
+          profiles={FIXTURE_PROFILES}
+          family
+          plan={FIXTURE_PLAN}
+          account={{ email: "parent@example.com" }}
+          onSaveProfile={asyncNoop}
+          onDeleteProfile={asyncNoop}
+          onSignOut={asyncNoop}
+          promo={<PromoCodeInput email="parent@example.com" profileId={maya.id} apply={async () => ({ success: false, message: "That promo code has expired" })} />}
+          folders={FIXTURE_FOLDERS}
+          hideUsage
+        />
+      </ToastProvider>
+    );
+  }
   return (
-    <AppShell profile={FIXTURE_PROFILES[0]} family={surface} folders={FIXTURE_FOLDERS} hideUsage>
-      <main id="main" className="flex-1 overflow-y-auto px-4 py-8 md:px-6 lg:px-8">
-        <div className="mx-auto w-full max-w-[45rem]">
-          <Specimen family={family} port={port} />
-        </div>
-      </main>
-    </AppShell>
+    <ProfilePickerView
+      profiles={FIXTURE_PROFILES}
+      currentId={maya.id}
+      family
+      accountEmail="parent@example.com"
+      canGoBack
+      onSelect={noop}
+      onSave={asyncNoop}
+      onDelete={asyncNoop}
+      initialEditing={state === "edit"}
+    />
   );
 }
 
