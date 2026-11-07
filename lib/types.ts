@@ -145,6 +145,8 @@ export interface Profile {
   type: string;
   avatar: string;
   email?: string;
+  gradeLevel?: string;
+  createdAt?: string;
 }
 
 // Legacy content item stored per profile (content_<profileId>)
