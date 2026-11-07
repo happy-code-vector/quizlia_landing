@@ -14,7 +14,7 @@ export const PEOPLE_STATES = ["picker", "edit", "signin", "create", "settings"] 
 // Welcome family states for /dev/fixtures/welcome?state=...
 export const WELCOME_STATES = ["login", "signup", "forgot", "forgot-sent", "success", "processing"] as const;
 
-export const FIXTURE_FAMILIES = ["home", "study", "people", "welcome", "paywall"] as const;
+export const FIXTURE_FAMILIES = ["home", "study", "people", "welcome", "paywall", "paywall-modal"] as const;
 export type FixtureFamily = (typeof FIXTURE_FAMILIES)[number];
 
 export const FIXTURE_NOW = new Date("2026-11-06T19:00:00Z");

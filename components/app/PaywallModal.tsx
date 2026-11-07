@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { auth } from "@/lib/firebase";
-import { SUBSCRIPTION_PLANS, SubscriptionPlan } from "@/lib/subscription";
-import { Icon } from "@/components/app/Icon";
+import { SUBSCRIPTION_PLANS, type SubscriptionPlan } from "@/lib/subscription";
+import { Button } from "@/components/ui/button";
+import { CardDialog } from "@/components/app/CardDialog";
+import { InlineBanner } from "@/components/app/people/FormKit";
+import { PlanFeatures, PlanOption, capsuleLabel, priceSentence } from "@/components/app/welcome/planParts";
 
 interface PaywallModalProps {
   isOpen: boolean;
@@ -12,16 +15,90 @@ interface PaywallModalProps {
   profileId: number;
 }
 
+export interface PaywallDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  plans: SubscriptionPlan[];
+  /** True when the profile has used its allowance (changes the line under the title). */
+  limitReached: boolean;
+  /** Plan id while a checkout request is in flight. */
+  loadingPlan: string | null;
+  /** Returns an error message to show in a banner, or null when checkout started. */
+  onChoose: (plan: SubscriptionPlan) => Promise<string | null>;
+}
+
+const FOOTER_LINK = "underline underline-offset-4";
+
+/**
+ * Paywall dialog: the same plans, rows and sentence as /note/pricing (components/app/welcome/planParts),
+ * in one column at every width. Family is preselected and listed first; every plan is visible
+ * (AR, 2026-11-07). Takes props only so /dev/fixtures/paywall-modal can render it.
+ */
+export function PaywallDialog({ open, onOpenChange, plans, limitReached, loadingPlan, onChoose }: PaywallDialogProps) {
+  const ordered = [...plans].reverse();
+  const [selectedId, setSelectedId] = useState(ordered.find((p) => p.id === "family_yearly")?.id ?? ordered[0].id);
+  const [error, setError] = useState<string | null>(null);
+  const includesId = useId();
+  const selected = ordered.find((p) => p.id === selectedId) ?? ordered[0];
+  const busy = loadingPlan === selected.id;
+
+  const choose = async () => {
+    setError(null);
+    const message = await onChoose(selected);
+    if (message) setError(message);
+  };
+
+  return (
+    <CardDialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) setError(null);
+        onOpenChange(next);
+      }}
+      title="Keep making study sets"
+      description={
+        limitReached
+          ? "You've reached your generation limit. Pick a plan to keep going."
+          : "Pick a plan to keep going. The same plans as the QuizliAI iPhone app."
+      }
+      wide
+    >
+      <fieldset className="flex flex-col gap-3">
+        <legend className="sr-only">Choose a plan</legend>
+        {ordered.map((p) => (
+          <PlanOption key={p.id} plan={p} checked={p.id === selectedId} onSelect={() => setSelectedId(p.id)} compact />
+        ))}
+      </fieldset>
+
+      <PlanFeatures plan={selected} headingId={includesId} level={3} />
+
+      <div className="flex flex-col gap-3">
+        {error && <InlineBanner>{error}</InlineBanner>}
+        <Button size="lg" className="w-full" onClick={choose} disabled={busy}>
+          {busy ? "Opening checkout" : capsuleLabel(selected)}
+        </Button>
+        <p className="text-center text-subheadline text-supporting">{priceSentence(selected)}</p>
+      </div>
+
+      <p className="text-center text-subheadline text-supporting">
+        <a href="https://sites.google.com/view/quizliai-terms/home" target="_blank" rel="noopener noreferrer" className={FOOTER_LINK}>
+          Terms<span className="sr-only"> (opens in a new tab)</span>
+        </a>
+        {" · "}
+        <a href="https://sites.google.com/view/quizliai-privacy/home" target="_blank" rel="noopener noreferrer" className={FOOTER_LINK}>
+          Privacy<span className="sr-only"> (opens in a new tab)</span>
+        </a>
+      </p>
+    </CardDialog>
+  );
+}
+
+/** Container: owns Stripe checkout. Same request as /note/pricing. */
 export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId }: PaywallModalProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  if (!isOpen) return null;
-
-  const paidPlans = SUBSCRIPTION_PLANS.filter((p) => p.id !== "free");
-  const freePlan = SUBSCRIPTION_PLANS[0];
-
-  const handleSubscribe = async (plan: SubscriptionPlan) => {
-    setIsLoading(true);
+  const handleChoose = async (plan: SubscriptionPlan): Promise<string | null> => {
+    setLoadingPlan(plan.id);
     try {
       const idToken = auth?.currentUser ? await auth.currentUser.getIdToken() : null;
       const response = await fetch("/api/stripe/checkout", {
@@ -30,137 +107,32 @@ export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId 
           "Content-Type": "application/json",
           ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
         },
-        body: JSON.stringify({
-          priceId: plan.stripePriceId,
-          profileId,
-          planId: plan.id,
-        }),
+        body: JSON.stringify({ priceId: plan.stripePriceId, profileId, planId: plan.id }),
       });
-
       const data = await response.json();
       if (data.url) {
         window.location.href = data.url;
-      } else {
-        console.error("No checkout URL returned");
+        return null;
       }
+      return "Checkout did not open. Try again in a minute.";
     } catch (error) {
       console.error("Checkout error:", error);
+      return "QuizliAI can't be reached. Check your connection, then try again.";
     } finally {
-      setIsLoading(false);
+      setLoadingPlan(null);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="relative bg-gradient-to-r from-purple-600 to-pink-600 p-6 rounded-t-2xl text-white">
-          <button onClick={onClose} className="absolute top-4 right-4 text-white/80 hover:text-white">
-            <Icon name="close" />
-          </button>
-          <div className="text-center">
-            <Icon name="rocket_launch" className="text-5xl mb-2" />
-            <h2 className="text-2xl font-bold">Upgrade to Premium</h2>
-            <p className="text-white/80 mt-1">Same plans as the QuizliAI iOS app</p>
-          </div>
-        </div>
-
-        {/* Usage Warning */}
-        {remainingGenerations <= 0 && (
-          <div className="mx-6 mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-            <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-              <Icon name="warning" className="text-lg" />
-              <p className="text-sm font-medium">You&apos;ve reached your generation limit</p>
-            </div>
-          </div>
-        )}
-
-        {/* Plan Cards */}
-        <div className="p-6 space-y-4">
-          {paidPlans.map((plan) => {
-            const isPopular = plan.id === "individual_yearly";
-            return (
-              <div
-                key={plan.id}
-                className={`rounded-xl p-5 ${
-                  isPopular
-                    ? "border-2 border-purple-500 bg-purple-50/50 dark:bg-purple-900/10"
-                    : "border border-gray-200 dark:border-gray-800"
-                }`}
-              >
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white">{plan.name}</h3>
-                    <div className="flex items-baseline gap-1 mt-1">
-                      <span className="text-3xl font-bold text-purple-600">${plan.price}</span>
-                      <span className="text-gray-500 dark:text-gray-400">/{plan.interval}</span>
-                    </div>
-                    {plan.id === "family_yearly" && (
-                      <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                        About ${Math.round(plan.price / 4)} per child per year, up to 4 kids
-                      </p>
-                    )}
-                  </div>
-                  {isPopular && (
-                    <span className="bg-purple-600 text-white text-xs font-bold px-2 py-1 rounded-full">POPULAR</span>
-                  )}
-                </div>
-
-                <ul className="space-y-2 mb-4">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-center gap-2 text-gray-700 dark:text-gray-300">
-                      <Icon name="check_circle" className="text-green-500 text-lg" />
-                      <span className="text-sm">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => handleSubscribe(plan)}
-                  disabled={isLoading}
-                  className={`w-full py-3 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2 ${
-                    isPopular
-                      ? "bg-gradient-to-r from-purple-600 to-pink-600"
-                      : "bg-gray-900 dark:bg-gray-700"
-                  }`}
-                >
-                  {isLoading ? (
-                    <>
-                      <Icon name="progress_activity" className="animate-spin" />
-                      Processing...
-                    </>
-                  ) : plan.trialDays > 0 ? (
-                    <>
-                      <Icon name="bolt" />
-                      Start {plan.trialDays}-Day Free Trial
-                    </>
-                  ) : (
-                    <>
-                      <Icon name="bolt" />
-                      Subscribe Now
-                    </>
-                  )}
-                </button>
-              </div>
-            );
-          })}
-
-          {/* Free Plan Comparison */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-            <p className="text-sm text-gray-600 dark:text-gray-400 text-center">
-              Free plan: {freePlan.freeGenerationsTotal} note to try
-            </p>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="px-6 pb-6 text-center">
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            Cancel anytime. Secure payment via Stripe.
-          </p>
-        </div>
-      </div>
-    </div>
+    <PaywallDialog
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) onClose();
+      }}
+      plans={SUBSCRIPTION_PLANS.filter((p) => p.id !== "free")}
+      limitReached={remainingGenerations <= 0}
+      loadingPlan={loadingPlan}
+      onChoose={handleChoose}
+    />
   );
 }
