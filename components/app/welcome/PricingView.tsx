@@ -2,30 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CalendarClock, CircleCheck, Check, ChevronDown, Unlock, X } from "lucide-react";
+import { CalendarClock, CircleCheck, ChevronDown, Unlock, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InlineBanner } from "@/components/app/people/FormKit";
 import type { SubscriptionPlan } from "@/lib/subscription";
 import { WelcomeFrame } from "./WelcomeFrame";
+import { PlanFeatures, PlanOption, capsuleLabel, money, per, priceSentence } from "./planParts";
 
 // Pricing on the welcome family. Below 1024 px it is the approved iOS paywall port (one default plan,
 // the rest behind "See more plans", one rust capsule). At 1024+ it is the split layout AR picked
 // from two mockups (2026-11-06): story left, plans and the capsule right.
-
-const money = (n: number) => `$${n.toFixed(2)}`;
-const per = (p: SubscriptionPlan) => (p.interval === "week" ? "a week" : "a year");
-
-/** One sentence in words, as on the iOS paywall. */
-function priceSentence(p: SubscriptionPlan) {
-  if (p.trialDays > 0) return `Try ${p.trialDays} days free, then ${money(p.price)} ${per(p)}. Cancel any time.`;
-  return `${money(p.price)} ${per(p)}, billed ${p.interval === "week" ? "weekly" : "yearly"}. Cancel any time.`;
-}
-
-function subline(p: SubscriptionPlan) {
-  if (p.id === "family_yearly") return `About $${Math.round(p.price / 4)} per child a year, up to 4 kids`;
-  if (p.interval === "year") return `${money(p.price / 12)} a month, billed yearly`;
-  return "Billed weekly";
-}
 
 const FAQ: { q: string; a: string }[] = [
   { q: "Can I cancel any time?", a: "Yes. Cancel whenever you like and you keep access until the end of the billing period." },
@@ -68,37 +54,16 @@ export function PricingView({ plans, freePlan, currentPlan, loadingPlan, onChoos
   const rows = (
     <fieldset className="flex flex-col gap-3">
       <legend className="sr-only">Choose a plan</legend>
-      {plans.map((p) => {
-        const checked = p.id === selectedId;
-        const hiddenSmall = !checked && !more ? "hidden lg:flex" : "flex";
-        return (
-          <label
-            key={p.id}
-            className={`${hiddenSmall} mb-3 last:mb-0 cursor-pointer items-start gap-3 rounded-2xl p-4 ${
-              checked ? "border-[1.5px] border-rust bg-card shadow-card" : "border border-card-stroke bg-card hover:bg-hover-fill"
-            }`}
-          >
-            <span className="flex w-full items-start gap-3">
-              <input
-                type="radio"
-                name="plan"
-                value={p.id}
-                checked={checked}
-                onChange={() => setSelectedId(p.id)}
-                className="mt-1 size-5 shrink-0 accent-[var(--primary-fill)]"
-              />
-              <span className="flex min-w-0 flex-1 flex-col">
-                <span className="flex flex-wrap items-baseline justify-between gap-x-3">
-                  <span className="text-headline text-label">{p.name}</span>
-                  <span className="text-headline text-label tabular-nums">{money(p.price)} <span className="text-subheadline font-normal text-supporting">{per(p)}</span></span>
-                </span>
-                <span className="text-subheadline text-supporting">{subline(p)}</span>
-                {currentPlan === p.id && <span className="mt-1 text-subheadline font-semibold text-label">Your current plan</span>}
-              </span>
-            </span>
-          </label>
-        );
-      })}
+      {plans.map((p) => (
+        <PlanOption
+          key={p.id}
+          plan={p}
+          checked={p.id === selectedId}
+          onSelect={() => setSelectedId(p.id)}
+          isCurrent={currentPlan === p.id}
+          className={`${p.id !== selectedId && !more ? "hidden lg:flex" : "flex"} mb-3 last:mb-0`}
+        />
+      ))}
     </fieldset>
   );
 
@@ -124,29 +89,15 @@ export function PricingView({ plans, freePlan, currentPlan, loadingPlan, onChoos
           </>
         ) : busy ? (
           "Opening checkout"
-        ) : selected.trialDays > 0 ? (
-          `Start ${selected.trialDays}-day free trial`
         ) : (
-          `Subscribe for ${money(selected.price)} ${per(selected)}`
+          capsuleLabel(selected)
         )}
       </Button>
       <p className="text-center text-subheadline text-supporting">{priceSentence(selected)}</p>
     </div>
   );
 
-  const features = (
-    <section aria-labelledby="includes" className="flex flex-col gap-2">
-      <h2 id="includes" className="text-subheadline font-semibold text-label">{selected.name} includes</h2>
-      <ul className="flex flex-col gap-2">
-        {selected.features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-subheadline text-label">
-            <Check aria-hidden="true" strokeWidth={1.75} className="mt-0.5 size-4 shrink-0 text-success" />
-            {f}
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
+  const features = <PlanFeatures plan={selected} headingId="includes" />;
 
   const faq = (
     <section aria-labelledby="faq" className="mx-auto flex w-full max-w-[40rem] flex-col gap-3">

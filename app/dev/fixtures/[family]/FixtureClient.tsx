@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Check, CircleAlert } from "lucide-react";
 import { ToastProvider } from "@/components/app/ToastContainer";
 import { AppShell, type Family } from "@/components/app/shell/AppShell";
@@ -18,6 +19,7 @@ import { SettingsView, type PlanSummary } from "@/components/app/people/Settings
 import { ForgotView, LoginView, SignupView } from "@/components/app/welcome/AuthViews";
 import { SubscriptionProcessingView, SubscriptionSuccessView } from "@/components/app/welcome/SubscriptionSuccessView";
 import { PricingView } from "@/components/app/welcome/PricingView";
+import { PaywallDialog } from "@/components/app/PaywallModal";
 import { SUBSCRIPTION_PLANS } from "@/lib/subscription";
 import { PromoCodeInput } from "@/components/app/PromoCodeInput";
 import {
@@ -61,6 +63,8 @@ export function FixtureClient({ family, state }: { family: FixtureFamily; state?
       />
     );
   }
+
+  if (family === "paywall-modal") return <PaywallModalFixture state={state} />;
 
   const surface: Family = "welcome";
   const port = "PR 5";
@@ -291,5 +295,34 @@ function Specimen({ family, port }: { family: string; port: string }) {
         <p className="tabular text-footnote text-supporting">Footnote, metadata only · 6 Nov 2026</p>
       </section>
     </div>
+  );
+}
+
+/**
+ * Paywall dialog over a study-family page. ?state=limit (default), nolimit, error (checkout failed), busy (checkout opening).
+ */
+function PaywallModalFixture({ state }: { state?: string }) {
+  const [open, setOpen] = useState(true);
+  const plans = SUBSCRIPTION_PLANS.filter((p) => p.id !== "free");
+  return (
+    <>
+      <a href="#main" className="skip-link">Skip to content</a>
+      <div aria-hidden="true" className="family-surface family-study" />
+      <main id="main" className="mx-auto w-full max-w-[45rem] px-4 py-10">
+        <h1 className="text-title font-semibold">Make a study set</h1>
+        <div className="ds-card mt-6 flex flex-col gap-3 p-6">
+          <p className="text-callout text-supporting">Paste a link, a PDF or a photo of notes.</p>
+          <button type="button" onClick={() => setOpen(true)} className="btn-primary self-start">Make my study set</button>
+        </div>
+      </main>
+      <PaywallDialog
+        open={open}
+        onOpenChange={setOpen}
+        plans={plans}
+        limitReached={state !== "nolimit"}
+        loadingPlan={state === "busy" ? "family_yearly" : null}
+        onChoose={async () => (state === "error" ? "Checkout did not open. Try again in a minute." : null)}
+      />
+    </>
   );
 }
