@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { closeGame, hapticFeedback, postResult } from "@/lib/games/bridge";
 import { initAudio, playMatch, playMiss, playTap } from "@/lib/games/sound";
 import type { Flashcard, StudyDeck, TrueFalseResult } from "@/lib/games/types";
@@ -119,10 +119,13 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
   const dragStartXRef = useRef<number | null>(null);
   const feedbackTimerRef = useRef<number | null>(null);
 
-  phaseRef.current = phase;
-  isPausedRef.current = isPaused;
-  soundEnabledRef.current = soundEnabled;
-  statementRef.current = statement;
+  // Mirror latest state into refs after commit so timers and listeners read current values.
+  useLayoutEffect(() => {
+    phaseRef.current = phase;
+    isPausedRef.current = isPaused;
+    soundEnabledRef.current = soundEnabled;
+    statementRef.current = statement;
+  });
 
   // Clear pending feedback timer on unmount
   useEffect(() => {
@@ -356,9 +359,9 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
     return (
       <main className="min-h-dvh bg-[var(--game-bg)] text-[var(--game-text)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] px-4 py-6 flex flex-col justify-between">
         <div className="max-w-lg mx-auto w-full pt-12 text-center">
-          <p className="text-[17px] font-semibold">
+          <h1 className="text-[17px] font-semibold">
             Add at least 4 flashcards to play
-          </p>
+          </h1>
         </div>
         <div className="max-w-lg mx-auto w-full pb-4">
           <button
@@ -499,9 +502,9 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
         {/* Top bar + 4px draining timer bar + Live Right/Wrong Scoreboard */}
         <div className="flex flex-col gap-2">
           <header className="grid grid-cols-3 items-center gap-2 min-h-[34px]">
-            <div className="truncate text-[14px] font-semibold">
-              {deck.title}
-            </div>
+            <h1 className="truncate text-[14px] font-semibold">
+              <span className="sr-only">True or False Sprint: </span>{deck.title}
+            </h1>
             <div
               className={`text-center text-[15px] font-semibold tabular-nums ${
                 isFinalTenSeconds
@@ -619,7 +622,7 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
         <div className="flex-1 flex items-center justify-center py-2">
           {phase === "ready" ? (
             <div className="w-full rounded-3xl bg-[var(--game-card)] border border-[var(--game-border)] p-6 flex flex-col items-center text-center gap-5 game-anim-deal">
-              <h1 className="text-xl font-semibold">Is it true or false?</h1>
+              <h2 className="text-xl font-semibold">Is it true or false?</h2>
               <button
                 type="button"
                 onClick={handleStartRound}

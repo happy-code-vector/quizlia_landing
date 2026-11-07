@@ -381,9 +381,9 @@ export default function MemoryFlip({ deck }: { deck: StudyDeck }) {
     return (
       <main className="min-h-dvh bg-[var(--game-bg)] text-[var(--game-text)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] px-4 py-6 flex flex-col justify-between">
         <div className="max-w-lg mx-auto w-full pt-12 text-center">
-          <p className="text-[17px] font-semibold">
+          <h1 className="text-[17px] font-semibold">
             Add at least 4 flashcards to play
-          </p>
+          </h1>
         </div>
         <div className="max-w-lg mx-auto w-full pb-4">
           <button
@@ -506,9 +506,9 @@ export default function MemoryFlip({ deck }: { deck: StudyDeck }) {
     <main className="min-h-dvh bg-[var(--game-bg)] text-[var(--game-text)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] px-4 py-3">
       <div className="max-w-4xl mx-auto w-full flex flex-col gap-2.5">
         <header className="grid grid-cols-3 items-center gap-2 min-h-[34px]">
-          <div className="truncate text-[15px] font-semibold">
-            {state.deck.title}
-          </div>
+          <h1 className="truncate text-[15px] font-semibold">
+            <span className="sr-only">Memory Flip: </span>{state.deck.title}
+          </h1>
           <div className="text-center text-[13px] text-[var(--game-text-muted)]">
             {state.matchedCardIds.length} of {state.cards.length} pairs
           </div>
