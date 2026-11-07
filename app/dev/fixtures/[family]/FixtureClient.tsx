@@ -20,7 +20,7 @@ import { ForgotView, LoginView, SignupView } from "@/components/app/welcome/Auth
 import { SubscriptionProcessingView, SubscriptionSuccessView } from "@/components/app/welcome/SubscriptionSuccessView";
 import { PricingView } from "@/components/app/welcome/PricingView";
 import { PaywallDialog } from "@/components/app/PaywallModal";
-import { SUBSCRIPTION_PLANS, getPlanById } from "@/lib/subscription";
+import { SUBSCRIPTION_PLANS, getPlanById, resolveEffectivePlan } from "@/lib/subscription";
 import { PromoCodeInput } from "@/components/app/PromoCodeInput";
 import {
   FIXTURE_FOLDERS, FIXTURE_NOW, FIXTURE_POSITIONS, FIXTURE_PROFILES, FIXTURE_SKETCH, FIXTURE_TOPICS, type FixtureFamily,
@@ -300,13 +300,24 @@ function Specimen({ family, port }: { family: string; port: string }) {
 
 /**
  * Paywall dialog over a study-family page. ?state=limit (default), nolimit, error (checkout failed), busy (checkout opening),
- * paid (Family subscriber at the daily cap: no higher plan), paid-individual (Individual Annual subscriber at the cap: Family offered).
+ * paid (Family subscriber at the daily cap: no higher plan, Individual and Weekly disabled as lower limit),
+ * paid-individual (Individual Annual at the cap: Family offered, Weekly disabled as same limit),
+ * paid-weekly (Weekly at the cap: Family offered, Individual Annual disabled as same limit),
+ * paid-legacy (grandfathered plan at the cap: no row is current, every plan disabled).
  */
 function PaywallModalFixture({ state }: { state?: string }) {
   const [open, setOpen] = useState(true);
   const plans = SUBSCRIPTION_PLANS.filter((p) => p.id !== "free");
   const currentPlan =
-    state === "paid" ? getPlanById("family_yearly")! : state === "paid-individual" ? getPlanById("individual_yearly")! : SUBSCRIPTION_PLANS[0];
+    state === "paid"
+      ? getPlanById("family_yearly")!
+      : state === "paid-individual"
+        ? getPlanById("individual_yearly")!
+        : state === "paid-weekly"
+          ? getPlanById("weekly")!
+          : state === "paid-legacy"
+            ? resolveEffectivePlan("pro_yearly")
+            : SUBSCRIPTION_PLANS[0];
   return (
     <>
       <a href="#main" className="skip-link">Skip to content</a>

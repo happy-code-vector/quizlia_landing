@@ -30,6 +30,8 @@ interface PlanOptionProps {
   onSelect: () => void;
   /** Shown under the plan when it is the user's plan. */
   isCurrent?: boolean;
+  /** Why this plan cannot be chosen now (paywall modal, paid profile). Disables the row and shows the reason. */
+  unavailable?: string;
   /** Unselected rows drop the subline so the capsule stays near the fold (modal). */
   compact?: boolean;
   /** Display and spacing classes from the caller (the page hides rows below 1024 px). */
@@ -37,14 +39,17 @@ interface PlanOptionProps {
 }
 
 /** One radio row. Must sit inside a fieldset with a legend; the radio group name is "plan". */
-export function PlanOption({ plan, checked, onSelect, isCurrent, compact, className = "flex" }: PlanOptionProps) {
+export function PlanOption({ plan, checked, onSelect, isCurrent, unavailable, compact, className = "flex" }: PlanOptionProps) {
   const pad = compact && !checked ? "px-4 py-3" : "p-4";
+  const disabled = !!unavailable;
   return (
     <label
-      className={`${className} ${pad} cursor-pointer items-start gap-3 rounded-2xl ${
+      className={`${className} ${pad} items-start gap-3 rounded-2xl ${
+        disabled ? "cursor-not-allowed" : "cursor-pointer"
+      } ${
         checked
           ? "border-[1.5px] border-rust bg-card shadow-card"
-          : `border bg-card hover:bg-hover-fill ${compact ? "border-divider" : "border-card-stroke"}`
+          : `border bg-card ${disabled ? "" : "hover:bg-hover-fill"} ${compact ? "border-divider" : "border-card-stroke"}`
       }`}
     >
       <span className="flex w-full items-start gap-3">
@@ -54,7 +59,8 @@ export function PlanOption({ plan, checked, onSelect, isCurrent, compact, classN
           value={plan.id}
           checked={checked}
           onChange={onSelect}
-          className="mt-1 size-5 shrink-0 accent-[var(--primary-fill)]"
+          disabled={disabled}
+          className="mt-1 size-5 shrink-0 accent-[var(--primary-fill)] disabled:cursor-not-allowed"
         />
         <span className="flex min-w-0 flex-1 flex-col">
           <span className="flex flex-wrap items-baseline justify-between gap-x-3">
@@ -65,6 +71,7 @@ export function PlanOption({ plan, checked, onSelect, isCurrent, compact, classN
           </span>
           {!(compact && !checked) && <span className="text-subheadline text-supporting">{subline(plan)}</span>}
           {isCurrent && <span className="mt-1 text-subheadline font-semibold text-label">Your current plan</span>}
+          {unavailable && !isCurrent && <span className="mt-1 text-subheadline text-supporting">{unavailable}</span>}
         </span>
       </span>
     </label>
