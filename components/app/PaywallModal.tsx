@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useMemo, useState } from "react";
+import { CircleCheck } from "lucide-react";
 import { auth } from "@/lib/firebase";
-import { SUBSCRIPTION_PLANS, type SubscriptionPlan } from "@/lib/subscription";
+import { SUBSCRIPTION_PLANS, getSubscription, resolveEffectivePlan, type SubscriptionPlan } from "@/lib/subscription";
 import { Button } from "@/components/ui/button";
 import { CardDialog } from "@/components/app/CardDialog";
 import { InlineBanner } from "@/components/app/people/FormKit";
@@ -19,6 +20,8 @@ export interface PaywallDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   plans: SubscriptionPlan[];
+  /** The plan the profile is on now (the free plan, or a paid plan resolved through resolveEffectivePlan). */
+  currentPlan: SubscriptionPlan;
   /** True when the profile has used its allowance (changes the line under the title). */
   limitReached: boolean;
   /** Plan id while a checkout request is in flight. */
@@ -34,12 +37,23 @@ const FOOTER_LINK = "underline underline-offset-4";
  * in one column at every width. Family is preselected and listed first; every plan is visible
  * (AR, 2026-11-07). Takes props only so /dev/fixtures/paywall-modal can render it.
  */
-export function PaywallDialog({ open, onOpenChange, plans, limitReached, loadingPlan, onChoose }: PaywallDialogProps) {
+export function PaywallDialog({ open, onOpenChange, plans, currentPlan, limitReached, loadingPlan, onChoose }: PaywallDialogProps) {
   const ordered = [...plans].reverse();
-  const [selectedId, setSelectedId] = useState(ordered.find((p) => p.id === "family_yearly")?.id ?? ordered[0].id);
+  const paid = currentPlan.id !== "free";
+  // A paid profile only reaches this dialog at its daily cap, so the free-plan wording does not apply.
+  // The plan worth offering is the first one with a higher daily cap; none exists on the top plan.
+  const upgrade = paid ? ordered.find((p) => p.generationsPerDay > currentPlan.generationsPerDay) : undefined;
+  const preferred =
+    upgrade ??
+    (paid ? ordered.find((p) => p.id === currentPlan.id) : undefined) ??
+    ordered.find((p) => p.id === "family_yearly") ??
+    ordered[0];
+  // null = follow the default; cleared on close so each opening starts from the current plan again.
+  const [pickedId, setPickedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const includesId = useId();
-  const selected = ordered.find((p) => p.id === selectedId) ?? ordered[0];
+  const selected = ordered.find((p) => p.id === pickedId) ?? preferred;
+  const isCurrent = selected.id === currentPlan.id;
   const busy = loadingPlan === selected.id;
 
   const choose = async () => {
@@ -52,21 +66,35 @@ export function PaywallDialog({ open, onOpenChange, plans, limitReached, loading
     <CardDialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) setError(null);
+        if (!next) {
+          setError(null);
+          setPickedId(null);
+        }
         onOpenChange(next);
       }}
-      title="Keep making study sets"
+      title={paid ? "You've reached today's limit" : "Keep making study sets"}
       description={
-        limitReached
-          ? "You've reached your generation limit. Pick a plan to keep going."
-          : "Pick a plan to keep going. The same plans as the QuizliAI iPhone app."
+        paid
+          ? `Your plan allows ${currentPlan.generationsPerDay} generations a day. ${
+              upgrade ? `${upgrade.name} allows ${upgrade.generationsPerDay}.` : "The limit resets daily."
+            }`
+          : limitReached
+            ? "You've reached your generation limit. Pick a plan to keep going."
+            : "Pick a plan to keep going. The same plans as the QuizliAI iPhone app."
       }
       wide
     >
       <fieldset className="flex flex-col gap-3">
         <legend className="sr-only">Choose a plan</legend>
         {ordered.map((p) => (
-          <PlanOption key={p.id} plan={p} checked={p.id === selectedId} onSelect={() => setSelectedId(p.id)} compact />
+          <PlanOption
+            key={p.id}
+            plan={p}
+            checked={p.id === selected.id}
+            onSelect={() => setPickedId(p.id)}
+            isCurrent={p.id === currentPlan.id}
+            compact
+          />
         ))}
       </fieldset>
 
@@ -74,10 +102,18 @@ export function PaywallDialog({ open, onOpenChange, plans, limitReached, loading
 
       <div className="flex flex-col gap-3">
         {error && <InlineBanner>{error}</InlineBanner>}
-        <Button size="lg" className="w-full" onClick={choose} disabled={busy}>
-          {busy ? "Opening checkout" : capsuleLabel(selected)}
+        <Button size="lg" className="w-full" onClick={choose} disabled={busy || isCurrent}>
+          {isCurrent ? (
+            <>
+              <CircleCheck aria-hidden="true" strokeWidth={1.75} className="size-5" /> Current plan
+            </>
+          ) : busy ? (
+            "Opening checkout"
+          ) : (
+            capsuleLabel(selected)
+          )}
         </Button>
-        <p className="text-center text-subheadline text-supporting">{priceSentence(selected)}</p>
+        {!isCurrent && <p className="text-center text-subheadline text-supporting">{priceSentence(selected)}</p>}
       </div>
 
       <p className="text-center text-subheadline text-supporting">
@@ -96,6 +132,11 @@ export function PaywallDialog({ open, onOpenChange, plans, limitReached, loading
 /** Container: owns Stripe checkout. Same request as /note/pricing. */
 export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId }: PaywallModalProps) {
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  // Read when the dialog opens (localStorage, client only), the same source as /note/pricing.
+  const currentPlan = useMemo(
+    () => resolveEffectivePlan(isOpen ? getSubscription(profileId).planId : "free"),
+    [isOpen, profileId],
+  );
 
   const handleChoose = async (plan: SubscriptionPlan): Promise<string | null> => {
     setLoadingPlan(plan.id);
@@ -130,6 +171,7 @@ export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId 
         if (!next) onClose();
       }}
       plans={SUBSCRIPTION_PLANS.filter((p) => p.id !== "free")}
+      currentPlan={currentPlan}
       limitReached={remainingGenerations <= 0}
       loadingPlan={loadingPlan}
       onChoose={handleChoose}
