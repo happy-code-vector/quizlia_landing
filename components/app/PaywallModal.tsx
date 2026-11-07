@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { CardDialog } from "@/components/app/CardDialog";
 import { InlineBanner } from "@/components/app/people/FormKit";
 import { PlanFeatures, PlanOption, capsuleLabel, priceSentence } from "@/components/app/welcome/planParts";
+import { SUPPORT_EMAIL } from "@/lib/support";
 
 interface PaywallModalProps {
   isOpen: boolean;
@@ -54,6 +55,17 @@ export function PaywallDialog({ open, onOpenChange, plans, currentPlan, limitRea
   const includesId = useId();
   const selected = ordered.find((p) => p.id === pickedId) ?? preferred;
   const isCurrent = selected.id === currentPlan.id;
+  // A paid profile cannot buy a plan that does not raise its daily cap: checkout would add a second, lower or equal
+  // subscription, and there is no plan-change route yet. Those rows stay visible, disabled, with the reason.
+  const blockedReason = (p: SubscriptionPlan): string | undefined => {
+    if (!paid || p.id === currentPlan.id || p.generationsPerDay > currentPlan.generationsPerDay) return undefined;
+    return p.generationsPerDay < currentPlan.generationsPerDay ? "Lower daily limit than your plan" : "Same daily limit as your plan";
+  };
+  const hasBlocked = ordered.some((p) => blockedReason(p));
+  const canBuy = !isCurrent && !blockedReason(selected);
+  // The server drops the free trial for an account that already has a subscription, so a paid profile is never promised one.
+  const offered = paid ? { ...selected, trialDays: 0 } : selected;
+  const includes = paid ? { ...selected, features: selected.features.filter((f) => !/free trial/i.test(f)) } : selected;
   const busy = loadingPlan === selected.id;
 
   const choose = async () => {
@@ -93,27 +105,40 @@ export function PaywallDialog({ open, onOpenChange, plans, currentPlan, limitRea
             checked={p.id === selected.id}
             onSelect={() => setPickedId(p.id)}
             isCurrent={p.id === currentPlan.id}
+            unavailable={blockedReason(p)}
             compact
           />
         ))}
       </fieldset>
 
-      <PlanFeatures plan={selected} headingId={includesId} level={3} />
+      {hasBlocked && (
+        <p className="text-subheadline text-supporting">
+          To change your plan, email{" "}
+          <a className="font-semibold text-rust underline underline-offset-4" href={`mailto:${SUPPORT_EMAIL}`}>
+            {SUPPORT_EMAIL}
+          </a>
+          .
+        </p>
+      )}
+
+      <PlanFeatures plan={includes} headingId={includesId} level={3} />
 
       <div className="flex flex-col gap-3">
         {error && <InlineBanner>{error}</InlineBanner>}
-        <Button size="lg" className="w-full" onClick={choose} disabled={busy || isCurrent}>
+        <Button size="lg" className="w-full" onClick={choose} disabled={busy || !canBuy}>
           {isCurrent ? (
             <>
               <CircleCheck aria-hidden="true" strokeWidth={1.75} className="size-5" /> Current plan
             </>
+          ) : !canBuy ? (
+            "Not available"
           ) : busy ? (
             "Opening checkout"
           ) : (
-            capsuleLabel(selected)
+            capsuleLabel(offered)
           )}
         </Button>
-        {!isCurrent && <p className="text-center text-subheadline text-supporting">{priceSentence(selected)}</p>}
+        {canBuy && <p className="text-center text-subheadline text-supporting">{priceSentence(offered)}</p>}
       </div>
 
       <p className="text-center text-subheadline text-supporting">
