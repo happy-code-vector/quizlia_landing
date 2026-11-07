@@ -20,7 +20,7 @@ import { ForgotView, LoginView, SignupView } from "@/components/app/welcome/Auth
 import { SubscriptionProcessingView, SubscriptionSuccessView } from "@/components/app/welcome/SubscriptionSuccessView";
 import { PricingView } from "@/components/app/welcome/PricingView";
 import { PaywallDialog } from "@/components/app/PaywallModal";
-import { SUBSCRIPTION_PLANS } from "@/lib/subscription";
+import { SUBSCRIPTION_PLANS, getPlanById } from "@/lib/subscription";
 import { PromoCodeInput } from "@/components/app/PromoCodeInput";
 import {
   FIXTURE_FOLDERS, FIXTURE_NOW, FIXTURE_POSITIONS, FIXTURE_PROFILES, FIXTURE_SKETCH, FIXTURE_TOPICS, type FixtureFamily,
@@ -299,11 +299,14 @@ function Specimen({ family, port }: { family: string; port: string }) {
 }
 
 /**
- * Paywall dialog over a study-family page. ?state=limit (default), nolimit, error (checkout failed), busy (checkout opening).
+ * Paywall dialog over a study-family page. ?state=limit (default), nolimit, error (checkout failed), busy (checkout opening),
+ * paid (Family subscriber at the daily cap: no higher plan), paid-individual (Individual Annual subscriber at the cap: Family offered).
  */
 function PaywallModalFixture({ state }: { state?: string }) {
   const [open, setOpen] = useState(true);
   const plans = SUBSCRIPTION_PLANS.filter((p) => p.id !== "free");
+  const currentPlan =
+    state === "paid" ? getPlanById("family_yearly")! : state === "paid-individual" ? getPlanById("individual_yearly")! : SUBSCRIPTION_PLANS[0];
   return (
     <>
       <a href="#main" className="skip-link">Skip to content</a>
@@ -319,6 +322,7 @@ function PaywallModalFixture({ state }: { state?: string }) {
         open={open}
         onOpenChange={setOpen}
         plans={plans}
+        currentPlan={currentPlan}
         limitReached={state !== "nolimit"}
         loadingPlan={state === "busy" ? "family_yearly" : null}
         onChoose={async () => (state === "error" ? "Checkout did not open. Try again in a minute." : null)}
