@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { closeGame, hapticFeedback, postResult } from "@/lib/games/bridge";
 import { initAudio, playMatch, playMiss, playTap } from "@/lib/games/sound";
 import type { Flashcard, QuizRunResult, StudyDeck } from "@/lib/games/types";
@@ -181,13 +181,16 @@ export default function QuizRun({ deck }: { deck: StudyDeck }) {
   const paletteRef = useRef<ThemePalette>(readThemePalette());
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  queueRef.current = queue;
-  queueIndexRef.current = queueIndex;
-  gateOptionsRef.current = gateOptions;
-  hasStartedRef.current = hasStarted;
-  isPausedRef.current = isPaused;
-  isFinishedRef.current = isFinished;
-  soundEnabledRef.current = soundEnabled;
+  // Mirror latest state into refs after commit so timers and listeners read current values.
+  useLayoutEffect(() => {
+    queueRef.current = queue;
+    queueIndexRef.current = queueIndex;
+    gateOptionsRef.current = gateOptions;
+    hasStartedRef.current = hasStarted;
+    isPausedRef.current = isPaused;
+    isFinishedRef.current = isFinished;
+    soundEnabledRef.current = soundEnabled;
+  });
 
   // Read theme.css variables on mount and when prefers-color-scheme changes
   useEffect(() => {
@@ -672,9 +675,9 @@ export default function QuizRun({ deck }: { deck: StudyDeck }) {
     return (
       <main className="min-h-dvh bg-[var(--game-bg)] text-[var(--game-text)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] px-4 py-6 flex flex-col justify-between">
         <div className="max-w-lg mx-auto w-full pt-12 text-center">
-          <p className="text-[17px] font-semibold">
+          <h1 className="text-[17px] font-semibold">
             Add at least 4 flashcards to play
-          </p>
+          </h1>
         </div>
         <div className="max-w-lg mx-auto w-full pb-4">
           <button
@@ -800,9 +803,9 @@ export default function QuizRun({ deck }: { deck: StudyDeck }) {
         className="max-w-md mx-auto w-full flex flex-col gap-2"
       >
         <header className="grid grid-cols-3 items-center gap-2 min-h-[32px]">
-          <div className="truncate text-[14px] font-semibold">
-            {deck.title}
-          </div>
+          <h1 className="truncate text-[14px] font-semibold">
+            <span className="sr-only">Quiz Run: </span>{deck.title}
+          </h1>
           <div className="text-center text-[13px] text-[var(--game-text-muted)] whitespace-nowrap tabular-nums">
             Card {displayCardNumber} of {distinctCards.length}
           </div>
