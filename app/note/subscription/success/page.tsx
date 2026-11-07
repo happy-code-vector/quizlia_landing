@@ -8,8 +8,7 @@ import {
   saveSubscriptionToFirebase,
   syncSubscriptionFromFirebase,
 } from "@/lib/firebaseSubscription";
-import Link from "next/link";
-import { Icon } from "@/components/app/Icon";
+import { SubscriptionProcessingView, SubscriptionSuccessView } from "@/components/app/welcome/SubscriptionSuccessView";
 
 function SuccessContent() {
   const router = useRouter();
@@ -57,81 +56,22 @@ function SuccessContent() {
         }
 
         setIsProcessing(false);
+      } else {
+        // No profile on the return URL: nothing to confirm, so do not spin forever.
+        setIsProcessing(false);
       }
     };
 
     processSubscription();
   }, [searchParams]);
 
-  if (isProcessing) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <div className="text-center">
-          <Icon name="progress_activity" className="text-5xl text-purple-600 animate-spin" />
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Processing your subscription...</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-8 text-center">
-        <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
-
-        <Icon name="check_circle" className="text-5xl text-green-600" />
-        </div>
-
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-          Welcome to QuizliAI Premium!
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Your subscription is now active. Your plan: {getPlanById(searchParams.get("plan_id") || "")?.name ?? "Premium"}.
-        </p>
-
-        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 mb-6">
-          <h3 className="font-semibold text-purple-700 dark:text-purple-400 mb-2">What's included:</h3>
-          <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 text-left">
-            <li className="flex items-center gap-2">
-              <Icon name="check" className="text-green-500 text-sm" />
-              Notes, quizzes, flashcards &amp; AI chat
-            </li>
-            <li className="flex items-center gap-2">
-              <Icon name="check" className="text-green-500 text-sm" />
-              Priority AI processing
-            </li>
-            <li className="flex items-center gap-2">
-              <Icon name="check" className="text-green-500 text-sm" />
-              Advanced content analysis
-            </li>
-            <li className="flex items-center gap-2">
-              <Icon name="check" className="text-green-500 text-sm" />
-              Priority support
-            </li>
-          </ul>
-        </div>
-
-        <Link
-          href="/note"
-          className="inline-flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
-        >
-          <Icon name="arrow_forward" />
-          Go to Dashboard
-        </Link>
-      </div>
-    </div>
-  );
+  if (isProcessing) return <SubscriptionProcessingView />;
+  return <SubscriptionSuccessView planName={getPlanById(searchParams.get("plan_id") || "")?.name ?? "Premium"} />;
 }
 
 export default function SubscriptionSuccessPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-          <Icon name="progress_activity" className="text-5xl text-purple-600 animate-spin" />
-        </div>
-      }
-    >
+    <Suspense fallback={<SubscriptionProcessingView />}>
       <SuccessContent />
     </Suspense>
   );
