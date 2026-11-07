@@ -11,6 +11,9 @@ export const STUDY_STATES = ["note", "flashcards", "quiz", "arcade"] as const;
 // People family states for /dev/fixtures/people?state=...
 export const PEOPLE_STATES = ["picker", "edit", "signin", "create", "settings"] as const;
 
+// Welcome family states for /dev/fixtures/welcome?state=...
+export const WELCOME_STATES = ["login", "signup", "forgot", "forgot-sent", "success", "processing"] as const;
+
 export const FIXTURE_FAMILIES = ["home", "study", "people", "welcome", "paywall"] as const;
 export type FixtureFamily = (typeof FIXTURE_FAMILIES)[number];
 

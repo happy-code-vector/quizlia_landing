@@ -1,7 +1,7 @@
 "use client";
 
-import { forwardRef, useEffect, useRef, type ReactNode } from "react";
-import { CircleAlert } from "lucide-react";
+import { forwardRef, useEffect, useRef, useState, type ReactNode } from "react";
+import { CircleAlert, Eye, EyeOff } from "lucide-react";
 
 // W-7 form pieces shared by the people screens: visible labels, hint before error,
 // error above the input with an "Error:" prefix, error summary for forms with 3+ fields.
@@ -166,5 +166,39 @@ export function ChoiceCards<T extends string>({
         })}
       </div>
     </fieldset>
+  );
+}
+
+/** Password control with the W-7.9 show/hide toggle. Takes the aria props from Field. */
+export function PasswordInput({
+  aria, value, onChange, autoComplete, invalid,
+}: {
+  aria: { id: string; "aria-describedby"?: string; "aria-invalid"?: true };
+  value: string;
+  onChange: (v: string) => void;
+  autoComplete: "current-password" | "new-password";
+  invalid: boolean;
+}) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        {...aria}
+        type={show ? "text" : "password"}
+        autoComplete={autoComplete}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`${inputClass(invalid)} pr-12`}
+      />
+      <button
+        type="button"
+        aria-label={show ? "Hide password" : "Show password"}
+        aria-pressed={show}
+        onClick={() => setShow((v) => !v)}
+        className="absolute top-0 right-0 flex size-11 items-center justify-center rounded-full text-supporting hover:text-label"
+      >
+        {show ? <EyeOff aria-hidden="true" strokeWidth={1.75} className="size-5" /> : <Eye aria-hidden="true" strokeWidth={1.75} className="size-5" />}
+      </button>
+    </div>
   );
 }

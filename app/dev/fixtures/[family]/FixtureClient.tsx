@@ -15,6 +15,10 @@ import { PeopleFrame } from "@/components/app/people/PeopleFrame";
 import { SignInPanel } from "@/components/app/people/SignInPanel";
 import { CreateProfileForm } from "@/components/app/people/CreateProfileForm";
 import { SettingsView, type PlanSummary } from "@/components/app/people/SettingsView";
+import { ForgotView, LoginView, SignupView } from "@/components/app/welcome/AuthViews";
+import { SubscriptionProcessingView, SubscriptionSuccessView } from "@/components/app/welcome/SubscriptionSuccessView";
+import { PricingView } from "@/components/app/welcome/PricingView";
+import { SUBSCRIPTION_PLANS } from "@/lib/subscription";
 import { PromoCodeInput } from "@/components/app/PromoCodeInput";
 import {
   FIXTURE_FOLDERS, FIXTURE_NOW, FIXTURE_POSITIONS, FIXTURE_PROFILES, FIXTURE_SKETCH, FIXTURE_TOPICS, type FixtureFamily,
@@ -44,9 +48,22 @@ export function FixtureClient({ family, state }: { family: FixtureFamily; state?
 
   if (family === "study") return <StudyFixture state={state} />;
   if (family === "people") return <PeopleFixture state={state} />;
+  if (family === "welcome") return <WelcomeFixture state={state} />;
+  if (family === "paywall") {
+    // ?state=current shows the current-plan state
+    return (
+      <PricingView
+        plans={SUBSCRIPTION_PLANS.filter((p) => p.id !== "free")}
+        freePlan={SUBSCRIPTION_PLANS[0]}
+        currentPlan={state === "current" ? "family_yearly" : "free"}
+        loadingPlan={null}
+        onChoose={authNoop}
+      />
+    );
+  }
 
-  const surface: Family = family === "paywall" ? "welcome" : family;
-  const port = { welcome: "PR 5", paywall: "PR 5" }[family];
+  const surface: Family = "welcome";
+  const port = "PR 5";
 
   // Welcome and paywall have no app shell (onboarding and purchase are full-screen flows).
   return (
@@ -70,6 +87,19 @@ const FIXTURE_PLAN: PlanSummary = {
   features: ["Up to 4 kid profiles and a parent profile", "20 notes a day", "Flashcards, quizzes and games for every note"],
   usage: { kind: "daily", used: 3, limit: 20 },
 };
+
+/**
+ * Welcome family: auth, subscription success.
+ * ?state=login (default) | signup | forgot | forgot-sent | success | processing
+ */
+function WelcomeFixture({ state }: { state?: string }) {
+  if (state === "signup") return <SignupView googleAvailable onGoogle={authNoop} onEmail={authNoop} />;
+  if (state === "forgot") return <ForgotView onSend={authNoop} />;
+  if (state === "forgot-sent") return <ForgotView onSend={authNoop} initialSent="maya@example.com" />;
+  if (state === "success") return <SubscriptionSuccessView planName="Family Annual" />;
+  if (state === "processing") return <SubscriptionProcessingView />;
+  return <LoginView googleAvailable onGoogle={authNoop} onEmail={authNoop} />;
+}
 
 /**
  * People family: profile picker, sign in, create profile, settings.
