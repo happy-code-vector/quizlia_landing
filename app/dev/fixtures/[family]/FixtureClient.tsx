@@ -4,6 +4,11 @@ import { Check, CircleAlert } from "lucide-react";
 import { ToastProvider } from "@/components/app/ToastContainer";
 import { AppShell, type Family } from "@/components/app/shell/AppShell";
 import { HomeView } from "@/components/app/home/HomeView";
+import { NoteView } from "@/components/app/note/NoteView";
+import type { NoteChatState } from "@/components/app/note/useNoteChat";
+import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
+import { QuizStudyMode } from "@/components/app/QuizStudyMode";
+import { ArcadeView } from "@/components/app/arcade/ArcadeView";
 import { Button } from "@/components/ui/button";
 import {
   FIXTURE_FOLDERS, FIXTURE_NOW, FIXTURE_POSITIONS, FIXTURE_PROFILES, FIXTURE_SKETCH, FIXTURE_TOPICS, type FixtureFamily,
@@ -31,8 +36,10 @@ export function FixtureClient({ family, state }: { family: FixtureFamily; state?
     );
   }
 
+  if (family === "study") return <StudyFixture state={state} />;
+
   const surface: Family = family === "paywall" ? "welcome" : family;
-  const port = { study: "PR 3", people: "PR 4", welcome: "PR 5", paywall: "PR 5" }[family];
+  const port = { people: "PR 4", welcome: "PR 5", paywall: "PR 5" }[family];
 
   // Welcome and paywall have no app shell (onboarding and purchase are full-screen flows).
   if (family === "welcome" || family === "paywall") {
@@ -55,6 +62,61 @@ export function FixtureClient({ family, state }: { family: FixtureFamily; state?
         </div>
       </main>
     </AppShell>
+  );
+}
+
+const FIXTURE_CHAT: NoteChatState = {
+  messages: [
+    { id: "default", sender: "default", text: "Ask me anything about this note." },
+    { id: "q1", sender: "user", text: "Why do leaves change color in fall?" },
+    { id: "a1", sender: "ai", text: "In fall the tree stops making **chlorophyll**. The green fades and the yellow and orange pigments that were there all along show through." },
+  ],
+  inputText: "",
+  setInputText: noop,
+  isLoading: false,
+  send: noop,
+};
+
+/**
+ * Study family: the real note page and both study modes with sample data.
+ * ?state=note (default) | flashcards | quiz | arcade
+ */
+function StudyFixture({ state }: { state?: string }) {
+  const topic = FIXTURE_TOPICS[0];
+  if (state === "flashcards") {
+    return (
+      <FlashcardStudyMode
+        flashcards={topic.flashcards!}
+        startIndex={FIXTURE_POSITIONS[topic.id].index}
+        deckTitle={topic.title}
+        onClose={noop}
+        onQuiz={noop}
+      />
+    );
+  }
+  if (state === "quiz") {
+    return <QuizStudyMode quizzes={topic.quiz!} topicTitle={topic.title} onClose={noop} />;
+  }
+  return (
+    <ToastProvider>
+      <AppShell profile={FIXTURE_PROFILES[0]} family="study" folders={FIXTURE_FOLDERS} hideUsage>
+        {state === "arcade" ? (
+          <ArcadeView topics={FIXTURE_TOPICS.filter((t) => t.flashcards?.length).map((t) => ({ id: t.id, title: t.title }))} profileId={FIXTURE_PROFILES[0].id} />
+        ) : (
+          <NoteView
+            topic={topic}
+            chat={FIXTURE_CHAT}
+            onStudyFlashcards={noop}
+            onQuiz={noop}
+            onPlay={noop}
+            menu={{
+              onShare: noop, onRename: noop, onDelete: noop, publishedSlug: null, isAdmin: false,
+              isPublishing: false, onPublish: noop, onUnpublish: noop, onCopyLink: noop,
+            }}
+          />
+        )}
+      </AppShell>
+    </ToastProvider>
   );
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Icon } from "@/components/app/Icon";
+import { useId, useRef, useState, type RefObject } from "react";
+import { CircleAlert } from "lucide-react";
+import { CardDialog } from "@/components/app/CardDialog";
 
 interface RenameModalProps {
   isOpen: boolean;
@@ -13,37 +14,33 @@ interface RenameModalProps {
    *  current title itself is excluded — renaming to a case-variant of
    *  yourself is a harmless no-op (spec 2026-11-06). */
   conflictNames?: string[];
+  /** Focus target on close when the opener is gone (a menu item). */
+  returnFocusTo?: RefObject<HTMLElement | null>;
 }
 
-export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType, conflictNames }: RenameModalProps) {
+/** Rename dialog (W-7: visible label, validate on submit, error above the field, never clears the field). */
+export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType, conflictNames, returnFocusTo }: RenameModalProps) {
   const [title, setTitle] = useState(currentTitle);
   const [error, setError] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (isOpen) {
-      setTitle(currentTitle);
-      document.body.style.overflow = "hidden";
-      setTimeout(() => inputRef.current?.select(), 100);
-    } else {
-      document.body.style.overflow = "unset";
-    }
-    setError("");
-    return () => {
-      document.body.style.overflow = "unset";
-    };
-  }, [isOpen, currentTitle]);
+  const id = useId();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const next = title.trim();
-    if (!next || next === currentTitle) {
+    if (!next) {
+      setError(`Enter a name for the ${itemType}`);
+      inputRef.current?.focus();
+      return;
+    }
+    if (next === currentTitle) {
       onClose();
       return;
     }
     const lower = next.toLowerCase();
     if (conflictNames && (lower.startsWith("general") || lower === "from web")) {
-      setError("This folder name is reserved");
+      setError("Choose another name. This folder name is reserved");
+      inputRef.current?.focus();
       return;
     }
     const collides = conflictNames?.some(
@@ -51,60 +48,56 @@ export function RenameModal({ isOpen, onClose, onRename, currentTitle, itemType,
         n.trim().toLowerCase() === next.toLowerCase()
     );
     if (collides) {
-      setError("A folder with this name already exists");
+      setError("Choose another name. A folder with this name already exists");
+      inputRef.current?.focus();
       return;
     }
     onRename(next);
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full border border-gray-200 dark:border-gray-800">
-        <form onSubmit={handleSubmit}>
-          <div className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="bg-blue-100 dark:bg-blue-900/30 rounded-full p-3">
-                <Icon name="edit" className="text-blue-600" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                Rename {itemType}
-              </h3>
-            </div>
-
-            <input
-              ref={inputRef}
-              type="text"
-              value={title}
-              onChange={(e) => { setTitle(e.target.value); setError(""); }}
-              placeholder="Enter new title..."
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoFocus
-            />
-            {error && (
-              <p className="mt-2 text-sm text-red-600 dark:text-red-400">{error}</p>
-            )}
-          </div>
-          <div className="border-t border-gray-200 dark:border-gray-800 px-6 py-4 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 rounded-lg font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!title.trim() || title.trim() === currentTitle}
-              className="px-4 py-2 rounded-lg font-medium bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Rename
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <CardDialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      title={`Rename ${itemType}`}
+      returnFocusTo={returnFocusTo}
+      onOpenAutoFocus={(e) => {
+        e.preventDefault();
+        setTitle(currentTitle);
+        setError("");
+        requestAnimationFrame(() => inputRef.current?.select());
+      }}
+    >
+      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor={`${id}-name`} className="text-subheadline font-semibold">Name</label>
+          {error && (
+            <p id={`${id}-error`} className="flex items-center gap-1.5 text-subheadline text-danger">
+              <CircleAlert aria-hidden="true" strokeWidth={1.75} className="size-4 shrink-0" />
+              <span className="sr-only">Error:</span> {error}
+            </p>
+          )}
+          <input
+            ref={inputRef}
+            id={`${id}-name`}
+            type="text"
+            autoComplete="off"
+            value={title}
+            onChange={(e) => {
+              setTitle(e.target.value);
+              if (error) setError("");
+            }}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? `${id}-error` : undefined}
+            className={`h-11 rounded-xl bg-card px-3 text-callout ${error ? "border-2 border-danger" : "border border-input"}`}
+          />
+        </div>
+        <div className="flex flex-wrap justify-end gap-3">
+          <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+          <button type="submit" className="btn-primary">Rename</button>
+        </div>
+      </form>
+    </CardDialog>
   );
 }

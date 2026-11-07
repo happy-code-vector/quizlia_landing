@@ -17,9 +17,20 @@ export function GameHost({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("quizli:game", onGameEvent);
   }, []);
 
+  // Games sit on the study family surface (W-3.2); the game palette maps onto the app tokens.
   return (
-    <div className="min-h-dvh bg-[var(--game-bg)] text-[var(--game-text)]">
+    <div className="min-h-dvh text-label">
+      <div aria-hidden="true" className="family-surface family-study" />
       {children}
+    </div>
+  );
+}
+
+/** Shared loading state while a play page reads its deck. */
+export function GameLoading() {
+  return (
+    <div className="flex min-h-dvh items-center justify-center">
+      <p role="status" className="text-callout text-supporting">Loading the deck…</p>
     </div>
   );
 }
