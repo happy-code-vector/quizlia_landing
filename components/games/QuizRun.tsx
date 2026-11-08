@@ -93,16 +93,17 @@ function useCountUp(target: number, active: boolean, durationMs = 600): number {
   const [value, setValue] = useState(0);
 
   useEffect(() => {
+    // setState only inside rAF callbacks, never synchronously in the effect body.
     if (!active) {
-      setValue(0);
-      return;
+      const resetId = window.requestAnimationFrame(() => setValue(0));
+      return () => window.cancelAnimationFrame(resetId);
     }
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced || target === 0) {
-      setValue(target);
-      return;
+      const settleId = window.requestAnimationFrame(() => setValue(target));
+      return () => window.cancelAnimationFrame(settleId);
     }
 
     let rafId = 0;
@@ -118,7 +119,7 @@ function useCountUp(target: number, active: boolean, durationMs = 600): number {
     return () => window.cancelAnimationFrame(rafId);
   }, [target, active, durationMs]);
 
-  return value;
+  return active ? value : 0;
 }
 
 export default function QuizRun({ deck }: { deck: StudyDeck }) {
@@ -633,8 +634,9 @@ export default function QuizRun({ deck }: { deck: StudyDeck }) {
   const resultPayload: QuizRunResult | null = isFinished
     ? (() => {
         const totalCards = distinctCards.length;
-        const startMs = startedAtMs ?? Date.now();
-        const endMs = finishedAtMs ?? Date.now();
+        // Both are set before isFinished flips; the fallbacks only keep types total.
+        const endMs = finishedAtMs ?? startedAtMs ?? 0;
+        const startMs = startedAtMs ?? endMs;
         const durationMs = Math.max(0, endMs - startMs);
         const denom = totalCards + wrongPicks;
         const accuracy =
@@ -703,6 +705,8 @@ export default function QuizRun({ deck }: { deck: StudyDeck }) {
       <main className="min-h-dvh bg-[var(--game-bg)] text-[var(--game-text)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] px-4 py-6">
         <div className="max-w-2xl mx-auto w-full flex flex-col gap-6">
           {mascotVisible ? (
+            // Decorative 96px mascot, hidden by onError when the asset is absent; next/image adds no value here.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src="/mascot/bear-happy.webp"
               alt=""
@@ -768,7 +772,7 @@ export default function QuizRun({ deck }: { deck: StudyDeck }) {
             <button
               type="button"
               onClick={handleRestart}
-              className="h-12 rounded-full border border-[var(--game-accent)] bg-[var(--game-card)] text-[var(--game-accent)] text-[15px] font-semibold"
+              className="h-12 rounded-full border border-[var(--game-accent)] bg-[var(--game-card)] text-[var(--game-accent-text)] text-[15px] font-semibold"
             >
               Play again
             </button>
@@ -868,7 +872,7 @@ export default function QuizRun({ deck }: { deck: StudyDeck }) {
                 data-testid="counter-right"
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border tabular-nums ${
                   queueIndex > 0
-                    ? "border-[var(--game-accent)] text-[var(--game-accent)] game-anim-bump"
+                    ? "border-[var(--game-accent)] text-[var(--game-accent-text)] game-anim-bump"
                     : "border-[var(--game-border)] text-[var(--game-text)]"
                 }`}
               >

@@ -51,16 +51,17 @@ function useCountUp(target: number, active: boolean, durationMs = 600): number {
   const [value, setValue] = useState(0);
 
   useEffect(() => {
+    // setState only inside rAF callbacks, never synchronously in the effect body.
     if (!active) {
-      setValue(0);
-      return;
+      const resetId = window.requestAnimationFrame(() => setValue(0));
+      return () => window.cancelAnimationFrame(resetId);
     }
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced || target === 0) {
-      setValue(target);
-      return;
+      const settleId = window.requestAnimationFrame(() => setValue(target));
+      return () => window.cancelAnimationFrame(settleId);
     }
 
     let rafId = 0;
@@ -76,7 +77,7 @@ function useCountUp(target: number, active: boolean, durationMs = 600): number {
     return () => window.cancelAnimationFrame(rafId);
   }, [target, active, durationMs]);
 
-  return value;
+  return active ? value : 0;
 }
 
 export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
@@ -300,8 +301,9 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
   const isFinished = phase === "finished";
   const resultPayload: TrueFalseResult | null = isFinished
     ? (() => {
-        const startMs = startedAtMs ?? Date.now() - ROUND_DURATION_MS;
-        const endMs = finishedAtMs ?? Date.now();
+        // Both are set before phase flips to finished; the fallbacks only keep types total.
+        const endMs = finishedAtMs ?? startedAtMs ?? 0;
+        const startMs = startedAtMs ?? endMs - ROUND_DURATION_MS;
         const durationMs = Math.max(0, endMs - startMs);
         const accuracy =
           totalStatements > 0
@@ -387,6 +389,8 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
       <main className="min-h-dvh bg-[var(--game-bg)] text-[var(--game-text)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] px-4 py-6">
         <div className="max-w-2xl mx-auto w-full flex flex-col gap-6 game-anim-deal">
           {mascotVisible ? (
+            // Decorative 96px mascot, hidden by onError when the asset is absent; next/image adds no value here.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src="/mascot/bear-happy.webp"
               alt=""
@@ -452,7 +456,7 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
             <button
               type="button"
               onClick={handleStartRound}
-              className="h-14 rounded-full border border-[var(--game-accent)] bg-[var(--game-card)] text-[var(--game-accent)] text-[15px] font-semibold motion-safe:active:scale-[0.98]"
+              className="h-14 rounded-full border border-[var(--game-accent)] bg-[var(--game-card)] text-[var(--game-accent-text)] text-[15px] font-semibold motion-safe:active:scale-[0.98]"
             >
               Play again
             </button>
@@ -508,7 +512,7 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
             <div
               className={`text-center text-[15px] font-semibold tabular-nums ${
                 isFinalTenSeconds
-                  ? "text-[var(--game-accent)] game-anim-pop"
+                  ? "text-[var(--game-accent-text)] game-anim-pop"
                   : "text-[var(--game-text)]"
               }`}
             >
@@ -570,7 +574,7 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
                 data-testid="counter-right"
                 className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[var(--game-card)] border tabular-nums font-semibold ${
                   correctCount > 0
-                    ? "border-[var(--game-accent)] text-[var(--game-accent)] game-anim-bump"
+                    ? "border-[var(--game-accent)] text-[var(--game-accent-text)] game-anim-bump"
                     : "border-[var(--game-border)] text-[var(--game-text)]"
                 }`}
               >
@@ -710,7 +714,7 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
                         dragOffsetX > 0 || slideDirection === "right"
                           ? "bg-[var(--game-accent)] text-[var(--game-on-accent)]"
-                          : "border border-[var(--game-accent)] text-[var(--game-accent)]"
+                          : "border border-[var(--game-accent)] text-[var(--game-accent-text)]"
                       }`}
                     >
                       {dragOffsetX > 0 || slideDirection === "right"
@@ -748,7 +752,7 @@ export default function TrueFalseSprint({ deck }: { deck: StudyDeck }) {
               phase !== "playing" || isPaused || wrongFeedbackCard !== null
             }
             onClick={() => submitAnswer(false)}
-            className={`h-14 rounded-full border border-[var(--game-accent)] bg-[var(--game-card)] text-[var(--game-accent)] text-[16px] font-semibold disabled:opacity-50 motion-safe:transition-transform motion-safe:active:scale-[0.96] ${
+            className={`h-14 rounded-full border border-[var(--game-accent)] bg-[var(--game-card)] text-[var(--game-accent-text)] text-[16px] font-semibold disabled:opacity-50 motion-safe:transition-transform motion-safe:active:scale-[0.96] ${
               isFalseShaking
                 ? "game-anim-shake border-2 border-[var(--game-miss)] text-[var(--game-text)]"
                 : isFalsePopping
