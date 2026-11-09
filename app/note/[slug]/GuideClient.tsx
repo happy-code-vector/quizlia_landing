@@ -7,6 +7,7 @@ import { FlashcardStudyMode } from "@/components/app/FlashcardStudyMode";
 import { QuizStudyMode } from "@/components/app/QuizStudyMode";
 import { getStudyGuide, StudyGuide } from "@/lib/studyGuide";
 import { Topic, getSourceIcon } from "@/lib/types";
+import { sendChat } from "@/lib/chatClient";
 import { MarkdownText } from "@/components/app/MarkdownText";
 import { Icon } from "@/components/app/Icon";
 
@@ -151,19 +152,15 @@ export function GuideClient({ slug, initialGuide }: { slug: string; initialGuide
 
     try {
       const context = buildContext();
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: userMessage.text, context }),
-      });
-
-      const result = await response.json();
+      // /api/chat requires a signed-in caller (meters every message), so the
+      // request goes through sendChat, which attaches the Firebase ID token.
+      const reply = await sendChat(userMessage.text, context);
       setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));
 
-      if (result.success || result.answer) {
-        setMessages((prev) => [...prev, { id: Date.now().toString(), sender: "ai", text: result.answer }]);
+      if (reply.ok) {
+        setMessages((prev) => [...prev, { id: Date.now().toString(), sender: "ai", text: reply.answer }]);
       } else {
-        setMessages((prev) => [...prev, { id: Date.now().toString(), sender: "ai", text: `Error: ${result.error || "Failed to get response"}` }]);
+        setMessages((prev) => [...prev, { id: Date.now().toString(), sender: "ai", text: reply.signIn ? reply.message : `Error: ${reply.message}` }]);
       }
     } catch (error) {
       setMessages((prev) => prev.filter((msg) => msg.id !== "typing"));

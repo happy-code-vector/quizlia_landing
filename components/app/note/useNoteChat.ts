@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Topic } from "@/lib/types";
+import { sendChat } from "@/lib/chatClient";
 
 export interface ChatMessage {
   id: string;
@@ -90,15 +91,14 @@ export function useNoteChat(profileId: number | null, topicId: string, topic: To
     setInputText("");
     setIsLoading(true);
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question, context: buildContext(topic) }),
-      });
-      const result = await response.json();
-      const text = result.success || result.answer
-        ? result.answer
-        : `The answer didn't load: ${result.error || "the server sent no answer"}. Send the question again.`;
+      // /api/chat requires a signed-in caller (meters every message), so the
+      // request goes through sendChat, which attaches the Firebase ID token.
+      const reply = await sendChat(question, buildContext(topic));
+      const text = reply.ok
+        ? reply.answer
+        : reply.signIn
+          ? reply.message
+          : `The answer didn't load: ${reply.message}. Send the question again.`;
       setMessages((prev) => [...prev.filter((m) => m.id !== "typing"), { id: Date.now().toString(), sender: "ai", text }]);
     } catch (error) {
       console.error("Chat error:", error);
