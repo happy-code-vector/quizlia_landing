@@ -37,12 +37,16 @@ export default function PricingPage() {
         },
         body: JSON.stringify({ priceId: plan.stripePriceId, profileId, planId: plan.id }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (data.url) {
         window.location.href = data.url;
         return null;
       }
-      return "Checkout did not open. Try again in a minute.";
+      // Surface the server's reason (e.g. the 409 duplicate-subscription
+      // guard) instead of a generic retry line.
+      return typeof data.error === "string" && data.error
+        ? data.error
+        : "Checkout did not open. Try again in a minute.";
     } catch (error) {
       console.error("Checkout error:", error);
       return "QuizliAI can't be reached. Check your connection, then try again.";

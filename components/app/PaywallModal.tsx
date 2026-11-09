@@ -42,10 +42,8 @@ export function PaywallDialog({ open, onOpenChange, plans, currentPlan, limitRea
   const ordered = [...plans].reverse();
   const paid = currentPlan.id !== "free";
   // A paid profile only reaches this dialog at its daily cap, so the free-plan wording does not apply.
-  // The plan worth offering is the first one with a higher daily cap; none exists on the top plan.
-  const upgrade = paid ? ordered.find((p) => p.generationsPerDay > currentPlan.generationsPerDay) : undefined;
+  // Nothing is buyable for a paid profile (one subscription per account), so preselect its current row.
   const preferred =
-    upgrade ??
     (paid ? ordered.find((p) => p.id === currentPlan.id) : undefined) ??
     ordered.find((p) => p.id === "family_yearly") ??
     ordered[0];
@@ -55,11 +53,12 @@ export function PaywallDialog({ open, onOpenChange, plans, currentPlan, limitRea
   const includesId = useId();
   const selected = ordered.find((p) => p.id === pickedId) ?? preferred;
   const isCurrent = selected.id === currentPlan.id;
-  // A paid profile cannot buy a plan that does not raise its daily cap: checkout would add a second, lower or equal
-  // subscription, and there is no plan-change route yet. Those rows stay visible, disabled, with the reason.
+  // A paid profile cannot buy anything here: /api/stripe/checkout refuses a
+  // second active subscription (one per account, agreed 2026-11-09), and plan
+  // changes go through support. Rows stay visible, disabled, with the reason.
   const blockedReason = (p: SubscriptionPlan): string | undefined => {
-    if (!paid || p.id === currentPlan.id || p.generationsPerDay > currentPlan.generationsPerDay) return undefined;
-    return p.generationsPerDay < currentPlan.generationsPerDay ? "Lower daily limit than your plan" : "Same daily limit as your plan";
+    if (!paid || p.id === currentPlan.id) return undefined;
+    return "Plan changes go through support";
   };
   const hasBlocked = ordered.some((p) => blockedReason(p));
   const canBuy = !isCurrent && !blockedReason(selected);
@@ -87,9 +86,7 @@ export function PaywallDialog({ open, onOpenChange, plans, currentPlan, limitRea
       title={paid ? "You've reached today's limit" : "Keep making study sets"}
       description={
         paid
-          ? `Your plan allows ${currentPlan.generationsPerDay} generations a day. ${
-              upgrade ? `${upgrade.name} allows ${upgrade.generationsPerDay}.` : "The limit resets daily."
-            }`
+          ? `Your plan allows ${currentPlan.generationsPerDay} generations a day. The limit resets daily.`
           : limitReached
             ? "You've reached your generation limit. Pick a plan to keep going."
             : "Pick a plan to keep going. The same plans as the QuizliAI iPhone app."
@@ -175,12 +172,16 @@ export function PaywallModal({ isOpen, onClose, remainingGenerations, profileId 
         },
         body: JSON.stringify({ priceId: plan.stripePriceId, profileId, planId: plan.id }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (data.url) {
         window.location.href = data.url;
         return null;
       }
-      return "Checkout did not open. Try again in a minute.";
+      // Surface the server's reason (e.g. the 409 duplicate-subscription
+      // guard) instead of a generic retry line.
+      return typeof data.error === "string" && data.error
+        ? data.error
+        : "Checkout did not open. Try again in a minute.";
     } catch (error) {
       console.error("Checkout error:", error);
       return "QuizliAI can't be reached. Check your connection, then try again.";

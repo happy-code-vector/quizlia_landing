@@ -19,10 +19,24 @@ export async function POST(request: NextRequest) {
       family_yearly: 7,
     };
 
-    // Check if Stripe secret key is configured and a real price ID was set
+    // A missing price is a client bug, never a reason to hand out a free
+    // "success" redirect: the old demo branch fired on !priceId alone —
+    // before any auth check — even with live keys configured.
+    if (!priceId) {
+      return NextResponse.json({ error: "Missing plan price" }, { status: 400 });
+    }
+
+    // Demo mode (no Stripe key) is for local development only. In production
+    // it must fail closed instead of simulating a paid checkout.
     const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
-    if (!stripeSecretKey || !priceId) {
-      // Demo mode - simulate successful checkout
+    if (!stripeSecretKey) {
+      if (process.env.NODE_ENV === "production") {
+        console.error("STRIPE_SECRET_KEY missing in production — refusing checkout");
+        return NextResponse.json(
+          { error: "Checkout is unavailable right now. Please try again later." },
+          { status: 503 }
+        );
+      }
       return NextResponse.json({
         url: `/note/subscription/success?session_id=demo_${Date.now()}&profile_id=${profileId}&plan_id=${demoPlanId}`,
         demo: true,
@@ -60,22 +74,43 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unknown price" }, { status: 400 });
     }
 
+    // One subscription per account (agreed 2026-11-09, option 1): refuse a
+    // second checkout while any plan is active — the old flow let a paid
+    // profile buy Family alongside Weekly/Individual (double billing).
+    // Plan changes go through support. This read also feeds the trial
+    // dedupe below, so it is fetched once; unlike the old trial-only read
+    // (fail-open), a read error now fails CLOSED — checkout must not
+    // proceed when the account's subscription status cannot be verified.
+    let subs: Record<string, unknown> | undefined;
+    try {
+      const db = await getAdminDb();
+      const snap = await db.collection("users").doc(caller.uid).get();
+      subs = (snap.data() as Record<string, unknown> | undefined)?.subscriptions as
+        | Record<string, unknown>
+        | undefined;
+    } catch {
+      return NextResponse.json(
+        { error: "Could not verify your subscription status. Please try again." },
+        { status: 503 }
+      );
+    }
+    const hasActive = Object.values(subs ?? {}).some(
+      (s) => (s as { active?: boolean } | null)?.active === true
+    );
+    if (hasActive) {
+      return NextResponse.json(
+        { error: "You already have an active subscription. To change plans, email hello@quizliai.com.", support: true },
+        { status: 409 }
+      );
+    }
+
     // Trial dedupe: Stripe never limits trials per customer — cancel and
     // resubscribe would earn another free week. Any prior subscription
     // footprint on this account drops the trial (annual trials are for
-    // first-time buyers only). Fails open: a read error keeps the trial
-    // rather than blocking checkout.
+    // first-time buyers only).
     let trialDays = trialDaysByPlan[planId] ?? 0;
-    if (trialDays > 0) {
-      try {
-        const db = await getAdminDb();
-        const snap = await db.collection("users").doc(caller.uid).get();
-        const subs = (snap.data() as Record<string, unknown> | undefined)?.subscriptions;
-        const hasPrior = !!subs && Object.values(subs).some((s) => s != null);
-        if (hasPrior) trialDays = 0;
-      } catch {
-        // keep the configured trial
-      }
+    if (trialDays > 0 && subs && Object.values(subs).some((s) => s != null)) {
+      trialDays = 0;
     }
 
     // Get the origin for redirect URLs
