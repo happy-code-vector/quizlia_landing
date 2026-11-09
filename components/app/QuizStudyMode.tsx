@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { ArrowRight, CircleCheck, CircleX, Share2 } from "lucide-react";
+import { MarkdownText } from "@/components/app/MarkdownText";
+import { StudySurface, StudyProgress, type Shortcut } from "@/components/app/study/StudySurface";
 
 interface Quiz {
   question: string;
@@ -31,15 +34,34 @@ interface Answer {
   isCorrect: boolean;
 }
 
+const ICON = { strokeWidth: 1.75, "aria-hidden": true } as const;
+const LETTERS = ["A", "B", "C", "D", "E", "F"];
+
+const SHORTCUTS: Shortcut[] = [
+  { keys: ["1", "2", "3", "4"], action: "Pick an answer" },
+  { keys: ["Enter"], action: "Next question" },
+  { keys: ["→"], action: "Next question" },
+  { keys: ["Esc"], action: "Back to the note" },
+  { keys: ["?"], action: "Show these shortcuts" },
+];
+
+/**
+ * Quiz study mode on the study surface. Correctness always shows as an icon plus words, never
+ * color alone (W-9.6). No live score while answering, matching the games (2026-11-05). The bear
+ * appears only on the result screen.
+ */
 export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: QuizStudyModeProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [showResult, setShowResult] = useState(false);
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [startTime, setStartTime] = useState(Date.now());
-  const [showExplanation, setShowExplanation] = useState(false);
+  const [startTime, setStartTime] = useState(() => Date.now());
+  const [finishedAt, setFinishedAt] = useState<number | null>(null);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [shared, setShared] = useState<string | null>(null);
   const reported = useRef(false);
+  const questionRef = useRef<HTMLHeadingElement>(null);
+  const nextRef = useRef<HTMLButtonElement>(null);
+  const resultRef = useRef<HTMLHeadingElement>(null);
 
   // One report per finished run; Try again resets it.
   useEffect(() => {
@@ -49,28 +71,45 @@ export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: Quiz
       total: quizzes.length,
       answers: answers.map((a) => ({ i: a.questionIndex, correct: a.isCorrect })),
       startedAt: new Date(startTime),
-      finishedAt: new Date(),
+      finishedAt: new Date(finishedAt ?? Date.now()),
     });
-  }, [isCompleted, onComplete, answers, quizzes.length, startTime]);
+  }, [isCompleted, onComplete, answers, quizzes.length, startTime, finishedAt]);
+
+  // Focus follows the question (W-5.4): the new question heading on Next, the result heading at the end.
+  useEffect(() => {
+    if (isCompleted) {
+      resultRef.current?.focus({ preventScroll: true });
+      return;
+    }
+    // First question: no keyboard step yet, so no ring; later questions follow the browser heuristic.
+    questionRef.current?.focus(currentIndex === 0 ? ({ preventScroll: true, focusVisible: false } as FocusOptions) : { preventScroll: true });
+  }, [currentIndex, isCompleted]);
+
+  // The Next button appears once an answer is picked; focus moves to it after it renders.
+  useEffect(() => {
+    if (selectedAnswer !== null) nextRef.current?.focus({ preventScroll: true });
+  }, [selectedAnswer]);
+
+  if (quizzes.length === 0) return null;
 
   const currentQuiz = quizzes[currentIndex];
-  const progress = ((currentIndex + 1) / quizzes.length) * 100;
+  const answered = selectedAnswer !== null;
+  const isLast = currentIndex >= quizzes.length - 1;
 
   const handleSelectAnswer = (option: string) => {
-    if (selectedAnswer) return;
+    if (answered) return;
     setSelectedAnswer(option);
-    setShowResult(true);
     const isCorrect = option === currentQuiz.correct_answer;
-    setAnswers([...answers, { questionIndex: currentIndex, selected: option, correct: currentQuiz.correct_answer, isCorrect }]);
+    setAnswers((prev) => [...prev, { questionIndex: currentIndex, selected: option, correct: currentQuiz.correct_answer, isCorrect }]);
   };
 
   const handleNext = () => {
-    if (currentIndex < quizzes.length - 1) {
+    if (!answered) return;
+    if (!isLast) {
       setCurrentIndex(currentIndex + 1);
       setSelectedAnswer(null);
-      setShowResult(false);
-      setShowExplanation(false);
     } else {
+      setFinishedAt(Date.now());
       setIsCompleted(true);
     }
   };
@@ -78,26 +117,21 @@ export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: Quiz
   const handleTryAgain = () => {
     setCurrentIndex(0);
     setSelectedAnswer(null);
-    setShowResult(false);
-    setShowExplanation(false);
     setAnswers([]);
     setIsCompleted(false);
+    setFinishedAt(null);
+    setShared(null);
     setStartTime(Date.now());
     reported.current = false;
   };
 
-  const getTimeTaken = () => {
-    const seconds = Math.floor((Date.now() - startTime) / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-  };
-
   const correctCount = answers.filter((a) => a.isCorrect).length;
   const scorePercentage = Math.round((correctCount / quizzes.length) * 100);
+  const seconds = Math.max(0, Math.floor(((finishedAt ?? startTime) - startTime) / 1000));
+  const timeTaken = `${Math.floor(seconds / 60)}:${(seconds % 60).toString().padStart(2, "0")}`;
 
   const handleShareResult = async () => {
-    const text = `I scored ${scorePercentage}% (${correctCount}/${quizzes.length}) on ${topicTitle ? `"${topicTitle}"` : "a QuizliAI quiz"}! 🎯`;
+    const text = `I got ${correctCount} of ${quizzes.length} right (${scorePercentage}%) on ${topicTitle ? `"${topicTitle}"` : "a QuizliAI quiz"}.`;
     if (navigator.share) {
       try {
         await navigator.share({ text });
@@ -108,131 +142,187 @@ export function QuizStudyMode({ quizzes, topicTitle, onClose, onComplete }: Quiz
     }
     try {
       await navigator.clipboard.writeText(text);
+      setShared("Result copied to the clipboard.");
     } catch {
-      // clipboard unavailable
+      setShared("Sharing isn't available in this browser.");
+    }
+  };
+
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+    if (isCompleted) return;
+    const target = e.target as HTMLElement;
+    const onControl = !!target.closest("button, a, input, textarea, select");
+    const n = Number(e.key);
+    if (Number.isInteger(n) && n >= 1 && n <= currentQuiz.options.length) {
+      e.preventDefault();
+      handleSelectAnswer(currentQuiz.options[n - 1]);
+    } else if ((e.key === "Enter" && !onControl) || e.key === "ArrowRight") {
+      if (!answered) return;
+      e.preventDefault();
+      handleNext();
     }
   };
 
   if (isCompleted) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 overflow-hidden">
-        <div className="flex-1 flex items-center justify-center p-4 sm:p-8 overflow-y-auto">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl sm:rounded-3xl shadow-2xl p-5 sm:p-8 max-w-md w-full text-center">
-            <div className={`w-16 h-16 sm:w-24 sm:h-24 mx-auto mb-4 sm:mb-6 rounded-full flex items-center justify-center ${scorePercentage >= 70 ? "bg-green-100" : scorePercentage >= 50 ? "bg-yellow-100" : "bg-red-100"}`}>
-              <span className={`material-symbols-outlined text-3xl sm:text-5xl ${scorePercentage >= 70 ? "text-green-600" : scorePercentage >= 50 ? "text-yellow-600" : "text-red-600"}`}>
-                {scorePercentage >= 70 ? "emoji_events" : scorePercentage >= 50 ? "thumb_up" : "refresh"}
-              </span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
-              {scorePercentage >= 70 ? "Great Job!" : scorePercentage >= 50 ? "Good Effort!" : "Keep Practicing!"}
-            </h2>
-            <div className="text-4xl sm:text-6xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-4 sm:mb-6">
-              {scorePercentage}%
-            </div>
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6 sm:mb-8">
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg sm:rounded-xl p-2 sm:p-4">
-                <p className="text-xl sm:text-2xl font-bold text-green-600">{correctCount}</p>
-                <p className="text-xs text-gray-500">Correct</p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg sm:rounded-xl p-2 sm:p-4">
-                <p className="text-xl sm:text-2xl font-bold text-red-600">{quizzes.length - correctCount}</p>
-                <p className="text-xs text-gray-500">Wrong</p>
-              </div>
-              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg sm:rounded-xl p-2 sm:p-4">
-                <p className="text-xl sm:text-2xl font-bold text-purple-600">{getTimeTaken()}</p>
-                <p className="text-xs text-gray-500">Time</p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 sm:gap-3">
-              <button onClick={handleTryAgain} className="w-full py-2.5 sm:py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-lg sm:rounded-xl font-medium hover:from-purple-600 hover:to-pink-600 transition-all">
-                Try Again
+      <StudySurface
+        title="Quiz"
+        subtitle={topicTitle}
+        backLabel="Back to the note"
+        onBack={onClose}
+        shortcuts={SHORTCUTS}
+        onKeyDown={onKeyDown}
+        footer={
+          <div className="flex flex-col items-center gap-2">
+            <button type="button" onClick={handleTryAgain} className="btn-primary min-h-12 w-full">Try again</button>
+            <div className="flex flex-wrap items-center justify-center gap-x-4">
+              <button type="button" onClick={handleShareResult} className="inline-flex min-h-11 items-center gap-2 px-3 text-subheadline font-semibold text-rust-on-tint hover:underline">
+                <Share2 {...ICON} className="size-4" /> Share result
               </button>
-              <button onClick={handleShareResult} className="w-full py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg sm:rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-lg">share</span>
-                Share Result
-              </button>
-              <button onClick={onClose} className="w-full py-2.5 sm:py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 rounded-lg sm:rounded-xl font-medium hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
-                Exit Quiz
+              <button type="button" onClick={onClose} className="inline-flex min-h-11 items-center px-3 text-subheadline font-semibold text-rust-on-tint hover:underline">
+                Back to the note
               </button>
             </div>
           </div>
+        }
+      >
+        <div className="mx-auto flex w-full max-w-[45rem] flex-1 flex-col items-center justify-center gap-6 px-4 py-8 text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mascot/quizliai_mascot_thumbs_up.webp" alt="" width={160} height={160} className="size-36 object-contain sm:size-40" />
+          <div className="flex flex-col gap-2">
+            <h2 ref={resultRef} tabIndex={-1} className="font-serif text-title font-semibold lg:text-large-title">
+              You got {correctCount} of {quizzes.length} right
+            </h2>
+            <p className="tabular text-callout text-supporting">{scorePercentage}% on {topicTitle ?? "this quiz"}</p>
+          </div>
+          <div className="grid w-full max-w-[30rem] grid-cols-3 gap-3">
+            <div className="ds-card flex flex-col items-center gap-1 p-4">
+              <CircleCheck {...ICON} className="size-6 text-success" />
+              <p className="tabular text-title2 font-semibold">{correctCount}</p>
+              <p className="text-subheadline text-supporting">Correct</p>
+            </div>
+            <div className="ds-card flex flex-col items-center gap-1 p-4">
+              <CircleX {...ICON} className="size-6 text-danger" />
+              <p className="tabular text-title2 font-semibold">{quizzes.length - correctCount}</p>
+              <p className="text-subheadline text-supporting">Missed</p>
+            </div>
+            <div className="ds-card flex flex-col items-center gap-1 p-4">
+              <span aria-hidden="true" className="size-6" />
+              <p className="tabular text-title2 font-semibold">{timeTaken}</p>
+              <p className="text-subheadline text-supporting">Time</p>
+            </div>
+          </div>
+          <p role="status" className="min-h-6 text-subheadline text-supporting">{shared}</p>
         </div>
-      </div>
+      </StudySurface>
     );
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 overflow-hidden">
-      <div className="flex items-center justify-between p-3 sm:p-4 text-white shrink-0">
-        <button onClick={onClose} className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-2 rounded-lg hover:bg-white/10 transition-colors" title="Exit Quiz">
-          <span className="material-symbols-outlined">close</span>
-          <span className="text-sm font-medium hidden sm:inline">Exit Quiz</span>
-        </button>
-        <div className="text-center">
-          <p className="text-xs sm:text-sm opacity-75">Question</p>
-          <p className="text-base sm:text-lg font-bold">{currentIndex + 1} of {quizzes.length}</p>
-        </div>
-        <div className="text-right">
-          <p className="text-xs sm:text-sm opacity-75">Score</p>
-          <p className="text-base sm:text-lg font-bold">{correctCount}/{answers.length}</p>
-        </div>
-      </div>
-      <div className="px-3 sm:px-4 shrink-0">
-        <div className="h-1.5 sm:h-2 bg-white/20 rounded-full overflow-hidden">
-          <div className="h-full bg-gradient-to-r from-purple-400 to-pink-400 transition-all duration-300" style={{ width: `${progress}%` }} />
-        </div>
-      </div>
-      <div className="flex-1 flex flex-col items-center p-3 sm:p-6 overflow-y-auto min-h-0">
-        <div className="w-full max-w-2xl">
-          <div className="bg-white dark:bg-gray-900 rounded-xl sm:rounded-2xl shadow-xl p-4 sm:p-6 mb-4 sm:mb-6">
-            <p className="text-base sm:text-xl md:text-2xl font-medium text-gray-900 dark:text-white leading-relaxed">{currentQuiz.question}</p>
-          </div>
-          <div className="space-y-2 sm:space-y-3">
-            {currentQuiz.options.map((option, index) => {
-              const isSelected = selectedAnswer === option;
-              const isCorrect = option === currentQuiz.correct_answer;
-              const showCorrect = showResult && isCorrect;
-              const showWrong = showResult && isSelected && !isCorrect;
-              return (
-                <button key={index} onClick={() => handleSelectAnswer(option)} disabled={showResult}
-                  className={`w-full p-3 sm:p-4 rounded-lg sm:rounded-xl text-left transition-all flex items-center gap-3 sm:gap-4 ${showCorrect ? "bg-green-500 text-white" : showWrong ? "bg-red-500 text-white" : isSelected ? "bg-purple-500 text-white" : "bg-white dark:bg-gray-800 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700"} ${showResult && !isSelected && !isCorrect ? "opacity-50" : ""}`}>
-                  <span className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold shrink-0 ${showCorrect || showWrong || isSelected ? "bg-white/20" : "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"}`}>
-                    {String.fromCharCode(65 + index)}
-                  </span>
-                  <span className="flex-1 font-medium text-sm sm:text-base">{option}</span>
-                  {showCorrect && <span className="material-symbols-outlined text-lg sm:text-xl shrink-0">check_circle</span>}
-                  {showWrong && <span className="material-symbols-outlined text-lg sm:text-xl shrink-0">cancel</span>}
-                </button>
-              );
-            })}
-          </div>
+  const picked = answers[answers.length - 1];
+  const wasCorrect = answered && picked?.questionIndex === currentIndex && picked.isCorrect;
 
-          {showResult && currentQuiz.explanation && (
-            <div className="mt-3 sm:mt-4">
-              <button onClick={() => setShowExplanation(!showExplanation)} className="flex items-center gap-2 text-white/80 hover:text-white transition-colors" title={showExplanation ? "Hide Explanation" : "Show Explanation"}>
-                <span className="material-symbols-outlined text-sm">{showExplanation ? "expand_less" : "expand_more"}</span>
-                <span className="text-xs sm:text-sm font-medium">{showExplanation ? "Hide" : "Show"} Explanation</span>
-              </button>
-              {showExplanation && (
-                <div className="mt-2 sm:mt-3 bg-white/10 backdrop-blur rounded-lg sm:rounded-xl p-3 sm:p-4 text-white">
-                  <p className="text-xs sm:text-sm leading-relaxed">{currentQuiz.explanation}</p>
+  return (
+    <StudySurface
+      title="Quiz"
+      subtitle={topicTitle}
+      backLabel="Back to the note"
+      onBack={onClose}
+      shortcuts={SHORTCUTS}
+      onKeyDown={onKeyDown}
+      footer={
+        answered ? (
+          <button ref={nextRef} type="button" onClick={handleNext} className="btn-primary min-h-12 w-full">
+            {isLast ? "See results" : "Next question"}
+            <ArrowRight {...ICON} className="size-5" />
+          </button>
+        ) : (
+          <p className="flex min-h-12 items-center justify-center text-center text-subheadline text-supporting">
+            Pick an answer to continue.
+          </p>
+        )
+      }
+    >
+      <div className="mx-auto flex w-full max-w-[45rem] flex-col gap-5 px-4 pt-4 pb-6 sm:pt-6">
+        <div className="flex flex-col gap-2">
+          <p className="tabular text-subheadline font-semibold">Question {currentIndex + 1} of {quizzes.length}</p>
+          <StudyProgress value={currentIndex + (answered ? 1 : 0)} total={quizzes.length} />
+        </div>
+
+        <section aria-labelledby="quiz-question" className="ds-card rounded-[1.375rem] p-6 sm:p-8">
+          <h2 id="quiz-question" ref={questionRef} tabIndex={-1} className="font-serif text-title3 font-semibold sm:text-title2">
+            <span className="sr-only">Question {currentIndex + 1} of {quizzes.length}. </span>
+            {currentQuiz.question}
+          </h2>
+        </section>
+
+        <ul aria-label="Answers" className="flex flex-col gap-3">
+          {currentQuiz.options.map((option, i) => {
+            const isPicked = selectedAnswer === option;
+            const isCorrect = option === currentQuiz.correct_answer;
+            const showCorrect = answered && isCorrect;
+            const showWrong = answered && isPicked && !isCorrect;
+            return (
+              <li key={i}>
+                <button
+                  type="button"
+                  onClick={() => handleSelectAnswer(option)}
+                  aria-disabled={answered || undefined}
+                  className={`flex min-h-14 w-full items-center gap-3 rounded-2xl border-2 bg-card px-4 py-3 text-left text-body transition-[border-color,background-color] duration-150 ease-[cubic-bezier(0.2,0,0,1)] ${
+                    showCorrect ? "border-success" : showWrong ? "border-danger" : "border-card-stroke shadow-card"
+                  } ${answered ? "cursor-default" : "hover:border-input"}`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`tabular flex size-8 shrink-0 items-center justify-center rounded-full text-subheadline font-semibold ${
+                      isPicked ? "bg-label text-card" : "bg-control text-label"
+                    }`}
+                  >
+                    {i < LETTERS.length ? LETTERS[i] : i + 1}
+                  </span>
+                  <span className="flex-1">{option}</span>
+                  {showCorrect && (
+                    <span className="flex shrink-0 items-center gap-1 text-subheadline font-semibold">
+                      <CircleCheck {...ICON} className="size-5 text-success" />
+                      {isPicked ? "Your answer" : "Answer"}
+                    </span>
+                  )}
+                  {showWrong && (
+                    <span className="flex shrink-0 items-center gap-1 text-subheadline font-semibold">
+                      <CircleX {...ICON} className="size-5 text-danger" />
+                      Your answer
+                    </span>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        <div aria-live="polite" className="flex flex-col gap-3">
+          {answered && (
+            <>
+              <p className="flex items-center gap-2 text-headline">
+                {wasCorrect ? (
+                  <><CircleCheck {...ICON} className="size-5 shrink-0 text-success" /> Correct.</>
+                ) : (
+                  <><CircleX {...ICON} className="size-5 shrink-0 text-danger" /> Not quite. The answer is {currentQuiz.correct_answer}.</>
+                )}
+              </p>
+              {currentQuiz.explanation && (
+                <div className="rounded-2xl bg-paper p-5 text-on-paper">
+                  <p className="text-footnote font-semibold text-on-paper-supporting">Why</p>
+                  <MarkdownText text={currentQuiz.explanation} className="mt-1 text-callout leading-relaxed [&_strong]:font-semibold" />
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
       </div>
-      {showResult && (
-        <div className="p-3 sm:p-6 flex justify-center shrink-0">
-          <button onClick={handleNext} className="px-6 sm:px-8 py-2.5 sm:py-3 bg-white text-purple-600 rounded-lg sm:rounded-xl font-bold hover:bg-gray-100 transition-colors flex items-center gap-2 text-sm sm:text-base">
-            {currentIndex < quizzes.length - 1 ? (
-              <>Next Question<span className="material-symbols-outlined text-lg sm:text-xl">arrow_forward</span></>
-            ) : (
-              <>See Results<span className="material-symbols-outlined text-lg sm:text-xl">emoji_events</span></>
-            )}
-          </button>
-        </div>
-      )}
-    </div>
+    </StudySurface>
   );
 }

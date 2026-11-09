@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { closeGame, hapticFeedback, postResult } from "@/lib/games/bridge";
 import { initAudio, playMatch, playMiss, playTap } from "@/lib/games/sound";
 import type { AnswerSnakeResult, Flashcard, StudyDeck } from "@/lib/games/types";
@@ -145,16 +145,17 @@ function useCountUp(target: number, active: boolean, durationMs = 600): number {
   const [value, setValue] = useState(0);
 
   useEffect(() => {
+    // setState only inside rAF callbacks, never synchronously in the effect body.
     if (!active) {
-      setValue(0);
-      return;
+      const resetId = window.requestAnimationFrame(() => setValue(0));
+      return () => window.cancelAnimationFrame(resetId);
     }
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced || target === 0) {
-      setValue(target);
-      return;
+      const settleId = window.requestAnimationFrame(() => setValue(target));
+      return () => window.cancelAnimationFrame(settleId);
     }
 
     let rafId = 0;
@@ -170,7 +171,7 @@ function useCountUp(target: number, active: boolean, durationMs = 600): number {
     return () => window.cancelAnimationFrame(rafId);
   }, [target, active, durationMs]);
 
-  return value;
+  return active ? value : 0;
 }
 
 export default function AnswerSnake({ deck }: { deck: StudyDeck }) {
@@ -228,14 +229,17 @@ export default function AnswerSnake({ deck }: { deck: StudyDeck }) {
   const paletteRef = useRef<ThemePalette>(readThemePalette());
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
-  orbsRef.current = orbs;
-  showCorrectRingRef.current = showCorrectRing;
-  cardIndexRef.current = cardIndex;
-  gameCardsRef.current = gameCards;
-  hasStartedRef.current = hasStarted;
-  isPausedRef.current = isPaused;
-  isFinishedRef.current = isFinished;
-  soundEnabledRef.current = soundEnabled;
+  // Mirror latest state into refs after commit so timers and listeners read current values.
+  useLayoutEffect(() => {
+    orbsRef.current = orbs;
+    showCorrectRingRef.current = showCorrectRing;
+    cardIndexRef.current = cardIndex;
+    gameCardsRef.current = gameCards;
+    hasStartedRef.current = hasStarted;
+    isPausedRef.current = isPaused;
+    isFinishedRef.current = isFinished;
+    soundEnabledRef.current = soundEnabled;
+  });
 
   // Read theme.css variables on mount and when prefers-color-scheme changes
   useEffect(() => {
@@ -586,8 +590,9 @@ export default function AnswerSnake({ deck }: { deck: StudyDeck }) {
   const resultPayload: AnswerSnakeResult | null = isFinished
     ? (() => {
         const totalCards = gameCards.length;
-        const startMs = startedAtMs ?? Date.now();
-        const endMs = finishedAtMs ?? Date.now();
+        // Both are set before isFinished flips; the fallbacks only keep types total.
+        const endMs = finishedAtMs ?? startedAtMs ?? 0;
+        const startMs = startedAtMs ?? endMs;
         const durationMs = Math.max(0, endMs - startMs);
         const denom = totalCards + wrongPicks;
         const accuracy =
@@ -628,9 +633,9 @@ export default function AnswerSnake({ deck }: { deck: StudyDeck }) {
     return (
       <main className="min-h-dvh bg-[var(--game-bg)] text-[var(--game-text)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] px-4 py-6 flex flex-col justify-between">
         <div className="max-w-lg mx-auto w-full pt-12 text-center">
-          <p className="text-[17px] font-semibold">
+          <h1 className="text-[17px] font-semibold">
             Add at least 4 flashcards to play
-          </p>
+          </h1>
         </div>
         <div className="max-w-lg mx-auto w-full pb-4">
           <button
@@ -656,6 +661,8 @@ export default function AnswerSnake({ deck }: { deck: StudyDeck }) {
       <main className="min-h-dvh bg-[var(--game-bg)] text-[var(--game-text)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] px-4 py-6">
         <div className="max-w-2xl mx-auto w-full flex flex-col gap-6">
           {mascotVisible ? (
+            // Decorative 96px mascot, hidden by onError when the asset is absent; next/image adds no value here.
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src="/mascot/bear-happy.webp"
               alt=""
@@ -721,7 +728,7 @@ export default function AnswerSnake({ deck }: { deck: StudyDeck }) {
             <button
               type="button"
               onClick={handleRestart}
-              className="h-12 rounded-full border border-[var(--game-accent)] bg-[var(--game-card)] text-[var(--game-accent)] text-[15px] font-semibold"
+              className="h-12 rounded-full border border-[var(--game-accent)] bg-[var(--game-card)] text-[var(--game-accent-text)] text-[15px] font-semibold"
             >
               Play again
             </button>
@@ -757,9 +764,9 @@ export default function AnswerSnake({ deck }: { deck: StudyDeck }) {
         className="max-w-md mx-auto w-full flex flex-col gap-2"
       >
         <header className="grid grid-cols-3 items-center gap-2 min-h-[32px]">
-          <div className="truncate text-[14px] font-semibold">
-            {deck.title}
-          </div>
+          <h1 className="truncate text-[14px] font-semibold">
+            <span className="sr-only">Answer Snake: </span>{deck.title}
+          </h1>
           <div className="text-center text-[13px] text-[var(--game-text-muted)] whitespace-nowrap tabular-nums">
             Card {cardIndex + 1} of {gameCards.length}
           </div>
@@ -794,6 +801,7 @@ export default function AnswerSnake({ deck }: { deck: StudyDeck }) {
 
         <div
           role="progressbar"
+          aria-label="Progress"
           aria-valuenow={progressPct}
           aria-valuemin={0}
           aria-valuemax={100}
@@ -821,7 +829,7 @@ export default function AnswerSnake({ deck }: { deck: StudyDeck }) {
                 data-testid="counter-right"
                 className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border tabular-nums ${
                   cardIndex > 0
-                    ? "border-[var(--game-accent)] text-[var(--game-accent)] game-anim-bump"
+                    ? "border-[var(--game-accent)] text-[var(--game-accent-text)] game-anim-bump"
                     : "border-[var(--game-border)] text-[var(--game-text)]"
                 }`}
               >

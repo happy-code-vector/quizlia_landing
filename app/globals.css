@@ -3,209 +3,228 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Material Symbols */
-.material-symbols-outlined {
-  font-family: 'Material Symbols Outlined';
-  font-weight: normal;
-  font-style: normal;
-  font-size: 24px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  /* inline-flex + align/justify centers the glyph inside its own box and
-     vertical-align: middle centers the box against adjacent text — fixes
-     the baseline offset that made icons sit high/low next to labels. */
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  vertical-align: middle;
-  flex-shrink: 0;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-rendering: optimizeLegibility;
-  font-feature-settings: 'liga';
-  transition: color 150ms ease-out, transform 150ms ease-out;
-}
-
-/* Buttons — these classes are referenced throughout the app but were never
-   defined; buttons relied on call-site utilities alone. inline-flex keeps
-   icon + label vertically centered. */
-.btn-primary,
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border-radius: 9999px;
-  font-weight: 500;
-  transition: all 150ms ease-out;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background-image: linear-gradient(to right, #964cee, #c77dff);
-  color: #ffffff;
-  padding: 0.625rem 1.5rem;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12);
-}
-
-.btn-primary:hover {
-  filter: brightness(1.08);
-}
-
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  filter: none;
-}
-
-.btn-secondary {
-  border: 1px solid rgb(209 213 219); /* gray-300 */
-  background-color: #ffffff;
-  color: rgb(55 65 81); /* gray-700 */
-  padding: 0.625rem 1.5rem;
-}
-
-.btn-secondary:hover {
-  background-color: rgb(249 250 251); /* gray-50 */
-}
-
-.dark .btn-secondary {
-  border-color: rgb(55 65 81); /* gray-700 */
-  background-color: rgb(17 24 39); /* gray-900 */
-  color: rgb(209 213 219); /* gray-300 */
-}
-
-.dark .btn-secondary:hover {
-  background-color: rgb(31 41 55); /* gray-800 */
-}
-
-/* Font Variables */
+/*
+ * QuizliAI web tokens.
+ * Source of truth: claude/quizliai-visual-direction-lock-2026-11-02.md (palette, families)
+ * and claude/quizliai-web-design-standards-2026-11-06.md (rule ids W-x.y).
+ * Every color in app/ and components/ comes from here (W-2.4). New colors need a
+ * measured contrast row in the standards doc first (W-9.2).
+ */
 :root {
-  --font-rethink-sans: var(--nf-rethink), 'Rethink Sans', system-ui, -apple-system, sans-serif;
-  --font-glancyr: system-ui, -apple-system, sans-serif;
-  --font-source-serif-4: var(--nf-serif), 'Source Serif 4', serif;
+  color-scheme: light;
+
+  /* Surface families, top stop -> bottom stop (lock: Surface.secondary -> tertiary) */
+  --home-top: #E4EEFB;
+  --home-bottom: #E6F4EA;
+  --study-top: #E3F2E8;
+  --study-bottom: #D9ECE2;
+  --people-top: #ECE8F8;
+  --people-bottom: #E2E0F5;
+  --welcome-top: #E4EEFB;
+  --welcome-bottom: #ECE6F7;
+
+  /* Cards and paper */
+  --card: #FFFFFF;
+  --card-stroke: transparent;
+  --card-shadow: 0 1px 2px rgb(0 0 0 / 0.04), 0 6px 20px rgb(0 0 0 / 0.06);
+  --card-shadow-raised: 0 2px 4px rgb(0 0 0 / 0.06), 0 10px 28px rgb(0 0 0 / 0.09);
+  --paper: #FBF7EE;
+  --on-paper: #1D1D1F;
+  --paper-back-1: #F7F2E6;             /* deck stack, second card */
+  --paper-back-2: #F3EDE0;             /* deck stack, third card */
+  --on-paper-supporting: #5A5A60;      /* 6.6:1 on paper */
+  --divider: rgb(0 0 0 / 0.08);
+
+  /* Text */
+  --label: #000000;
+  --text-supporting: #5A5A60;          /* Text.supportingOnTint, also passes on white */
+
+  /* Rust, the only accent */
+  --rust: #B85818;                     /* text and icons on white cards (4.72:1) */
+  --rust-on-tint: #9E4A12;             /* Accent.foregroundOnTint */
+  --rust-wash: rgb(184 88 24 / 0.12);
+  --primary-fill: #B85818;             /* W-2.3: same fill in light and dark */
+  --primary-hover: #A34E14;
+  --primary-active: #9E4A12;
+
+  /* Web additions (standards section 2) */
+  --ring: #9E4A12;
+  --input-border: #7C7C80;
+  --danger-text: #C4161C;
+  --success: #248A3D;                  /* W-2.1: icons and borders only, never text on a tint */
+  --warning: #C93400;                  /* Review again mark: icons and borders only (5.28 white, 4.29 tint) */
+  --success-on-paper: #248A3D;         /* stamps on paper, both modes (4.11; icons and large bold text) */
+  --warning-on-paper: #C93400;         /* stamps on paper, both modes (4.94) */
+
+  /* Neutral interaction fills (W-4.2) */
+  --hover-fill: rgb(0 0 0 / 0.04);
+  --control-fill: #F2F2F7;
+  --track: rgb(0 0 0 / 0.08);
+
+  /* shadcn names, mapped onto the tokens above */
+  --background: var(--home-top);
+  --foreground: var(--label);
+  --card-foreground: var(--label);
+  --popover: var(--card);
+  --popover-foreground: var(--label);
+  --primary: var(--primary-fill);
+  --primary-foreground: #FFFFFF;
+  --secondary: var(--control-fill);
+  --secondary-foreground: var(--label);
+  --muted: var(--control-fill);
+  --muted-foreground: var(--text-supporting);
+  --accent: var(--hover-fill);
+  --accent-foreground: var(--label);
+  --destructive: #C4161C;
+  --destructive-foreground: #FFFFFF;
+  --border: var(--divider);
+  --input: var(--input-border);
+  --chart-1: #B85818;
+  --chart-2: #2F6FA8;
+  --chart-3: #2E7D4F;
+  --chart-4: #8A6A12;
+  --chart-5: #5A5A60;
+  --radius: 0.75rem;
+
+  /* Type (W-6.1) */
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: ui-serif, var(--nf-serif), Georgia, serif;
+
+  /* Motion (W-9.7) */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
 }
 
-:root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
+.dark {
+  color-scheme: dark;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
-}
+  --home-top: #121A24;
+  --home-bottom: #11201A;
+  --study-top: #0F1C16;
+  --study-bottom: #0D1813;
+  --people-top: #171428;
+  --people-bottom: #141224;
+  --welcome-top: #121A24;
+  --welcome-bottom: #171428;
 
-@layer base {
-  :root {
-    --background: 36 33% 97%;
-    --foreground: 30 9% 15%;
-    --card: 36 33% 99%;
-    --card-foreground: 30 9% 15%;
-    --popover: 36 33% 99%;
-    --popover-foreground: 30 9% 15%;
-    --primary: 28 54% 33%;
-    --primary-foreground: 36 33% 97%;
-    --secondary: 32 30% 90%;
-    --secondary-foreground: 28 54% 33%;
-    --muted: 32 30% 94%;
-    --muted-foreground: 30 9% 45%;
-    --accent: 20 60% 85%;
-    --accent-foreground: 28 54% 33%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 36 33% 97%;
-    --border: 30 9% 85%;
-    --input: 30 9% 85%;
-    --ring: 28 54% 33%;
-    --chart-1: 28 54% 33%;
-    --chart-2: 15 70% 40%;
-    --chart-3: 42 60% 45%;
-    --chart-4: 5 65% 40%;
-    --chart-5: 35 65% 50%;
-    --radius: 0.5rem;
-  }
-  .dark {
-    --background: 0 0% 5%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 266 83% 62%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 266 40% 20%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 65%;
-    --accent: 266 83% 62%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 266 83% 62%;
-    --chart-1: 266 83% 62%;
-    --chart-2: 266 60% 50%;
-    --chart-3: 280 70% 55%;
-    --chart-4: 250 65% 50%;
-    --chart-5: 290 60% 60%;
-  }
+  --card: #1C1C1E;
+  --card-stroke: rgb(255 255 255 / 0.10);
+  --card-shadow: none;
+  --card-shadow-raised: none;
+  --divider: rgb(255 255 255 / 0.10);
+
+  --label: #FFFFFF;
+  --text-supporting: rgb(235 235 245 / 0.64);
+
+  --rust: #D0702E;
+  --rust-on-tint: #D0702E;
+  --rust-wash: rgb(208 112 46 / 0.22);
+
+  --ring: #D0702E;
+  --input-border: #8E8E93;
+  --danger-text: #FF6961;
+  --success: #30D158;
+  --warning: #FF9F0A;                  /* 8.28 on #1C1C1E, 8.53 on study tint */
+
+  --hover-fill: rgb(255 255 255 / 0.06);
+  --control-fill: #2C2C2E;
+  --track: rgb(255 255 255 / 0.12);
+
+  --chart-2: #5E9FD6;
+  --chart-3: #4FB57A;
+  --chart-4: #C9A43A;
+  --chart-5: #AEAEB2;
 }
 
 @theme inline {
-  --color-background: hsl(var(--background));
-  --color-foreground: hsl(var(--foreground));
-  --color-card: hsl(var(--card));
-  --color-card-foreground: hsl(var(--card-foreground));
-  --color-popover: hsl(var(--popover));
-  --color-popover-foreground: hsl(var(--popover-foreground));
-  --color-primary: hsl(var(--primary));
-  --color-primary-foreground: hsl(var(--primary-foreground));
-  --color-secondary: hsl(var(--secondary));
-  --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted: hsl(var(--muted));
-  --color-muted-foreground: hsl(var(--muted-foreground));
-  --color-accent: hsl(var(--accent));
-  --color-accent-foreground: hsl(var(--accent-foreground));
-  --color-destructive: hsl(var(--destructive));
-  --color-destructive-foreground: hsl(var(--destructive-foreground));
-  --color-border: hsl(var(--border));
-  --color-input: hsl(var(--input));
-  --color-ring: hsl(var(--ring));
-  --color-chart-1: hsl(var(--chart-1));
-  --color-chart-2: hsl(var(--chart-2));
-  --color-chart-3: hsl(var(--chart-3));
-  --color-chart-4: hsl(var(--chart-4));
-  --color-chart-5: hsl(var(--chart-5));
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-label: var(--label);
+  --color-supporting: var(--text-supporting);
+  --color-rust: var(--rust);
+  --color-rust-on-tint: var(--rust-on-tint);
+  --color-rust-wash: var(--rust-wash);
+  --color-danger: var(--danger-text);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-success-on-paper: var(--success-on-paper);
+  --color-warning-on-paper: var(--warning-on-paper);
+  --color-paper: var(--paper);
+  --color-on-paper: var(--on-paper);
+  --color-paper-back-1: var(--paper-back-1);
+  --color-paper-back-2: var(--paper-back-2);
+  --color-on-paper-supporting: var(--on-paper-supporting);
+  --color-divider: var(--divider);
+  --color-card-stroke: var(--card-stroke);
+  --color-hover-fill: var(--hover-fill);
+  --color-control: var(--control-fill);
+  --color-track: var(--track);
+  --color-home-top: var(--home-top);
+  --color-study-top: var(--study-top);
+  --color-people-top: var(--people-top);
+  --color-welcome-top: var(--welcome-top);
+
+  --shadow-card: var(--card-shadow);
+  --shadow-card-raised: var(--card-shadow-raised);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-card: 1rem;          /* 16, lock: white cards */
+  --radius-feature: 1.375rem;   /* 22, lock rule 3: one hero object only */
 
-  --font-rethink-sans: var(--font-rethink-sans), system-ui, sans-serif;
-  --font-glancyr: var(--font-glancyr), system-ui, sans-serif;
-  --font-source-serif-4: var(--font-source-serif-4), serif;
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-display);
 
-  /* Landing page (direction C). Explicit colors, independent of the app theme. */
-  --color-c-page: #fbfaf7;
-  --color-c-ink: #16121f;
-  --color-c-brand: #964cee;
-  --color-c-brand-ink: #7a35d9; /* brand purple for small text on light surfaces (AA) */
-  --color-c-lime: oklch(0.9 0.17 128);
-  --color-c-soft: #f0ebfb;
-  --color-c-mint: #ecf8d8;
-  --color-c-peach: #fde9dc;
-  --color-c-muted: #625b70;
-  --color-c-wrong: #ffe1e1;
+  /* Type scale (W-6.3), iOS text styles at default Dynamic Type */
+  --text-large-title: 2.125rem;
+  --text-large-title--line-height: 1.2;
+  /* Landing hero h1 at 1024+ only (proposed in PR 6; no iOS counterpart). */
+  --text-display: 3.5rem;
+  --text-display--line-height: 1.1;
+  --text-title: 1.75rem;
+  --text-title--line-height: 1.2;
+  --text-title2: 1.375rem;
+  --text-title2--line-height: 1.27;
+  --text-title3: 1.25rem;
+  --text-title3--line-height: 1.25;
+  --text-headline: 1.0625rem;
+  --text-headline--line-height: 1.3;
+  --text-headline--font-weight: 600;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.5;
+  --text-callout: 1rem;
+  --text-callout--line-height: 1.4;
+  --text-subheadline: 0.9375rem;
+  --text-subheadline--line-height: 1.35;
+  --text-footnote: 0.8125rem;
+  --text-footnote--line-height: 1.4;
+
 
   --breakpoint-2xl: 1400px;
 
@@ -213,20 +232,12 @@
   --animate-accordion-up: accordion-up 0.2s ease-out;
 
   @keyframes accordion-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--radix-accordion-content-height);
-    }
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
   }
   @keyframes accordion-up {
-    from {
-      height: var(--radix-accordion-content-height);
-    }
-    to {
-      height: 0;
-    }
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
   }
 }
 
@@ -234,8 +245,157 @@
   * {
     @apply border-border;
   }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* W-4.4: Tailwind v4 sets cursor: default on buttons. Restore pointer. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  summary,
+  label:has(> input[type="checkbox"]),
+  label:has(> input[type="radio"]),
+  label[for] {
+    cursor: pointer;
+  }
+  :disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not(:disabled),
+  textarea:not(:disabled) {
+    cursor: text;
+  }
+
+  /* W-4.3: outline, not box-shadow, so it survives forced-colors mode. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  /* W-5.5: page h1 takes focus on route change without drawing a ring for mouse users. */
+  h1[tabindex="-1"]:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* W-6.4: inputs at 16px or more so iOS Safari does not zoom on focus. */
+  input, select, textarea {
+    font-size: max(1rem, 1em);
+  }
+
+  /* W-5.8: sticky phone top bar (56px) never covers the focused element. */
+  @media (max-width: 767px) {
+    html { scroll-padding-top: 3.5rem; }
+  }
+}
+
+/* W-9.6 / W-6.7 */
+.tabular { font-variant-numeric: tabular-nums; }
+
+/* W-3.2: one fixed family layer per route. Never repeats, never scrolls, spans the sidebar. */
+.family-surface {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+.family-home { background: linear-gradient(180deg, var(--home-top), var(--home-bottom)); }
+.family-study { background: linear-gradient(180deg, var(--study-top), var(--study-bottom)); }
+.family-people { background: linear-gradient(180deg, var(--people-top), var(--people-bottom)); }
+.family-welcome { background: linear-gradient(180deg, var(--welcome-top), var(--welcome-bottom)); }
+
+/* Cards (lock rule 5): white 16, shadow in light, 1px stroke in dark. In a layer so utilities can adjust it. */
+@layer components {
+  .ds-card {
+    background: var(--card);
+    border: 1px solid var(--card-stroke);
+    border-radius: 1rem;
+    box-shadow: var(--card-shadow);
+  }
+  /* W-4.2 clickable card: shadow one step up (light), stroke white 16% (dark), press 0.99. */
+  .ds-card-link {
+    transition: box-shadow 150ms var(--ease-standard), border-color 150ms var(--ease-standard), transform 150ms var(--ease-standard);
+  }
+  @media (hover: hover) {
+    .ds-card-link:hover { box-shadow: var(--card-shadow-raised); }
+    .dark .ds-card-link:hover { border-color: rgb(255 255 255 / 0.16); }
+  }
+  .ds-card-link:active { transform: scale(0.99); }
+}
+
+/* Buttons (W-4.2). These class names are used across the app; they now carry the lock styles. */
+.btn-primary,
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1.5rem;
+  border-radius: 9999px;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  transition: background-color 150ms var(--ease-standard), border-color 150ms var(--ease-standard), transform 150ms var(--ease-standard);
+}
+.btn-primary {
+  background-color: var(--primary-fill);
+  color: #FFFFFF;
+}
+.btn-secondary {
+  background-color: var(--card);
+  color: var(--label);
+  border: 1px solid var(--divider);
+}
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) { background-color: var(--primary-hover); }
+  .btn-secondary:hover:not(:disabled) { border-color: var(--input-border); }
+}
+.btn-primary:active:not(:disabled) {
+  background-color: var(--primary-active);
+  transform: scale(0.98);
+}
+.btn-secondary:active:not(:disabled) { background-color: var(--hover-fill); }
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Skip link (W-5.1) */
+.skip-link {
+  position: absolute;
+  left: 1rem;
+  top: -4rem;
+  z-index: 100;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background: var(--card);
+  color: var(--label);
+  font-weight: 600;
+  box-shadow: var(--card-shadow-raised);
+}
+.skip-link:focus { top: 1rem; }
+
+/* W-9.8: under reduced motion, no transform animates; transitions become a short crossfade. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: opacity, color, background-color, border-color !important;
+    transition-duration: 150ms !important;
+    scroll-behavior: auto !important;
+  }
+  .animate-pulse,
+  .animate-spin,
+  .animate-ping,
+  .animate-bounce {
+    animation: none !important;
   }
 }
 
@@ -257,40 +417,8 @@
   border-radius: 2px;
   animation: confetti-fall 3s ease-out forwards;
 }
-
-/* Landing demo: flashcard flip. Reduced motion swaps faces instead of flipping. */
-.c-flip-in {
-  transform-style: preserve-3d;
-  transition: transform 0.55s cubic-bezier(0.3, 1.3, 0.5, 1);
-}
-.c-flip[data-flipped="true"] .c-flip-in {
-  transform: rotateY(180deg);
-}
-.c-face {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-.c-face-back {
-  transform: rotateY(180deg);
-}
 @media (prefers-reduced-motion: reduce) {
-  .c-flip-in {
-    transition: none;
-    transform-style: flat;
-  }
-  .c-flip[data-flipped="true"] .c-flip-in {
-    transform: none;
-  }
-  .c-face-back {
-    transform: none;
-    display: none;
-  }
-  .c-flip[data-flipped="true"] .c-face-front {
-    display: none;
-  }
-  .c-flip[data-flipped="true"] .c-face-back {
-    display: flex;
-  }
+  .animate-confetti { display: none; }
 }
 
 @keyframes demo-in {
@@ -304,63 +432,30 @@
   }
 }
 
-/* Landing page motion: simple, opt-in only for users without reduced-motion. */
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes drift {
-  to {
-    transform: translate(24px, -18px);
-  }
-}
-@keyframes chip-pop {
-  from {
-    opacity: 0;
-    transform: rotate(0deg) scale(0.9);
-  }
-  to {
-    opacity: 1;
-    transform: rotate(-3deg) scale(1);
-  }
-}
+/* Game feedback pop (arcade games). The transform runs only without reduced motion (W-9.8). */
 @media (prefers-reduced-motion: no-preference) {
-  .anim-rise {
-    animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
-    animation-delay: var(--d, 0s);
-  }
-  .anim-drift {
-    animation: drift 14s ease-in-out infinite alternate;
-  }
-  .anim-float {
-    animation: float 4.5s ease-in-out infinite;
-  }
-  .anim-wave {
-    transform-origin: 50% 90%;
-    animation: wave-tilt 2.8s ease-in-out infinite;
-  }
   .anim-pop {
-    animation: mascot-pop 0.6s cubic-bezier(0.3, 1.5, 0.5, 1) backwards;
-  }
-  .anim-chip {
-    animation: chip-pop 0.6s 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
-  }
-  /* Scroll reveal without JS. Browsers without scroll-driven animations just show the content. */
-  @supports (animation-timeline: view()) {
-    .reveal {
-      animation: rise linear backwards;
-      animation-timeline: view();
-      animation-range: entry 0% entry 35%;
-    }
+    animation: mascot-pop 0.25s cubic-bezier(0.2, 0, 0, 1) backwards;
   }
 }
+@keyframes mascot-pop { from { transform: scale(0.6); opacity: 0 } to { transform: none; opacity: 1 } }
 
-@keyframes float { 0%,100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
-@keyframes wave-tilt { 0%,100% { transform: rotate(-2deg) } 50% { transform: rotate(3deg) } }
-@keyframes mascot-pop { from { transform: scale(0.3) translateY(20px); opacity: 0 } to { transform: none; opacity: 1 } }
+/* Study flashcard flip (W-9.7: 400 ms max). Reduced motion crossfades the faces instead (W-9.8). */
+.study-flip {
+  transform-style: preserve-3d;
+  transition: transform 400ms var(--ease-standard);
+}
+.study-flip[data-flipped="true"] { transform: rotateY(180deg); }
+.study-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.study-face-back { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .study-flip,
+  .study-flip[data-flipped="true"] { transform: none; transform-style: flat; }
+  .study-face { transition: opacity 150ms linear; }
+  .study-face-back { transform: none; opacity: 0; }
+  .study-flip[data-flipped="true"] .study-face-front { opacity: 0; }
+  .study-flip[data-flipped="true"] .study-face-back { opacity: 1; }
+}

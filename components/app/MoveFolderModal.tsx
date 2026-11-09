@@ -1,4 +1,5 @@
 "use client";
+import { Icon } from "@/components/app/Icon";
 
 interface Folder {
   id: string;
@@ -42,7 +43,7 @@ export function MoveFolderModal({
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
           >
-            <span className="material-symbols-outlined">close</span>
+            <Icon name="close" />
           </button>
         </div>
 

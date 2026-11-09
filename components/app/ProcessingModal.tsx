@@ -5,36 +5,24 @@ interface ProcessingModalProps {
   message?: string;
 }
 
-export function ProcessingModal({ isOpen, message = "Processing your content..." }: ProcessingModalProps) {
+/**
+ * Generating loader. The bear (think pose) is allowed here: it is a state-change moment
+ * (mascot rule). Under reduced motion the spinner stops (globals.css).
+ */
+export function ProcessingModal({ isOpen, message = "Reading your source and writing notes, flashcards and a quiz." }: ProcessingModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-gray-800">
-        <div className="flex flex-col items-center text-center">
-          <div className="relative w-20 h-20 mb-6">
-            <div className="absolute inset-0 border-4 border-blue-200 dark:border-blue-900 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-blue-600 rounded-full border-t-transparent animate-spin"></div>
-            <span className="material-symbols-outlined absolute inset-0 flex items-center justify-center text-blue-600 text-3xl">
-              auto_awesome
-            </span>
-          </div>
-
-          <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">
-            AI is Working Its Magic
-          </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            {message}
-          </p>
-
-          <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></div>
-          </div>
-
-          <p className="text-sm text-gray-500 dark:text-gray-500 mt-4">
-            This usually takes a few seconds...
-          </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div role="status" aria-live="polite" className="ds-card flex w-full max-w-[26rem] flex-col items-center gap-3 p-8 text-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/mascot/quizliai_mascot_think.webp" alt="" width={72} height={72} className="size-[4.5rem] object-contain" />
+        <p className="text-title3 font-semibold">Making your study set</p>
+        <p className="text-subheadline text-supporting">{message}</p>
+        <div className="mt-2 h-1 w-full overflow-hidden rounded-full bg-track" aria-hidden="true">
+          <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
         </div>
+        <p className="text-subheadline text-supporting">This usually takes under a minute.</p>
       </div>
     </div>
   );

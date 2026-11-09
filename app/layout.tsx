@@ -1,29 +1,31 @@
 import './globals.css';
-import type { Metadata } from 'next';
-import { Rethink_Sans, Source_Serif_4 } from 'next/font/google';
+import type { Metadata, Viewport } from 'next';
+import { Source_Serif_4 } from 'next/font/google';
 import { ThemeProvider } from '@/components/theme-provider';
 
-// Fonts load through next/font only (self-hosted, size-adjusted fallback, no layout jump).
-const rethink = Rethink_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '600', '700', '800'],
-  variable: '--nf-rethink',
-  display: 'swap',
-});
-
+// W-6.2: the display serif is ui-serif (New York) first; Source Serif 4 is the fallback for
+// browsers without ui-serif. preload: false so Safari, which has New York, never downloads it.
 const sourceSerif = Source_Serif_4({
   subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  style: ['normal', 'italic'],
+  weight: ['400', '600'],
   variable: '--nf-serif',
   display: 'swap',
+  adjustFontFallback: true,
+  preload: false,
 });
 
 export const metadata: Metadata = {
+  // Absolute URLs for canonical, Open Graph and Twitter images (standards section 11).
+  metadataBase: new URL('https://quizliai.com'),
   title: 'QuizliAI - AI-Powered Note Taking & Study Assistant',
   description: 'Your smartest assistant. Get instant notes, transcripts, and study materials from anything. Never take notes again.',
   // Icons come from app/favicon.ico, app/icon.png and app/apple-icon.png
   // (Next.js file convention): every route gets them, with versioned URLs.
+};
+
+// W-8.3: the browser paints its default canvas in the OS scheme before any CSS loads.
+export const viewport: Viewport = {
+  colorScheme: 'light dark',
 };
 
 export default function RootLayout({
@@ -32,17 +34,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning className={`${rethink.variable} ${sourceSerif.variable}`}>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Material Symbols is still used by the /note app (icon font). */}
-        <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-rethink-sans">
+    <html lang="en" suppressHydrationWarning className={sourceSerif.variable}>
+      <body>
+        {/* W-8.1: next-themes is the only theme provider. */}
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >

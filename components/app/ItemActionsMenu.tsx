@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Icon } from "@/components/app/Icon";
 
 interface ItemActionsMenuProps {
   onRename: () => void;
@@ -39,7 +40,7 @@ export function ItemActionsMenu({ onRename, onMove, showMove = true, onDelete, b
         className={`inline-flex h-9 w-9 items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors ${buttonClassName}`}
         title="More actions"
       >
-        <span className="material-symbols-outlined text-lg">more_vert</span>
+        <Icon name="more_vert" className="text-lg" />
       </button>
 
       {isOpen && (
@@ -52,7 +53,7 @@ export function ItemActionsMenu({ onRename, onMove, showMove = true, onDelete, b
             }}
             className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3"
           >
-            <span className="material-symbols-outlined text-lg text-orange-600">edit</span>
+            <Icon name="edit" className="text-lg text-orange-600" />
             Rename
           </button>
           {showMove && onMove && (
@@ -64,7 +65,7 @@ export function ItemActionsMenu({ onRename, onMove, showMove = true, onDelete, b
               }}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3"
             >
-              <span className="material-symbols-outlined text-lg text-purple-600">drive_file_move</span>
+              <Icon name="drive_file_move" className="text-lg text-purple-600" />
               Move to Folder
             </button>
           )}
@@ -77,7 +78,7 @@ export function ItemActionsMenu({ onRename, onMove, showMove = true, onDelete, b
               }}
               className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-3"
             >
-              <span className="material-symbols-outlined text-lg text-red-600">delete</span>
+              <Icon name="delete" className="text-lg text-red-600" />
               Delete
             </button>
           )}

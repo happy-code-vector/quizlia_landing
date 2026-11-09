@@ -99,7 +99,7 @@ export function InteractiveQuiz({ quizzes }: InteractiveQuizProps) {
         {showConfetti && <Confetti />}
         <div className="flex items-center gap-2 mb-6">
           <span className="text-2xl">🏆</span>
-          <h2 className="text-xl font-semibold text-white font-rethink-sans">Quiz Complete!</h2>
+          <h2 className="text-xl font-semibold text-white font-sans">Quiz Complete!</h2>
         </div>
 
         <div className="bg-gradient-to-br from-[#964CEE]/20 to-[#f15bb5]/10 border border-[#964CEE]/20 rounded-2xl p-8 text-center">
@@ -117,7 +117,7 @@ export function InteractiveQuiz({ quizzes }: InteractiveQuizProps) {
             </span>
           </div>
 
-          <h3 className="text-2xl font-bold text-white mb-2 font-source-serif-4">
+          <h3 className="text-2xl font-bold text-white mb-2 font-serif">
             {scorePercentage >= 70 ? "Great Job!" : scorePercentage >= 50 ? "Good Effort!" : "Keep Practicing!"}
           </h3>
 
@@ -158,7 +158,7 @@ export function InteractiveQuiz({ quizzes }: InteractiveQuizProps) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <span className="text-2xl">🧠</span>
-          <h2 className="text-xl font-semibold text-white font-rethink-sans">Quick Quiz</h2>
+          <h2 className="text-xl font-semibold text-white font-sans">Quick Quiz</h2>
         </div>
         <div className="flex items-center gap-4">
           {streak >= 2 && (
@@ -166,7 +166,7 @@ export function InteractiveQuiz({ quizzes }: InteractiveQuizProps) {
               🔥 {streak} streak
             </span>
           )}
-          <span className="text-sm text-white/50 font-rethink-sans">
+          <span className="text-sm text-white/50 font-sans">
             Score: {points} pts
           </span>
         </div>
@@ -174,7 +174,7 @@ export function InteractiveQuiz({ quizzes }: InteractiveQuizProps) {
 
       {/* Progress bar */}
       <div className="mb-6">
-        <div className="flex justify-between text-xs text-white/50 mb-2 font-rethink-sans">
+        <div className="flex justify-between text-xs text-white/50 mb-2 font-sans">
           <span>Question {currentIndex + 1} of {quizzes.length}</span>
           <span>{Math.round(progress)}%</span>
         </div>
@@ -188,7 +188,7 @@ export function InteractiveQuiz({ quizzes }: InteractiveQuizProps) {
 
       {/* Question card */}
       <div className="bg-[#111] border border-white/10 rounded-2xl p-6 mb-4">
-        <p className="text-lg md:text-xl text-white font-rethink-sans leading-relaxed">
+        <p className="text-lg md:text-xl text-white font-sans leading-relaxed">
           {currentQuiz.question}
         </p>
       </div>
@@ -206,7 +206,7 @@ export function InteractiveQuiz({ quizzes }: InteractiveQuizProps) {
               key={index}
               onClick={() => handleSelectAnswer(option)}
               disabled={showResult}
-              className={`w-full p-4 rounded-xl text-left transition-all flex items-center gap-4 font-rethink-sans
+              className={`w-full p-4 rounded-xl text-left transition-all flex items-center gap-4 font-sans
                 ${showCorrect
                   ? "bg-green-500/20 border-2 border-green-500 text-white"
                   : showWrong
@@ -241,7 +241,7 @@ export function InteractiveQuiz({ quizzes }: InteractiveQuizProps) {
         <div className="mb-4">
           <button
             onClick={() => setShowExplanation(!showExplanation)}
-            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-rethink-sans"
+            className="flex items-center gap-2 text-white/60 hover:text-white transition-colors text-sm font-sans"
           >
             <span>{showExplanation ? "▲" : "▼"}</span>
             <span>{showExplanation ? "Hide" : "Show"} Explanation</span>
@@ -250,7 +250,7 @@ export function InteractiveQuiz({ quizzes }: InteractiveQuizProps) {
             <div className="mt-3 bg-white/5 rounded-xl p-4">
               <MarkdownText
                 text={currentQuiz.explanation}
-                className="text-white/70 text-sm leading-relaxed font-rethink-sans [&_strong]:text-white"
+                className="text-white/70 text-sm leading-relaxed font-sans [&_strong]:text-white"
               />
             </div>
           )}
@@ -261,7 +261,7 @@ export function InteractiveQuiz({ quizzes }: InteractiveQuizProps) {
       {showResult && (
         <button
           onClick={handleNext}
-          className="w-full py-4 bg-gradient-to-r from-[#964CEE] to-[#f15bb5] text-white rounded-xl font-medium hover:opacity-90 transition-opacity font-rethink-sans"
+          className="w-full py-4 bg-gradient-to-r from-[#964CEE] to-[#f15bb5] text-white rounded-xl font-medium hover:opacity-90 transition-opacity font-sans"
         >
           {currentIndex < quizzes.length - 1 ? "Next Question →" : "See Results 🏆"}
         </button>
