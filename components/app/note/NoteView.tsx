@@ -196,7 +196,7 @@ export function NoteView({ topic, chat, menu, onStudyFlashcards, onQuiz, onPlay 
               <section aria-labelledby="note-lesson" className="ds-card flex flex-col p-2">
                 <h2 id="note-lesson" className="px-4 pt-3 pb-1 text-title3 font-semibold">In this lesson</h2>
                 {groups.map((g) => (
-                  <details key={g.id} className="group border-t border-divider first-of-type:border-t-0">
+                  <details key={g.id} open className="group border-t border-divider first-of-type:border-t-0">
                     <summary className="flex min-h-12 list-none items-center gap-3 rounded-xl px-4 py-2 hover:bg-hover-fill [&::-webkit-details-marker]:hidden">
                       <h3 className="flex-1 text-headline">{g.title}</h3>
                       {g.count !== undefined && <span className="tabular text-subheadline text-supporting">{g.count}</span>}
