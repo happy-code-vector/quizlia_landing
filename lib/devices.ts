@@ -166,6 +166,58 @@ export async function refundDeviceScan(deviceId: string): Promise<void> {
   }));
 }
 
+// Generation/chat refunds — the same "errors are never metered" principle
+// (item 42) for the model calls: the meter runs BEFORE the call as the quota
+// gate, so a failed call must give the unit back. A failed generation on a
+// free device otherwise permanently burns its one lifetime free note, and a
+// failed chat burns one of its 10 lifetime messages.
+//
+// Pure builders decide the write (unit-tested in devices.test.ts); null means
+// nothing to undo — no metered unit (duplicate refund, never-metered caller)
+// or the day anchor rolled past midnight, where touching the fresh counters
+// would produce a wrong-day decrement.
+
+/** The write that undoes one metered generation, or null for a no-op. */
+export function buildGenerationRefund(
+  doc: DeviceDoc,
+  plan: PlanKind
+): Partial<DeviceDoc> | null {
+  if (doc.date !== today()) return null;
+  if (plan === "free") {
+    if (doc.freeUsed !== true) return null;
+    return { freeUsed: false, used: Math.max(0, (doc.used ?? 0) - 1) };
+  }
+  const used = doc.used ?? 0;
+  if (!(used > 0)) return null;
+  return { used: used - 1 };
+}
+
+/** The write that undoes one metered chat message, or null for a no-op. */
+export function buildChatRefund(
+  doc: DeviceDoc,
+  plan: PlanKind
+): Partial<DeviceDoc> | null {
+  if (doc.chatDate !== today()) return null;
+  const chatTotal = doc.chatTotal ?? 0;
+  const chatUsed = doc.chatUsed ?? 0;
+  if (plan === "free") {
+    if (!(chatTotal > 0)) return null;
+    return { chatUsed: Math.max(0, chatUsed - 1), chatTotal: chatTotal - 1 };
+  }
+  if (!(chatUsed > 0)) return null;
+  return { chatUsed: chatUsed - 1 };
+}
+
+/** Gives back a metered generation when the model call delivered nothing. */
+export async function refundDeviceGeneration(deviceId: string, plan: PlanKind): Promise<void> {
+  await patchDevice(deviceId, (d) => (buildGenerationRefund(d, plan) ?? {}) as DeviceDoc);
+}
+
+/** Gives back a metered chat message when the model call delivered nothing. */
+export async function refundDeviceChat(deviceId: string, plan: PlanKind): Promise<void> {
+  await patchDevice(deviceId, (d) => (buildChatRefund(d, plan) ?? {}) as DeviceDoc);
+}
+
 export async function setDeviceEntitlement(
   deviceId: string,
   entitlement: DeviceEntitlement | null

@@ -9,7 +9,7 @@ import {
   devicePlan,
   type DeviceCaller,
 } from "@/lib/caller";
-import { meterDeviceGeneration, meterDeviceChat } from "@/lib/devices";
+import { meterDeviceGeneration, meterDeviceChat, refundDeviceGeneration, refundDeviceChat } from "@/lib/devices";
 import { generateCore, streamStudyPack, bandForSource } from "@/lib/generate-core";
 import { chatCore, tutorCore } from "@/lib/chat-core";
 import { FREE_TEXT_FORMAT_CONTRACT, JSON_FORMAT_CONTRACT } from "@/lib/format-contract";
@@ -203,6 +203,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     }
   }
 
+  let refundMeteredDevice: (() => Promise<void>) | null = null;
   if (device) {
     const plan = devicePlan(device.entitlement);
     const meter = purpose === "generation"
@@ -214,6 +215,18 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
         { status: meter.status }
       );
     }
+    // Errors are never metered (item 42): the meter above is the quota
+    // gate, so any failure after this point gives the unit back — a failed
+    // model call must not consume a device's free note or a lifetime chat
+    // message. Never throws into the failing response it accompanies.
+    refundMeteredDevice = async () => {
+      try {
+        if (purpose === "generation") await refundDeviceGeneration(device!.deviceId, plan);
+        else await refundDeviceChat(device!.deviceId, plan);
+      } catch (error) {
+        console.error("device meter refund failed:", error);
+      }
+    };
   } else if (caller) {
     // The quota write needs the caller's own (verified) token.
     const token = (request.headers.get("authorization") || "").startsWith("Bearer ")
@@ -250,6 +263,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
       );
       const check = await checkBudget(budgetKey!, budgetPlan, est);
       if (!check.ok) {
+        await refundMeteredDevice?.();
         return NextResponse.json(
           { error: { code: "budget_reached", message: check.message }, resetAt: check.resetAt },
           { status: 429 }
@@ -262,10 +276,22 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
   // meter entry (metered above); the combined pack is cached at the end
   // (item 9) even if the client drops mid-stream (item 66b).
   if (isNewShape && body.stream === true && body.type === "study_pack" && !body.fileData) {
-    const streamSource =
-      body.mimeType === "video/youtube" && sourceEstVideoId
-        ? await getTranscript(sourceEstVideoId).then((t) => t?.text.slice(0, 120000) ?? "")
-        : String(body.content ?? "");
+    let streamSource: string;
+    try {
+      streamSource =
+        body.mimeType === "video/youtube" && sourceEstVideoId
+          ? await getTranscript(sourceEstVideoId).then((t) => t?.text.slice(0, 120000) ?? "")
+          : String(body.content ?? "");
+    } catch (error) {
+      // The transcript failed before the stream opened — nothing is
+      // delivered, so the metered unit goes back (item 42).
+      console.error("stream transcript error:", error);
+      await refundMeteredDevice?.();
+      return NextResponse.json(
+        { error: { code: 500, message: "Could not read this video's captions" } },
+        { status: 500 }
+      );
+    }
     const words = streamSource.split(/\s+/).filter(Boolean).length;
     const band =
       body.mimeType === "video/youtube"
@@ -307,6 +333,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
             });
           } catch (err) {
             console.error("stream pack error:", err);
+            void refundMeteredDevice?.();
             try {
               controller.enqueue(encoder.encode(JSON.stringify({ part: "error", message: "Generation failed" }) + "\n"));
             } catch {}
@@ -327,6 +354,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
       fileData: body.fileData,
     });
     if (!result.ok) {
+      await refundMeteredDevice?.();
       return NextResponse.json(
         { error: { code: result.status, message: result.message } },
         { status: result.status }
@@ -371,6 +399,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     if (budget?.plan) {
       const check = await checkBudget(budget.key, budget.plan, estimateCents("gemini-3.1-flash-lite", Math.ceil(source.length / 4), 500));
       if (!check.ok) {
+        await refundMeteredDevice?.();
         return NextResponse.json(
           { error: { code: check.kind === "daily" ? "budget_reached" : "budget_reached", message: check.message }, resetAt: check.resetAt },
           { status: 429 }
@@ -387,6 +416,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
       note_id: typeof body.note_id === "string" ? body.note_id : undefined,
     });
     if (!result.ok) {
+      await refundMeteredDevice?.();
       return NextResponse.json(
         { error: { code: result.status, message: result.message } },
         { status: result.status }
@@ -408,6 +438,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     if (budget?.plan) {
       const check = await checkBudget(budget.key, budget.plan, estimateCents("gemini-3.1-flash-lite", Math.ceil(String(body.context).length / 4), 2048));
       if (!check.ok) {
+        await refundMeteredDevice?.();
         return NextResponse.json(
           { error: { code: "budget_reached", message: check.message }, resetAt: check.resetAt },
           { status: 429 }
@@ -416,6 +447,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     }
     const result = await chatCore(body.question, body.context);
     if (!result.ok) {
+      await refundMeteredDevice?.();
       return NextResponse.json(
         { error: { code: result.status, message: result.message } },
         { status: result.status }
@@ -427,7 +459,11 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
     return NextResponse.json({ success: true, answer: result.answer });
   }
 
-  return await proxyToGemini(purpose, body);
+  // Legacy proxy path (old body shape): a non-2xx upstream means the
+  // caller got nothing — refund the metered device unit (item 42).
+  const proxied = await proxyToGemini(purpose, body);
+  if (proxied.status >= 400) await refundMeteredDevice?.();
+  return proxied;
 }
 
 // Everything after validation and quota pass: append the format contract
