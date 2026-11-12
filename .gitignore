@@ -40,3 +40,4 @@ next-env.d.ts
 !lib/certs/*.pem
 scripts/landing-tiles/f_*/
 scripts/landing-tiles/node_modules/
+image-pipeline/
