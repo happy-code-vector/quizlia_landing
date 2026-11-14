@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test": "npx -y tsx --test lib/*.test.ts lib/games/*.test.ts"
   },
   "overrides": {
     "@grpc/grpc-js": "^1.13.6",
