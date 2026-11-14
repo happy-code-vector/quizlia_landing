@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ProfileFace } from "./ProfileFace";
 import { EditProfileForm } from "./ProfileFields";
 import { DeleteProfileConfirm } from "./DeleteProfileConfirm";
+import { DeleteAccountConfirm, type DeleteAccountStep } from "./DeleteAccountConfirm";
 
 import { SUPPORT_EMAIL } from "@/lib/support";
 export { SUPPORT_EMAIL };
@@ -34,6 +35,10 @@ export interface SettingsViewProps {
   onSaveProfile: (p: Profile) => Promise<void>;
   onDeleteProfile: () => Promise<void>;
   onSignOut: () => Promise<void>;
+  /** Deletes the signed-in account (iOS parity). Shown only when signed in. */
+  onDeleteAccount?: (input: { password?: string; popup?: boolean }) => Promise<DeleteAccountStep>;
+  /** Fixtures: open the delete-account dialog on load. */
+  openDeleteAccount?: boolean;
   /** The promo code field; fixtures pass a static one. */
   promo: React.ReactNode;
   folders?: ShellFolder[];
@@ -45,9 +50,12 @@ export interface SettingsViewProps {
  * hidden behind a tab and the System/Light/Dark control (W-8.2) is always in view. Help sits here (W-9.5).
  */
 export function SettingsView({
-  profile, profiles, family, plan, account, onSaveProfile, onDeleteProfile, onSignOut, promo, folders, hideUsage,
+  profile, profiles, family, plan, account, onSaveProfile, onDeleteProfile, onSignOut, onDeleteAccount, openDeleteAccount,
+  promo, folders, hideUsage,
 }: SettingsViewProps) {
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [accountDeleteOpen, setAccountDeleteOpen] = useState(!!openDeleteAccount);
+  const accountDeleteRef = useRef<HTMLButtonElement>(null);
   const [signingOut, setSigningOut] = useState(false);
   const deleteRef = useRef<HTMLButtonElement>(null);
 
@@ -144,6 +152,19 @@ export function SettingsView({
                 >
                   {signingOut ? "Signing out" : "Sign out"}
                 </Button>
+                {onDeleteAccount && (
+                  <div className="flex w-full flex-col items-start gap-1 border-t border-divider pt-4">
+                    <button
+                      ref={accountDeleteRef}
+                      type="button"
+                      onClick={() => setAccountDeleteOpen(true)}
+                      className="rounded-full py-2 text-subheadline font-semibold text-danger underline-offset-4 hover:underline"
+                    >
+                      Delete account
+                    </button>
+                    <p className="text-subheadline text-supporting">Deletes your account, every profile and all notes.</p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -188,6 +209,22 @@ export function SettingsView({
           onConfirm={onDeleteProfile}
         />
       </CardDialog>
+
+      {account && onDeleteAccount && (
+        <CardDialog
+          open={accountDeleteOpen}
+          onOpenChange={setAccountDeleteOpen}
+          title="Delete your account?"
+          returnFocusTo={accountDeleteRef}
+        >
+          <DeleteAccountConfirm
+            email={account.email}
+            paid={plan.paid}
+            onDelete={onDeleteAccount}
+            onCancel={() => setAccountDeleteOpen(false)}
+          />
+        </CardDialog>
+      )}
     </AppShell>
   );
 }
