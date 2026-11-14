@@ -53,7 +53,9 @@ export async function publishNoteToLibrary(topic: Topic, uid: string): Promise<{
           ? `PDF · ${topic.title}`
           : topic.sourceType === "image"
             ? `Photo · ${topic.title}`
-            : "QuizliAI user";
+            : topic.sourceType === "text"
+              ? `Typed notes · ${topic.title}`
+              : "QuizliAI user";
 
   // Same shape as seeded guides so the public page renders it identically.
   await setDoc(doc(db, "notes", slug), {

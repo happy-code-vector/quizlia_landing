@@ -6,7 +6,7 @@ import Link from "next/link";
 import * as Menu from "@radix-ui/react-dropdown-menu";
 import {
   ArrowLeft, ChevronDown, CirclePlay, Ellipsis, EyeOff, FileText, Gamepad2, Globe, Image as ImageIcon,
-  Layers, Link as LinkIcon, MessageCircleQuestion, Pencil, Share2, Trash2,
+  Layers, Link as LinkIcon, MessageCircleQuestion, Pencil, Share2, Trash2, Type,
 } from "lucide-react";
 import type { Topic } from "@/lib/types";
 import { getYouTubeEmbedUrl } from "@/lib/types";
@@ -23,6 +23,7 @@ const SOURCE: Record<Topic["sourceType"], { label: string; Icon: typeof FileText
   pdf: { label: "PDF file", Icon: FileText },
   youtube: { label: "YouTube video", Icon: CirclePlay },
   image: { label: "Photos of notes", Icon: ImageIcon },
+  text: { label: "Typed notes", Icon: Type },
 };
 
 export interface NoteMenuActions {

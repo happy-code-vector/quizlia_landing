@@ -10,6 +10,7 @@ import { db, auth, isFirebaseConfigured } from "./firebase";
 import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { currentUserDocId } from "./firebaseSubscription";
 import { localFoldersKey, SyncedFolder } from "./folderSync";
+import { docSourceType } from "./typed-text";
 
 export function localContentKey(profileId: number | string): string {
   return `content_${profileId}`;
@@ -235,13 +236,6 @@ export async function mergeIOSNotesIntoContent(
     const existing = JSON.parse(localStorage.getItem(key) || "[]");
     const known = new Set(existing.map((i: any) => i.sourceId));
 
-    const mapType = (raw: unknown): string => {
-      const t = String(raw || "").toLowerCase();
-      if (t.includes("youtube")) return "youtube";
-      if (t.includes("pdf")) return "pdf";
-      if (t.includes("image") || t.includes("photo")) return "image";
-      return "url";
-    };
     const tryParse = (raw: unknown): any => {
       if (typeof raw !== "string" || !raw) return null;
       try { return JSON.parse(raw); } catch { return null; }
@@ -326,7 +320,6 @@ export async function mergeIOSNotesIntoContent(
       const note = tryParse(d.note);
       const flashcards = tryParse(d.flashcard);
       const quiz = tryParse(d.quiz);
-      const sourceType = mapType(d.contentType);
       // The original URL lives in contentPath (iOS writes it; the web does
       // too since the URL-loss fix). Legacy web docs stuffed it into title
       // instead — and per-note-schema-era web docs kept the full URL inside
@@ -339,6 +332,9 @@ export async function mergeIOSNotesIntoContent(
           ? note.sourceUrl
           : "") ||
         (/^https?:\/\//i.test(String(d.title ?? "")) ? String(d.title) : "");
+      // Typed notes (iOS Type or speak, Exam Lens, web Type or paste) share
+      // contentType "text" with older web link notes; the URL tells them apart.
+      const sourceType = docSourceType(d.contentType, remoteUrl);
       const base = {
         sourceId: noteDoc.id,
         sourceName:
