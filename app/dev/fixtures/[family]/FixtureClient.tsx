@@ -110,7 +110,7 @@ function WelcomeFixture({ state }: { state?: string }) {
 
 /**
  * People family: profile picker, sign in, create profile, settings.
- * ?state=picker (default) | edit | signin | create | settings
+ * ?state=picker (default) | edit | signin | create | settings | delete-account (Delete account opens the password step)
  */
 function PeopleFixture({ state }: { state?: string }) {
   const [maya] = FIXTURE_PROFILES;
@@ -134,7 +134,7 @@ function PeopleFixture({ state }: { state?: string }) {
       </PeopleFrame>
     );
   }
-  if (state === "settings") {
+  if (state === "settings" || state === "delete-account") {
     return (
       <ToastProvider>
         <SettingsView
@@ -146,6 +146,8 @@ function PeopleFixture({ state }: { state?: string }) {
           onSaveProfile={asyncNoop}
           onDeleteProfile={asyncNoop}
           onSignOut={asyncNoop}
+          onDeleteAccount={async () => ({ status: "reauth", method: "password" })}
+          openDeleteAccount={state !== "settings"}
           promo={<PromoCodeInput email="parent@example.com" profileId={maya.id} apply={async () => ({ success: false, message: "That promo code has expired" })} />}
           folders={FIXTURE_FOLDERS}
           hideUsage

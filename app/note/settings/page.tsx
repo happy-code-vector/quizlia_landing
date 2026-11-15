@@ -10,12 +10,15 @@ import { isAdminUser } from "@/lib/admin";
 import { PromoCodeInput } from "@/components/app/PromoCodeInput";
 import { useAuth } from "@/lib/auth";
 import { deleteProfile, readCurrentProfile, readProfiles, updateProfile } from "@/lib/profileStore";
+import { deleteAccount } from "@/lib/deleteAccount";
+import { useToast } from "@/components/app/ToastContainer";
 import type { Profile } from "@/lib/types";
 import { SettingsView, type PlanSummary } from "@/components/app/people/SettingsView";
 
 export default function SettingsPage() {
   const router = useRouter();
   const { user, signOut } = useAuth();
+  const { showToast } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
@@ -65,6 +68,15 @@ export default function SettingsPage() {
         localStorage.removeItem("currentProfile");
         // There is no /note/login route; the sign-in page lives at /auth/login.
         router.push("/auth/login");
+      }}
+      onDeleteAccount={async (input) => {
+        const result = await deleteAccount({ ...input, localProfileIds: readProfiles().map((p) => p.id) });
+        if (result.status === "done") {
+          showToast("Your account is deleted.", "success");
+          // Local data is gone, so the picker starts fresh, signed out.
+          router.push("/note/profile-selection");
+        }
+        return result;
       }}
       promo={
         <PromoCodeInput
