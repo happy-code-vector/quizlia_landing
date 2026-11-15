@@ -7,6 +7,7 @@ import { PaywallModal } from "@/components/app/PaywallModal";
 import { useGenerateContent, type SourceType } from "@/hooks/useGenerateContent";
 import { SOURCES, sourceOption } from "@/components/app/home/sources";
 import { extractYouTubeId } from "@/lib/url-dedupe";
+import { validateTypedText } from "@/lib/typed-text";
 import type { Profile, ContentItem } from "@/lib/types";
 
 interface GenerateContentFormProps {
@@ -24,6 +25,7 @@ const STROKE = 1.75;
 function validate(type: string, text: string, file: File | null): string | null {
   if (type === "pdf") return file ? null : "Choose a PDF file";
   if (type === "image") return file ? null : "Choose a photo of your notes";
+  if (type === "text") return validateTypedText(text);
   const value = text.trim();
   if (type === "youtube") {
     if (!value) return "Enter a YouTube link";
@@ -66,12 +68,14 @@ export function GenerateContentForm({
   const hintId = `${id}-hint`;
   const fileRef = useRef<HTMLInputElement>(null);
   const textRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
   const [error, setError] = useState<string | null>(null);
   // W-7.4: after a field has shown an error, re-validate it as the user types.
   const [touched, setTouched] = useState(false);
 
   const source = sourceOption(contentType);
   const isFile = contentType === "pdf" || contentType === "image";
+  const isTyped = contentType === "text";
 
   const pickSource = (type: SourceType) => {
     if (type === contentType) return;
@@ -90,7 +94,7 @@ export function GenerateContentForm({
     setError(message);
     if (message) {
       // W-7.6: one-field form, so focus goes to the field.
-      (isFile ? fileRef.current : textRef.current)?.focus();
+      (isFile ? fileRef.current : isTyped ? notesRef.current : textRef.current)?.focus();
       return;
     }
     void generateContent();
@@ -101,6 +105,8 @@ export function GenerateContentForm({
       ? "Paste the address from the YouTube app or your browser."
       : contentType === "url"
         ? "An article or lesson page. Pages behind a sign-in will not work."
+        : isTyped
+          ? "Write or paste what you want to study. QuizliAI turns it into notes, flashcards and a quiz."
         : contentType === "pdf"
           ? "One PDF, up to the size your browser can upload."
           : "A clear photo of handwritten or printed notes.";
@@ -200,6 +206,24 @@ export function GenerateContentForm({
                 </button>
               )}
             </div>
+          ) : isTyped ? (
+            <textarea
+              ref={notesRef}
+              id={fieldId}
+              rows={8}
+              autoComplete="off"
+              spellCheck
+              value={contentInput}
+              aria-describedby={error ? `${errorId} ${hintId}` : hintId}
+              aria-invalid={error ? true : undefined}
+              onChange={(e) => {
+                setContentInput(e.target.value);
+                if (touched) setError(validate(contentType, e.target.value, null));
+              }}
+              className={`min-h-44 resize-y rounded-xl bg-card px-3 py-2.5 text-callout text-label ${
+                error ? "border-2 border-danger" : "border border-input"
+              }`}
+            />
           ) : (
             <input
               ref={textRef}

@@ -3,7 +3,7 @@
 export interface Topic {
   id: string;
   title: string;
-  sourceType: "url" | "pdf" | "youtube" | "image";
+  sourceType: "url" | "pdf" | "youtube" | "image" | "text";
   sourceUrl?: string;
   createdAt: string;
   folderId?: string | number;
@@ -82,6 +82,7 @@ export function getSourceIcon(sourceType: string): string {
     case "pdf": return "picture_as_pdf";
     case "youtube": return "play_circle";
     case "image": return "image";
+    case "text": return "edit";
     default: return "article";
   }
 }

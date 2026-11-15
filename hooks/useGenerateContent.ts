@@ -10,6 +10,7 @@ import { auth } from "@/lib/firebase";
 import type { Profile, ContentItem, Topic } from "@/lib/types";
 import { isAdminUser, publishNoteToLibrary } from "@/lib/publishNote";
 import { extractYouTubeId, normalizeUrlForDedupe } from "@/lib/url-dedupe";
+import { typedTextSourceName } from "@/lib/typed-text";
 
 interface UseGenerateContentOptions {
   profile: Profile | null;
@@ -20,7 +21,7 @@ interface UseGenerateContentOptions {
   initialType?: SourceType;
 }
 
-export type SourceType = "youtube" | "url" | "pdf" | "image";
+export type SourceType = "youtube" | "url" | "pdf" | "image" | "text";
 
 /** Dedupe (spec §2): an item this profile already generated from the same
  *  video (any link form) or the same normalized URL. Legacy items without
@@ -91,9 +92,11 @@ export function useGenerateContent({ profile, targetFolderId, onGenerated, initi
     showToast("Generating your study materials...", "info");
 
     try {
-      const sourceText = selectedFile ? selectedFile.name : contentInput;
+      // Typed notes: the text itself is the content; its first line names the source.
+      const isTyped = contentType === "text";
+      const sourceText = selectedFile ? selectedFile.name : isTyped ? typedTextSourceName(contentInput) : contentInput;
 
-      let contentToAnalyze = contentInput;
+      let contentToAnalyze = isTyped ? contentInput.trim() : contentInput;
       let fileData: string | null = null;
       let fileMimeType: string | null = null;
 
