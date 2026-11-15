@@ -17,6 +17,7 @@ import { youtubeVideoId, getVideoDurationSeconds, getTranscript } from "@/lib/tr
 import { getCachedStudyPack, getCachedStudyPackForLink, putCachedStudyPack, putCachedStudyPackForLink } from "@/lib/pack-cache";
 import { timingLog } from "@/lib/timing";
 import { checkBudget, recordSpend, budgetKeyFor, resolveAccountBudget, estimateCents, type BudgetPlan } from "@/lib/budget";
+import { fileDataEstimateTokens } from "@/lib/file-estimate";
 
 export const dynamic = "force-dynamic";
 
@@ -127,7 +128,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ pu
 
   // Worst-case input estimate for the pre-call budget check (items 22-24):
   // content text, or the transcript once the pre-check below fetched it.
-  let sourceEstTokens = Math.ceil((body.content?.length ?? 0) / 4) + (body.fileData ? 3000 : 0);
+  // Inline files (photo/PDF) scale with size — the old flat 3,000 tokens
+  // under-reserved chapter PDFs ~3.7x (lib/file-estimate.ts).
+  let sourceEstTokens = Math.ceil((body.content?.length ?? 0) / 4)
+    + (body.fileData ? fileDataEstimateTokens(body.fileData.length) : 0);
   let sourceEstVideoId: string | null = null;
 
   // Pre-metering YouTube validation: a caption-less or over-60-min

@@ -90,7 +90,7 @@ async function accountPlan(uid: string): Promise<{ plan: PlanKind; admin: boolea
 }
 
 import { timingLog } from "@/lib/timing";
-import { checkBudget, budgetKeyFor, resolveAccountBudget, estimateCents, type BudgetPlan } from "@/lib/budget";
+import { checkBudget, recordSpend, budgetKeyFor, resolveAccountBudget, estimateCents, type BudgetPlan } from "@/lib/budget";
 
 export async function POST(request: NextRequest) {
   const requestStartedAt = Date.now();
@@ -196,8 +196,10 @@ export async function POST(request: NextRequest) {
   }
 
   // Margin stop before the model call (item 42: budget_reached never
-  // fails over). Rank calls are sub-cent, so spend is enforced but not
-  // recorded per call — the usage lands in the [timing] rank lines.
+  // fails over). Rank calls are sub-cent but no longer free at the paid
+  // 50/day cap (up to $1.05/month unrecorded on Individual, 74% of its
+  // budget) — each call is recorded after success, same numbers the
+  // pre-call check reserved.
   const budget = device?.entitlement
     ? {
         key: budgetKeyFor(device.entitlement),
@@ -228,6 +230,20 @@ export async function POST(request: NextRequest) {
       return errorResponse(422, "not_enough_text", "Not enough usable sentences on this page. Try another page.");
     }
     return errorResponse(503, "busy", "The scanner is busy right now. Try again in a moment.");
+  }
+
+  // Record the spend the pre-call check reserved (same estimate basis:
+  // sentence tokens in, 400 out). Cache hits returned above — only a real
+  // model call reaches here. Admins have no budget key and stay unmetered.
+  if (budget?.plan) {
+    await recordSpend(
+      budget.key,
+      budget.plan,
+      "gemini-3.1-flash-lite",
+      Math.ceil(sentences.reduce((n, s) => n + s.t.length, 0) / 4),
+      0,
+      400
+    );
   }
 
   await writeCache(key, outcome.keyPoints, language);
