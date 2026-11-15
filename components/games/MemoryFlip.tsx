@@ -317,7 +317,6 @@ export default function MemoryFlip({ deck }: { deck: StudyDeck }) {
     createMemoryInitialState
   );
   const [soundEnabled, setSoundEnabled] = useState(true);
-  const [mascotVisible, setMascotVisible] = useState(true);
 
   useEffect(() => {
     if (state.status !== "playing" || state.startedAt === null) return;
@@ -409,16 +408,17 @@ export default function MemoryFlip({ deck }: { deck: StudyDeck }) {
     return (
       <main className="min-h-dvh bg-[var(--game-bg)] text-[var(--game-text)] font-[system-ui,-apple-system,BlinkMacSystemFont,'Segoe_UI',Roboto,sans-serif] px-4 py-6">
         <div className="max-w-2xl mx-auto w-full flex flex-col gap-6">
-          {mascotVisible ? (
-            // Decorative 96px mascot, hidden by onError when the asset is absent; next/image adds no value here.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src="/mascot/bear-happy.webp"
-              alt=""
-              onError={() => setMascotVisible(false)}
-              className="h-24 w-auto object-contain self-start"
-            />
-          ) : null}
+          {/* Decorative 96px mascot: celebrate when the heading says Nice work (accuracy 0.8+), think otherwise. */}
+          {/* eslint-disable-next-line @next/next/no-img-element -- fixed-size decorative art; next/image adds nothing here */}
+          <img
+            src={
+              finishedResult.accuracy >= 0.8
+                ? "/mascot/quizliai_mascot_celebrate.webp"
+                : "/mascot/quizliai_mascot_think.webp"
+            }
+            alt=""
+            className="h-24 w-auto object-contain self-start"
+          />
 
           <h1 aria-live="polite" className="text-2xl font-semibold">
             {headingText}
