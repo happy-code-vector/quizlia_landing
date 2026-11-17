@@ -1,5 +1,5 @@
 /** @type {import('next').NextConfig} */
-const aliases = Object.assign({}, require('./content/study/aliases.json'), require('./content/study/aliases-history.json'), require('./content/study/aliases-english.json'), require('./content/study/aliases-science.json'));
+const aliases = require('./content/study/aliases.js');
 
 const nextConfig = {
   // Short spoken addresses for the video call to action: quizliai.com/<alias> -> /study/<slug>.
