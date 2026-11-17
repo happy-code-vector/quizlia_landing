@@ -18,6 +18,9 @@ import { sciencePages } from "./science"
 import { videoAPages } from "./video-a"
 import { videoBPages } from "./video-b"
 import { videoCPages } from "./video-c"
+import { videoDPages } from "./video-d"
+import { videoEPages } from "./video-e"
+import { videoFPages } from "./video-f"
 
 const pilotPages: StudyPage[] = [
   {
@@ -79,6 +82,6 @@ const pilotPages: StudyPage[] = [
   },
 ]
 
-export const studyPages: StudyPage[] = [...pilotPages, ...historyPages, ...englishPages, ...sciencePages, ...videoAPages, ...videoBPages, ...videoCPages]
+export const studyPages: StudyPage[] = [...pilotPages, ...historyPages, ...englishPages, ...sciencePages, ...videoAPages, ...videoBPages, ...videoCPages, ...videoDPages, ...videoEPages, ...videoFPages]
 
 export const getStudyPage = (slug: string) => studyPages.find((p) => p.slug === slug)
