@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `${page.title}: flashcards and quiz | QuizliAI`,
     description,
-    alternates: { canonical: `https://quizliai.com/study/${page.slug}` },
+    alternates: { canonical: `https://www.quizliai.com/study/${page.slug}` },
     robots: page.status === "live" ? undefined : { index: false, follow: false },
     openGraph: { title: page.title, description, url: `/study/${page.slug}`, images: [{ url: "/og.png", width: 1200, height: 630 }] },
   }

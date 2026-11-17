@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { studyPages } from "@/content/study/pages";
 import { getAllNotesForSitemapServer } from "@/lib/firebase-server";
 
-const SITE_URL = "https://quizliai.com";
+const SITE_URL = "https://www.quizliai.com";
 
 // Truly dynamic: every request queries Firestore (REST server path —
 // the client SDK never initializes outside the browser), so an admin

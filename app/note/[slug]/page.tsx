@@ -3,7 +3,7 @@ import { cache } from "react";
 import { getStudyGuide } from "@/lib/studyGuide";
 import { GuideClient } from "./GuideClient";
 
-const SITE_URL = "https://quizliai.com";
+const SITE_URL = "https://www.quizliai.com";
 
 // generateMetadata and the page body both need the guide — cache() shares
 // one fetch per request instead of two identical Firestore reads.
