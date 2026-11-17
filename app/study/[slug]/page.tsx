@@ -18,7 +18,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const page = getStudyPage(slug)
   if (!page) return {}
-  const description = `${page.title}: a short summary, 3 flashcards and a 3-question quiz.`
+  const description = page.video
+    ? `Study guide for "${page.video.title}" by ${page.video.channel}: a short summary, 3 flashcards and a 3-question quiz.`
+    : `${page.title}: a short summary, 3 flashcards and a 3-question quiz.`
   return {
     title: `${page.title}: flashcards and quiz | QuizliAI`,
     description,
@@ -46,6 +48,29 @@ export default async function StudyPageRoute({ params }: Props) {
         <p className="text-subheadline font-semibold text-rust-on-tint">{page.subject}</p>
         <h1 className="mt-1 font-serif text-large-title text-label">{page.title}</h1>
         <p className="mt-4 text-body text-label">{page.context}</p>
+
+        {page.video && (
+          <figure className="mt-8">
+            <div className="ds-card aspect-video w-full overflow-hidden">
+              <iframe
+                src={`https://www.youtube-nocookie.com/embed/${page.video.id}`}
+                title={`${page.video.title} by ${page.video.channel}`}
+                loading="lazy"
+                allow="encrypted-media; picture-in-picture; fullscreen"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+                className="size-full border-0"
+              />
+            </div>
+            <figcaption className="mt-3 text-subheadline text-supporting">
+              Study guide for{" "}
+              <a href={`https://www.youtube.com/watch?v=${page.video.id}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-label">
+                {page.video.title}
+              </a>{" "}
+              by {page.video.channel} on YouTube. This page is our own summary and questions. The channel did not make or approve it.
+            </figcaption>
+          </figure>
+        )}
 
         <h2 className="mt-10 text-title3 font-semibold text-label">3 flashcards</h2>
         <div className="mt-3 space-y-3">

@@ -2,7 +2,8 @@
 // status "draft": noindex, not in the sitemap. Set "live" only after the fact table is checked and AR approves.
 export type StudyPage = {
   slug: string
-  alias: string // short spoken address: quizliai.com/<alias> redirects here
+  alias?: string // short spoken address (own videos only); the map lives in aliases.js
+  video?: { id: string; title: string; channel: string } // companion YouTube video (SEO pages)
   status: "draft" | "live"
   title: string
   subject: string // eyebrow, e.g. "Biology"
@@ -14,6 +15,9 @@ export type StudyPage = {
 import { historyPages } from "./history"
 import { englishPages } from "./english"
 import { sciencePages } from "./science"
+import { videoAPages } from "./video-a"
+import { videoBPages } from "./video-b"
+import { videoCPages } from "./video-c"
 
 const pilotPages: StudyPage[] = [
   {
@@ -75,6 +79,6 @@ const pilotPages: StudyPage[] = [
   },
 ]
 
-export const studyPages: StudyPage[] = [...pilotPages, ...historyPages, ...englishPages, ...sciencePages]
+export const studyPages: StudyPage[] = [...pilotPages, ...historyPages, ...englishPages, ...sciencePages, ...videoAPages, ...videoBPages, ...videoCPages]
 
 export const getStudyPage = (slug: string) => studyPages.find((p) => p.slug === slug)
