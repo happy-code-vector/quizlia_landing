@@ -10,7 +10,7 @@ const description =
 export const metadata: Metadata = {
   title: { absolute: title },
   description,
-  alternates: { canonical: "https://quizliai.com/" },
+  alternates: { canonical: "https://www.quizliai.com/" },
   openGraph: {
     type: "website",
     url: "/",
@@ -30,7 +30,7 @@ const appJsonLd = {
   operatingSystem: "iOS",
   applicationCategory: "EducationalApplication",
   description,
-  url: "https://quizliai.com/",
+  url: "https://www.quizliai.com/",
   downloadUrl: APP_STORE_URL,
   installUrl: APP_STORE_URL,
   offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },

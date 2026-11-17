@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/api", "/auth", "/note/notes", "/note/settings", "/note/profile-selection", "/dev"],
     },
-    sitemap: "https://quizliai.com/sitemap.xml",
+    sitemap: "https://www.quizliai.com/sitemap.xml",
   };
 }
