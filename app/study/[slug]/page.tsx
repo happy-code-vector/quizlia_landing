@@ -4,7 +4,7 @@ import { ChevronDown } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Quiz } from "@/components/study/Quiz"
-import { APP_STORE_URL } from "@/lib/constants"
+import { studyStoreUrl } from "@/lib/campaign"
 import { getStudyPage, studyPages } from "@/content/study/pages"
 
 type Props = { params: Promise<{ slug: string }> }
@@ -29,10 +29,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     openGraph: { title: page.title, description, url: `/study/${page.slug}`, images: [{ url: "/og.png", width: 1200, height: 630 }] },
   }
 }
-
-// Optional Apple provider token. Campaign links need both pt and ct, so ct is added only when pt is set.
-const pt = process.env.NEXT_PUBLIC_APPSTORE_PT
-const storeUrl = (slug: string) => (pt ? `${APP_STORE_URL}?pt=${encodeURIComponent(pt)}&ct=${encodeURIComponent(slug)}&mt=8` : APP_STORE_URL)
 
 export default async function StudyPageRoute({ params }: Props) {
   const { slug } = await params
@@ -94,7 +90,7 @@ export default async function StudyPageRoute({ params }: Props) {
           <h2 id="unlock-h" className="text-title3 font-semibold text-label">Want the full experience?</h2>
           <p className="text-callout text-supporting">Make notes, flashcards and quizzes from any YouTube link, PDF or photo.</p>
           <a
-            href={storeUrl(page.slug)}
+            href={studyStoreUrl(page.slug)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-7 text-headline text-primary-foreground transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-primary-hover active:scale-[0.98] active:bg-primary-active"
