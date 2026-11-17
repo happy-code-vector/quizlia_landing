@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ChevronDown } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
@@ -99,6 +100,7 @@ export default async function StudyPageRoute({ params }: Props) {
             <span className="sr-only"> (opens the App Store)</span>
           </a>
         </section>
+        <p className="mt-6 text-center text-subheadline"><Link href="/study" prefetch={false} className="text-supporting underline underline-offset-4 hover:text-label">More free study sets</Link></p>
         {page.status === "draft" && <p className="mt-6 text-footnote text-supporting">Draft preview. Not public.</p>}
       </main>
       <SiteFooter />
