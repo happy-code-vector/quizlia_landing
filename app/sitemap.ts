@@ -36,6 +36,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const studyEntries: MetadataRoute.Sitemap = studyPages
     .filter((p) => p.status === "live")
     .map((p) => ({ url: `${SITE_URL}/study/${p.slug}`, changeFrequency: "monthly", priority: 0.7 }));
+  studyEntries.unshift({ url: `${SITE_URL}/study`, changeFrequency: "weekly", priority: 0.8 });
 
   return [...staticEntries, ...noteEntries, ...studyEntries];
 }
