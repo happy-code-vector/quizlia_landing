@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { studyPages } from "@/content/study/pages";
 import { getAllNotesForSitemapServer } from "@/lib/firebase-server";
 
 const SITE_URL = "https://quizliai.com";
@@ -32,5 +33,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
-  return [...staticEntries, ...noteEntries];
+  const studyEntries: MetadataRoute.Sitemap = studyPages
+    .filter((p) => p.status === "live")
+    .map((p) => ({ url: `${SITE_URL}/study/${p.slug}`, changeFrequency: "monthly", priority: 0.7 }));
+
+  return [...staticEntries, ...noteEntries, ...studyEntries];
 }
