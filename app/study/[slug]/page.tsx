@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Quiz } from "@/components/study/Quiz"
+import { VideoEmbed } from "@/components/study/VideoEmbed"
 import { DownloadRail } from "@/components/study/DownloadRail"
 import { studyStoreUrl } from "@/lib/campaign"
 import { getStudyPage, studyPages } from "@/content/study/pages"
@@ -56,15 +57,7 @@ export default async function StudyPageRoute({ params }: Props) {
         {page.video && (
           <figure className="mt-8">
             <div className="ds-card aspect-video w-full overflow-hidden">
-              <iframe
-                src={`https://www.youtube-nocookie.com/embed/${page.video.id}`}
-                title={`${page.video.title} by ${page.video.channel}`}
-                loading="lazy"
-                allow="encrypted-media; picture-in-picture; fullscreen"
-                referrerPolicy="strict-origin-when-cross-origin"
-                allowFullScreen
-                className="size-full border-0"
-              />
+              <VideoEmbed id={page.video.id} title={`${page.video.title} by ${page.video.channel}`} />
             </div>
             <figcaption className="mt-3 text-subheadline text-supporting">
               Study guide for{" "}
