@@ -72,9 +72,9 @@ function Alt({ children }: { children: React.ReactNode }) {
   return <p className="text-center text-subheadline text-supporting">{children}</p>;
 }
 
-const altLink = "font-semibold text-rust underline-offset-4 hover:underline";
+const altLink = "font-semibold text-rust underline-offset-4 hover:underline relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']";
 /** Links that sit directly on the family tint, not on a card (W-2: rust text on a tint uses the on-tint token). */
-const tintLink = "font-semibold text-rust-on-tint underline-offset-4 hover:underline";
+const tintLink = "font-semibold text-rust-on-tint underline-offset-4 hover:underline relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']";
 
 // ---------------------------------------------------------------- login
 
@@ -320,6 +320,7 @@ export function SignupView({ googleAvailable, onGoogle, onEmail }: SignupViewPro
             <div className="flex flex-col gap-1.5">
               {errors.terms && <FieldError id="signup-terms-error">{errors.terms}</FieldError>}
               <div className="flex items-start gap-3">
+                <span className="relative mt-0.5 inline-flex size-5 shrink-0">
                 <input
                   id={FIELD_IDS.terms}
                   type="checkbox"
@@ -327,8 +328,11 @@ export function SignupView({ googleAvailable, onGoogle, onEmail }: SignupViewPro
                   aria-invalid={errors.terms ? true : undefined}
                   aria-describedby={errors.terms ? "signup-terms-error" : undefined}
                   onChange={(e) => { setTerms(e.target.checked); live("terms", v.terms(e.target.checked)); }}
-                  className="mt-0.5 size-5 shrink-0 accent-[var(--primary-fill)]"
+                  className="size-5 shrink-0 accent-[var(--primary-fill)]"
                 />
+                {/* Invisible, larger tap area around the checkbox (44 px). The visible text label below still names the field. */}
+                <label htmlFor={FIELD_IDS.terms} aria-hidden="true" className="absolute -inset-3 cursor-pointer" />
+                </span>
                 <label htmlFor={FIELD_IDS.terms} className="text-subheadline text-label">
                   I agree to the{" "}
                   <a href={TERMS_URL} target="_blank" rel="noopener noreferrer" className={altLink}>Terms<span className="sr-only"> (opens in a new tab)</span></a>

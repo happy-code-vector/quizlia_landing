@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import Image from "next/image"
 import { Check, X } from "lucide-react"
 
@@ -24,6 +24,7 @@ function result(right: number, total: number) {
 // No score is stored.
 export function Quiz({ items, storeUrl }: { items: Q[]; storeUrl: string }) {
   const [picked, setPicked] = useState<(number | null)[]>(items.map(() => null))
+  const list = useRef<HTMLOListElement>(null)
   const answered = picked.filter((p) => p !== null).length
   const done = answered === items.length
   const right = picked.filter((p, i) => p === items[i].answer).length
@@ -31,7 +32,7 @@ export function Quiz({ items, storeUrl }: { items: Q[]; storeUrl: string }) {
 
   return (
     <div>
-      <ol className="space-y-4">
+      <ol ref={list} className="space-y-4">
         {items.map((item, i) => {
           const p = picked[i]
           const isDone = p !== null
@@ -88,7 +89,11 @@ export function Quiz({ items, storeUrl }: { items: Q[]; storeUrl: string }) {
               </a>
               <button
                 type="button"
-                onClick={() => setPicked(items.map(() => null))}
+                onClick={() => {
+                  setPicked(items.map(() => null))
+                  // The result card disappears, so move keyboard focus to the first answer instead of losing it.
+                  requestAnimationFrame(() => list.current?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus())
+                }}
                 className="min-h-11 text-subheadline font-semibold text-rust underline-offset-4 hover:underline"
               >
                 Try again
