@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Play } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { studyPages } from "@/content/study/pages"
@@ -47,7 +47,7 @@ export default function StudyHub() {
                       prefetch={false}
                       className="ds-card ds-card-link flex min-h-14 items-center justify-between gap-3 px-5 py-4"
                     >
-                      <span className="text-headline text-label">{p.title}</span>
+                      <span className="flex min-w-0 items-center gap-2 text-headline text-label">{p.title}{p.video && (<span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-rust-wash px-2 py-0.5 text-footnote font-semibold text-rust"><Play aria-hidden="true" strokeWidth={1.75} className="size-3 fill-current" />Video</span>)}</span>
                       <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-5 shrink-0 text-supporting" />
                     </Link>
                   </li>
