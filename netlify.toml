@@ -16,3 +16,307 @@
   # secrets scan (env-var value matching for GEMINI_API_KEY, Stripe, etc.)
   # remains fully active.
   SECRETS_SCAN_SMART_DETECTION_ENABLED = "false"
+
+# BEGIN short-address redirects (generated)
+# Generated from content/study/aliases.js by scripts/sync-netlify-redirects.mjs. Do not edit by hand.
+[[redirects]]
+  from = "https://quizliai.com/semicolon"
+  to = "https://www.quizliai.com/study/semicolon-vs-colon"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/semicolon"
+  to = "https://www.quizliai.com/study/semicolon-vs-colon"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/subverb"
+  to = "https://www.quizliai.com/study/subject-verb-agreement"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/subverb"
+  to = "https://www.quizliai.com/study/subject-verb-agreement"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/itsvsits"
+  to = "https://www.quizliai.com/study/its-vs-its"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/itsvsits"
+  to = "https://www.quizliai.com/study/its-vs-its"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/thesis"
+  to = "https://www.quizliai.com/study/how-to-write-a-thesis-statement"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/thesis"
+  to = "https://www.quizliai.com/study/how-to-write-a-thesis-statement"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/ethos"
+  to = "https://www.quizliai.com/study/ethos-pathos-and-logos"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/ethos"
+  to = "https://www.quizliai.com/study/ethos-pathos-and-logos"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/figurative"
+  to = "https://www.quizliai.com/study/figurative-language"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/figurative"
+  to = "https://www.quizliai.com/study/figurative-language"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/metaphor"
+  to = "https://www.quizliai.com/study/metaphor-vs-simile"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/metaphor"
+  to = "https://www.quizliai.com/study/metaphor-vs-simile"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/passive"
+  to = "https://www.quizliai.com/study/active-vs-passive-voice"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/passive"
+  to = "https://www.quizliai.com/study/active-vs-passive-voice"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/theme"
+  to = "https://www.quizliai.com/study/theme-vs-main-idea"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/theme"
+  to = "https://www.quizliai.com/study/theme-vs-main-idea"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/frenchrev"
+  to = "https://www.quizliai.com/study/french-revolution-causes"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/frenchrev"
+  to = "https://www.quizliai.com/study/french-revolution-causes"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/cubacrisis"
+  to = "https://www.quizliai.com/study/cuban-missile-crisis"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/cubacrisis"
+  to = "https://www.quizliai.com/study/cuban-missile-crisis"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/indrev"
+  to = "https://www.quizliai.com/study/industrial-revolution"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/indrev"
+  to = "https://www.quizliai.com/study/industrial-revolution"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/amrev"
+  to = "https://www.quizliai.com/study/causes-of-the-american-revolution"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/amrev"
+  to = "https://www.quizliai.com/study/causes-of-the-american-revolution"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/versailles"
+  to = "https://www.quizliai.com/study/treaty-of-versailles"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/versailles"
+  to = "https://www.quizliai.com/study/treaty-of-versailles"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/renaissance"
+  to = "https://www.quizliai.com/study/renaissance"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/renaissance"
+  to = "https://www.quizliai.com/study/renaissance"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/civilrights"
+  to = "https://www.quizliai.com/study/civil-rights-movement"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/civilrights"
+  to = "https://www.quizliai.com/study/civil-rights-movement"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/depression"
+  to = "https://www.quizliai.com/study/great-depression-causes"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/depression"
+  to = "https://www.quizliai.com/study/great-depression-causes"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/reconstruct"
+  to = "https://www.quizliai.com/study/reconstruction-after-the-civil-war"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/reconstruct"
+  to = "https://www.quizliai.com/study/reconstruction-after-the-civil-war"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/photosynth"
+  to = "https://www.quizliai.com/study/photosynthesis-vs-cellular-respiration"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/photosynth"
+  to = "https://www.quizliai.com/study/photosynthesis-vs-cellular-respiration"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/organelles"
+  to = "https://www.quizliai.com/study/cell-organelles"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/organelles"
+  to = "https://www.quizliai.com/study/cell-organelles"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/replicate"
+  to = "https://www.quizliai.com/study/dna-replication"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/replicate"
+  to = "https://www.quizliai.com/study/dna-replication"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/darwin"
+  to = "https://www.quizliai.com/study/natural-selection"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/darwin"
+  to = "https://www.quizliai.com/study/natural-selection"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/bonds"
+  to = "https://www.quizliai.com/study/ionic-vs-covalent-bonds"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/bonds"
+  to = "https://www.quizliai.com/study/ionic-vs-covalent-bonds"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/periodic"
+  to = "https://www.quizliai.com/study/periodic-table-trends"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/periodic"
+  to = "https://www.quizliai.com/study/periodic-table-trends"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/phscale"
+  to = "https://www.quizliai.com/study/acids-bases-and-ph"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/phscale"
+  to = "https://www.quizliai.com/study/acids-bases-and-ph"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/newton"
+  to = "https://www.quizliai.com/study/newtons-three-laws"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/newton"
+  to = "https://www.quizliai.com/study/newtons-three-laws"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/tectonics"
+  to = "https://www.quizliai.com/study/plate-tectonics"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/tectonics"
+  to = "https://www.quizliai.com/study/plate-tectonics"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/mitosis"
+  to = "https://www.quizliai.com/study/mitosis-vs-meiosis"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/mitosis"
+  to = "https://www.quizliai.com/study/mitosis-vs-meiosis"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/ww1"
+  to = "https://www.quizliai.com/study/causes-of-world-war-1"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/ww1"
+  to = "https://www.quizliai.com/study/causes-of-world-war-1"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://quizliai.com/commasplice"
+  to = "https://www.quizliai.com/study/comma-splice"
+  status = 302
+  force = true
+[[redirects]]
+  from = "https://www.quizliai.com/commasplice"
+  to = "https://www.quizliai.com/study/comma-splice"
+  status = 302
+  force = true
+# END short-address redirects
