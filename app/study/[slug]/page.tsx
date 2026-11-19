@@ -57,7 +57,7 @@ export default async function StudyPageRoute({ params }: Props) {
         {page.video && (
           <figure className="mt-8">
             <div className="ds-card aspect-video w-full overflow-hidden">
-              <VideoEmbed id={page.video.id} title={`${page.video.title} by ${page.video.channel}`} />
+              <VideoEmbed id={page.video.id} title={page.video.title} channel={page.video.channel} />
             </div>
             <figcaption className="mt-3 text-subheadline text-supporting">
               Study guide for{" "}
