@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { studyPages } from "@/content/study/pages"
 import { studyStoreUrl } from "@/lib/campaign"
+import { DownloadRail } from "@/components/study/DownloadRail"
 
 const title = "Free study sets: flashcards and quizzes"
 const description = "Free study sets on history, English, science and math. Each one has a short summary, 3 flashcards and a 3-question quiz."
@@ -26,7 +27,8 @@ export default function StudyHub() {
       <a href="#main" className="skip-link">Skip to content</a>
       <div aria-hidden="true" className="family-surface family-welcome" />
       <SiteHeader />
-      <main id="main" className="mx-auto w-full max-w-[75rem] px-4 pb-16 pt-8 md:px-6 lg:px-8 lg:pt-12">
+      <div className="mx-auto w-full max-w-[75rem] px-4 pb-28 pt-8 md:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-10 lg:px-8 lg:pb-16 lg:pt-12">
+      <main id="main" className="min-w-0">
         <h1 className="font-serif text-large-title text-label">Free study sets</h1>
         <p className="mt-3 max-w-[40rem] text-body text-supporting">
           A short summary, 3 flashcards and a 3-question quiz on each topic. Free to read and try.
@@ -38,7 +40,7 @@ export default function StudyHub() {
           return (
             <section key={subject} aria-labelledby={`h-${subject}`} className="mt-10">
               <h2 id={`h-${subject}`} className="text-title2 font-semibold text-label">{subject}</h2>
-              <ul className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              <ul className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {items.map((p) => (
                   <li key={p.slug}>
                     <Link
@@ -70,6 +72,8 @@ export default function StudyHub() {
           </a>
         </section>
       </main>
+      <DownloadRail slug="hub" />
+      </div>
       <SiteFooter />
     </>
   )
