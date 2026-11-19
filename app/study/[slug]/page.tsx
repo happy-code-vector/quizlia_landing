@@ -42,8 +42,7 @@ export default async function StudyPageRoute({ params }: Props) {
       <a href="#main" className="skip-link">Skip to content</a>
       <div aria-hidden="true" className="family-surface family-welcome" />
       <SiteHeader />
-      <div className="mx-auto w-full max-w-[66rem] px-4 pb-28 pt-8 md:px-6 lg:grid lg:grid-cols-[minmax(0,45rem)_17rem] lg:justify-center lg:gap-10 lg:pb-16 lg:pt-12">
-      <main id="main" className="min-w-0">
+      <main id="main" className="mx-auto w-full max-w-[45rem] px-4 pb-28 pt-8 md:px-6 lg:pb-16 lg:pt-12">
         <p className="text-subheadline font-semibold text-rust-on-tint">{page.subject}</p>
         <h1 className="mt-1 font-serif text-large-title text-label">{page.title}</h1>
         <p className="mt-4 text-body text-label">{page.context}</p>
@@ -106,7 +105,6 @@ export default async function StudyPageRoute({ params }: Props) {
         {page.status === "draft" && <p className="mt-6 text-footnote text-supporting">Draft preview. Not public.</p>}
       </main>
       <DownloadRail slug={page.slug} />
-      </div>
       <SiteFooter />
     </>
   )
