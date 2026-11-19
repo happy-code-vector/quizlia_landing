@@ -74,7 +74,7 @@ export default function StudyHub() {
       <DownloadRail slug="hub" />
       <SiteFooter />
       {/* Room for the fixed download bar on phones, so the last footer line stays visible. */}
-      <div aria-hidden="true" className="h-20 lg:hidden" />
+      <div aria-hidden="true" className="h-24 lg:hidden" />
     </>
   )
 }

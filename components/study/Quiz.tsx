@@ -52,7 +52,7 @@ export function Quiz({ items, storeUrl }: { items: Q[]; storeUrl: string }) {
                         aria-pressed={p === j}
                         onClick={() => setPicked((s) => s.map((v, k) => (k === i ? j : v)))}
                         className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border px-4 py-2 text-left text-callout text-label transition-colors duration-150 ease-[cubic-bezier(0.2,0,0,1)] ${
-                          isRight ? "border-success" : isWrong ? "border-danger" : "border-divider hover:bg-hover-fill"
+                          isRight ? "border-success" : isWrong ? "border-danger" : "border-input hover:bg-hover-fill"
                         }`}
                       >
                         <span>{o}</span>

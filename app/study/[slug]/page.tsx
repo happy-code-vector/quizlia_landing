@@ -70,6 +70,7 @@ export default async function StudyPageRoute({ params }: Props) {
               Study guide for{" "}
               <a href={`https://www.youtube.com/watch?v=${page.video.id}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-label">
                 {page.video.title}
+                <span className="sr-only"> (opens in a new tab)</span>
               </a>{" "}
               by {page.video.channel} on YouTube. This page is our own summary and questions. The channel did not make or approve it.
             </figcaption>
@@ -111,7 +112,7 @@ export default async function StudyPageRoute({ params }: Props) {
             ))}
           </ul>
           <p className="mt-4">
-            <Link href="/study" prefetch={false} className="inline-flex min-h-11 items-center text-subheadline font-semibold text-rust underline-offset-4 hover:underline">
+            <Link href="/study" prefetch={false} className="inline-flex min-h-11 items-center text-subheadline font-semibold text-rust-on-tint underline-offset-4 hover:underline">
               See all free study sets
             </Link>
           </p>
@@ -135,7 +136,7 @@ export default async function StudyPageRoute({ params }: Props) {
       <DownloadRail slug={page.slug} />
       <SiteFooter />
       {/* Room for the fixed download bar on phones, so the last footer line stays visible. */}
-      <div aria-hidden="true" className="h-20 lg:hidden" />
+      <div aria-hidden="true" className="h-24 lg:hidden" />
     </>
   )
 }

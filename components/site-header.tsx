@@ -14,7 +14,7 @@ const links = [
 export function SiteHeader() {
   return (
     <header className="bg-[var(--welcome-top)]">
-      <div className="mx-auto flex h-16 w-full max-w-[75rem] items-center justify-between gap-4 px-4 md:px-6 lg:px-8">
+      <div className="mx-auto flex min-h-16 w-full max-w-[75rem] flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 md:px-6 lg:px-8">
         <Link href="/" className="inline-flex min-h-11 items-center gap-2.5 rounded-full">
           <Image src="/logo.png" alt="" width={32} height={32} className="size-8 rounded-[0.5rem]" />
           <span className="text-headline text-label">QuizliAI</span>
