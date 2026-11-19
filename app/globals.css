@@ -459,3 +459,9 @@
   .study-flip[data-flipped="true"] .study-face-front { opacity: 0; }
   .study-flip[data-flipped="true"] .study-face-back { opacity: 1; }
 }
+
+/* Quiz result card on the study pages: a short fade and rise. Only used with motion-safe. */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}

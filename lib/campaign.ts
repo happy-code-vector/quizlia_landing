@@ -4,8 +4,8 @@ import { APP_STORE_URL } from "@/lib/constants"
 const APPLE_PROVIDER_TOKEN = "127599943"
 
 // Campaign names are limited to 30 characters in App Store Connect. A one-letter surface prefix plus the page slug, cut to fit.
-// s = button at the bottom of the page, q = QR code and button in the side rail, m = bar on phones.
-export type Surface = "s" | "q" | "m"
+// s = card at the bottom of the page, q = QR tab on desktop, m = bar on phones, r = quiz result card.
+export type Surface = "s" | "q" | "m" | "r"
 
 export function studyCampaign(slug: string, surface: Surface = "s"): string {
   return `${surface}-${slug}`.slice(0, 30).replace(/-+$/, "")

@@ -125,9 +125,9 @@ export function PricingView({ plans, freePlan, currentPlan, loadingPlan, onChoos
 
   const footer = (
     <p className="text-center text-subheadline text-supporting">
-      <a href="https://sites.google.com/view/quizliai-terms/home" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Terms<span className="sr-only"> (opens in a new tab)</span></a>
+      <a href="https://sites.google.com/view/quizliai-terms/home" target="_blank" rel="noopener noreferrer" className="relative underline underline-offset-4 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']">Terms<span className="sr-only"> (opens in a new tab)</span></a>
       {" · "}
-      <a href="https://sites.google.com/view/quizliai-privacy/home" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">Privacy<span className="sr-only"> (opens in a new tab)</span></a>
+      <a href="https://sites.google.com/view/quizliai-privacy/home" target="_blank" rel="noopener noreferrer" className="relative underline underline-offset-4 after:absolute after:-inset-x-1 after:-inset-y-3 after:content-['']">Privacy<span className="sr-only"> (opens in a new tab)</span></a>
     </p>
   );
 

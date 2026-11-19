@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { ChevronDown } from "lucide-react"
+import { ChevronDown, ChevronRight } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { Quiz } from "@/components/study/Quiz"
@@ -37,6 +37,12 @@ export default async function StudyPageRoute({ params }: Props) {
   const page = getStudyPage(slug)
   if (!page) notFound()
 
+  // Up to 3 other live sets: same subject first, rotated by slug so pages do not all point at the same sets.
+  const live = studyPages.filter((p) => p.status === "live" && p.slug !== page.slug)
+  const same = live.filter((p) => p.subject === page.subject)
+  const start = same.length ? [...page.slug].reduce((n, c) => n + c.charCodeAt(0), 0) % same.length : 0
+  const related = [...same.slice(start), ...same.slice(0, start), ...live.filter((p) => p.subject !== page.subject)].slice(0, 3)
+
   return (
     <>
       <a href="#main" className="skip-link">Skip to content</a>
@@ -64,6 +70,7 @@ export default async function StudyPageRoute({ params }: Props) {
               Study guide for{" "}
               <a href={`https://www.youtube.com/watch?v=${page.video.id}`} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-label">
                 {page.video.title}
+                <span className="sr-only"> (opens in a new tab)</span>
               </a>{" "}
               by {page.video.channel} on YouTube. This page is our own summary and questions. The channel did not make or approve it.
             </figcaption>
@@ -85,27 +92,51 @@ export default async function StudyPageRoute({ params }: Props) {
 
         <h2 className="mt-10 text-title3 font-semibold text-label">3 quiz questions</h2>
         <div className="mt-3">
-          <Quiz items={page.quiz} />
+          <Quiz items={page.quiz} storeUrl={studyStoreUrl(page.slug, "r")} />
         </div>
 
-        <section aria-labelledby="unlock-h" className="ds-card mt-10 flex flex-col items-center gap-4 p-8 text-center">
-          <h2 id="unlock-h" className="text-title3 font-semibold text-label">Want the full experience?</h2>
-          <p className="text-callout text-supporting">Make notes, flashcards and quizzes from any YouTube link, PDF or photo.</p>
+        <section aria-labelledby="keep-h" className="mt-12">
+          <h2 id="keep-h" className="text-title2 font-semibold text-label">Keep studying</h2>
+          <p className="mt-1 text-callout text-supporting">More free sets to try next.</p>
+          <ul className="mt-4 space-y-3">
+            {related.map((p) => (
+              <li key={p.slug}>
+                <Link href={`/study/${p.slug}`} prefetch={false} className="ds-card ds-card-link flex min-h-14 items-center justify-between gap-3 px-5 py-4">
+                  <span className="min-w-0">
+                    <span className="block text-subheadline font-semibold text-rust">{p.subject}</span>
+                    <span className="block text-headline text-label">{p.title}</span>
+                  </span>
+                  <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-5 shrink-0 text-supporting" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-4">
+            <Link href="/study" prefetch={false} className="inline-flex min-h-11 items-center text-subheadline font-semibold text-rust-on-tint underline-offset-4 hover:underline">
+              See all free study sets
+            </Link>
+          </p>
+        </section>
+
+        <section aria-labelledby="make-h" className="mt-12 rounded-2xl bg-primary px-6 py-8 text-primary-foreground md:px-10 md:py-10">
+          <h2 id="make-h" className="text-title2 font-semibold">Study anything, not just this.</h2>
+          <p className="mt-2 max-w-[30rem] text-callout">Paste a YouTube link, PDF or photo. QuizliAI makes the notes, flashcards and quiz for you.</p>
           <a
             href={studyStoreUrl(page.slug)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-12 items-center justify-center rounded-full bg-primary px-7 text-headline text-primary-foreground transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-primary-hover active:scale-[0.98] active:bg-primary-active"
+            className="mt-5 inline-flex h-12 items-center justify-center rounded-full bg-paper px-7 text-headline text-on-paper transition-[transform,opacity] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:opacity-90 active:scale-[0.98]"
           >
             Download QuizliAI
             <span className="sr-only"> (opens the App Store)</span>
           </a>
         </section>
-        <p className="mt-6 text-center text-subheadline"><Link href="/study" prefetch={false} className="text-supporting underline underline-offset-4 hover:text-label">More free study sets</Link></p>
         {page.status === "draft" && <p className="mt-6 text-footnote text-supporting">Draft preview. Not public.</p>}
       </main>
       <DownloadRail slug={page.slug} />
       <SiteFooter />
+      {/* Room for the fixed download bar on phones, so the last footer line stays visible. */}
+      <div aria-hidden="true" className="h-24 lg:hidden" />
     </>
   )
 }
