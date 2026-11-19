@@ -27,8 +27,7 @@ export default function StudyHub() {
       <a href="#main" className="skip-link">Skip to content</a>
       <div aria-hidden="true" className="family-surface family-welcome" />
       <SiteHeader />
-      <div className="mx-auto w-full max-w-[75rem] px-4 pb-28 pt-8 md:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:gap-10 lg:px-8 lg:pb-16 lg:pt-12">
-      <main id="main" className="min-w-0">
+      <main id="main" className="mx-auto w-full max-w-[75rem] px-4 pb-28 pt-8 md:px-6 lg:px-8 lg:pb-16 lg:pr-40 lg:pt-12">
         <h1 className="font-serif text-large-title text-label">Free study sets</h1>
         <p className="mt-3 max-w-[40rem] text-body text-supporting">
           A short summary, 3 flashcards and a 3-question quiz on each topic. Free to read and try.
@@ -73,7 +72,6 @@ export default function StudyHub() {
         </section>
       </main>
       <DownloadRail slug="hub" />
-      </div>
       <SiteFooter />
     </>
   )
