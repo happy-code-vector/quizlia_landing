@@ -7,7 +7,7 @@ const PRIVACY_URL = "https://sites.google.com/view/quizliai-privacy/home"
 const TERMS_URL = "https://sites.google.com/view/quizliai-terms/home"
 
 const linkClass =
-  "inline-flex min-h-11 items-center text-subheadline text-supporting underline-offset-4 hover:text-label hover:underline"
+  "inline-flex min-h-11 min-w-11 items-center text-subheadline text-supporting underline-offset-4 hover:text-label hover:underline"
 
 function Column({ title, children }: { title: string; children: React.ReactNode }) {
   return (
