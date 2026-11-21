@@ -4,7 +4,8 @@ const aliases = require('./content/study/aliases.js');
 const nextConfig = {
   // Short spoken addresses for the video call to action: quizliai.com/<alias> -> /study/<slug>.
   async redirects() {
-    return Object.entries(aliases).map(([alias, slug]) => ({ source: `/${alias}`, destination: `/study/${slug}`, permanent: false }));
+    const retired = [{ source: '/study/types-of-plate-boundaries', destination: '/study/plate-tectonics', permanent: true }];
+    return [...Object.entries(aliases).map(([alias, slug]) => ({ source: `/${alias}`, destination: `/study/${slug}`, permanent: false })), ...retired];
   },
   // firebase-admin is bundled INLINE (no serverExternalPackages): Netlify's
   // function runtime failed to resolve both Turbopack externals (hashed

@@ -40,25 +40,6 @@ export const videoDPages: StudyPage[] = [
     ],
   },
   {
-    slug: "types-of-plate-boundaries",
-    video: { id: "krXXSCb_P9Y", title: "What is Plate Tectonics: Crash Course Geology #10", channel: "CrashCourse" },
-    status: "live",
-    title: "The three types of plate boundaries",
-    subject: "Earth science",
-    context:
-      "Earth's outer shell is broken into tectonic plates. They meet at three kinds of boundaries. At a divergent boundary, plates move apart, and new crust forms as magma rises. At a convergent boundary, plates come together. One plate may sink under the other, or the edges may buckle into mountains. At a transform boundary, plates slide past each other.",
-    flashcards: [
-      { q: "What happens at a divergent boundary?", a: "Two plates move apart. New crust forms as material from the mantle rises. The Mid-Atlantic Ridge is an example." },
-      { q: "What happens at a convergent boundary?", a: "Two plates come together. One plate can sink under the other, or the plates can push up mountains." },
-      { q: "What happens at a transform boundary?", a: "Two plates slide past each other. The San Andreas Fault in California is an example." },
-    ],
-    quiz: [
-      { q: "Plates sliding past each other form which kind of boundary?", options: ["Transform", "Divergent", "Convergent", "Volcanic"], answer: 0, why: "Plates that slide past each other form a transform boundary." },
-      { q: "The Mid-Atlantic Ridge is an example of which boundary?", options: ["Convergent", "Divergent", "Transform", "None of these"], answer: 1, why: "At the Mid-Atlantic Ridge, plates move apart and new oceanic crust forms." },
-      { q: "What do plates do at a convergent boundary?", options: ["Move apart", "Slide past each other", "Come together", "Stop moving"], answer: 2, why: "Convergent means the plates move toward each other and collide." },
-    ],
-  },
-  {
     slug: "how-magnets-and-magnetic-fields-work",
     video: { id: "jG7ULeWUfDw", title: "Do we actually know how magnets work? - Rachel Yang", channel: "TED-Ed" },
     status: "live",
