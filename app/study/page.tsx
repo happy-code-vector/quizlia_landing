@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ChevronRight, Play } from "lucide-react"
+import { Atom, BookOpen, ChevronRight, Dna, FlaskConical, Landmark, Mountain, Sigma, type LucideIcon } from "lucide-react"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
 import { studyPages } from "@/content/study/pages"
 import { studyStoreUrl } from "@/lib/campaign"
 import { DownloadRail } from "@/components/study/DownloadRail"
+import { VideoCard } from "@/components/study/VideoCard"
 
 const title = "Free study sets: flashcards and quizzes"
 const description = "Free study sets on history, English, science and math. Each one has a short summary, 3 flashcards and a 3-question quiz."
@@ -17,6 +18,7 @@ export const metadata: Metadata = {
   openGraph: { title, description, url: "/study", images: [{ url: "/og.png", width: 1200, height: 630 }] },
 }
 
+const ICONS: Record<string, LucideIcon> = { History: Landmark, English: BookOpen, Biology: Dna, Chemistry: FlaskConical, Physics: Atom, "Earth science": Mountain, Math: Sigma }
 const ORDER = ["History", "English", "Biology", "Chemistry", "Physics", "Earth science", "Math"]
 
 export default function StudyHub() {
@@ -33,26 +35,46 @@ export default function StudyHub() {
           A short summary, 3 flashcards and a 3-question quiz on each topic. Free to read and try.
         </p>
 
-        {subjects.map((subject) => {
+        {subjects.map((subject, si) => {
           const items = live.filter((p) => p.subject === subject)
           if (items.length === 0) return null
+          const withVideo = items.filter((p) => p.video)
+          const plain = items.filter((p) => !p.video)
+          const Icon = ICONS[subject] ?? BookOpen
           return (
-            <section key={subject} aria-labelledby={`h-${subject}`} className="mt-10">
-              <h2 id={`h-${subject}`} className="text-title2 font-semibold text-label">{subject}</h2>
-              <ul className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {items.map((p) => (
-                  <li key={p.slug}>
-                    <Link
-                      href={`/study/${p.slug}`}
-                      prefetch={false}
-                      className="ds-card ds-card-link flex min-h-14 items-center justify-between gap-3 px-5 py-4"
-                    >
-                      <span className="flex min-w-0 items-center gap-2 text-headline text-label">{p.title}{p.video && (<span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-rust-wash px-2 py-0.5 text-footnote font-semibold text-rust"><Play aria-hidden="true" strokeWidth={1.75} className="size-3 fill-current" />Video</span>)}</span>
-                      <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-5 shrink-0 text-supporting" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            <section key={subject} aria-labelledby={`h-${subject}`} className="mt-12">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 place-items-center rounded-full bg-rust-wash">
+                  <Icon aria-hidden="true" strokeWidth={1.75} className="size-5 text-rust" />
+                </span>
+                <h2 id={`h-${subject}`} className="text-title2 font-semibold text-label">{subject}</h2>
+                <span className="text-subheadline text-supporting">{items.length} sets</span>
+              </div>
+              {withVideo.length > 0 && (
+                <ul className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {withVideo.map((p, i) => (
+                    <li key={p.slug} className="h-full">
+                      <VideoCard page={p} eager={si === 0 && i < 3} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {plain.length > 0 && (
+                <ul className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                  {plain.map((p) => (
+                    <li key={p.slug}>
+                      <Link
+                        href={`/study/${p.slug}`}
+                        prefetch={false}
+                        className="ds-card ds-card-link flex min-h-14 items-center justify-between gap-3 px-5 py-4"
+                      >
+                        <span className="text-headline text-label">{p.title}</span>
+                        <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-5 shrink-0 text-supporting" />
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </section>
           )
         })}

@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { ChevronDown, ChevronRight } from "lucide-react"
@@ -95,9 +96,21 @@ export default async function StudyPageRoute({ params }: Props) {
             {related.map((p) => (
               <li key={p.slug}>
                 <Link href={`/study/${p.slug}`} prefetch={false} className="ds-card ds-card-link flex min-h-14 items-center justify-between gap-3 px-5 py-4">
-                  <span className="min-w-0">
-                    <span className="block text-subheadline font-semibold text-rust">{p.subject}</span>
-                    <span className="block text-headline text-label">{p.title}</span>
+                  <span className="flex min-w-0 items-center gap-3">
+                    {p.video && (
+                      <Image
+                        src={`https://i.ytimg.com/vi/${p.video.id}/mqdefault.jpg`}
+                        alt=""
+                        width={96}
+                        height={54}
+                        unoptimized
+                        className="aspect-video w-24 shrink-0 rounded-lg object-cover"
+                      />
+                    )}
+                    <span className="min-w-0">
+                      <span className="block text-subheadline font-semibold text-rust">{p.subject}{p.video ? " · Video" : ""}</span>
+                      <span className="block text-headline text-label">{p.title}</span>
+                    </span>
                   </span>
                   <ChevronRight aria-hidden="true" strokeWidth={1.75} className="size-5 shrink-0 text-supporting" />
                 </Link>
