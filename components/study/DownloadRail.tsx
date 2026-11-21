@@ -1,5 +1,6 @@
 import QRCode from "qrcode"
 import { studyStoreUrl } from "@/lib/campaign"
+import { PhoneBar } from "./PhoneBar"
 
 // Download surfaces for the study pages.
 // Desktop (1024 px and up): a slim tab on the right edge of the screen, above the fold, that stays in view while the page scrolls.
@@ -23,20 +24,7 @@ export async function DownloadRail({ slug }: { slug: string }) {
       </a>
       </aside>
 
-      <aside aria-label="Download QuizliAI" className="fixed inset-x-0 bottom-0 z-40 border-t border-divider bg-card/95 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur lg:hidden">
-        <div className="mx-auto flex max-w-[45rem] items-center justify-between gap-3">
-          <p className="text-headline text-label">Get the app</p>
-          <a
-            href={studyStoreUrl(slug, "m")}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-6 text-headline text-primary-foreground transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.2,0,0,1)] hover:bg-primary-hover active:scale-[0.98] active:bg-primary-active"
-          >
-            Download
-            <span className="sr-only"> QuizliAI (opens the App Store)</span>
-          </a>
-        </div>
-      </aside>
+      <PhoneBar href={studyStoreUrl(slug, "m")} />
     </>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react"
 import Image from "next/image"
+import Link from "next/link"
 import { Check, X } from "lucide-react"
 
 type Q = { q: string; options: string[]; answer: number; why: string }
@@ -12,12 +13,12 @@ const primary =
 // What the result card says for each score. The score is out of the number of questions.
 function result(right: number, total: number) {
   if (right === total) {
-    return { head: `${right} out of ${total}. You know your stuff.`, body: "Keep it going. QuizliAI turns any lesson into notes, flashcards and quizzes.", cta: "Learn more at QuizliAI", bear: "celebrate" }
+    return { head: `${right} out of ${total}. You know your stuff.`, body: "Keep it going. Pick another free set.", bear: "celebrate" }
   }
   if (right >= total - 1) {
-    return { head: `${right} out of ${total}. So close.`, body: "A little more practice will lock it in. QuizliAI builds that practice from your own notes.", cta: "Get the app", bear: "think" }
+    return { head: `${right} out of ${total}. So close.`, body: "Look at the one you missed, then try again.", bear: "think" }
   }
-  return { head: `${right} out of ${total}. Seems like you need more help.`, body: "Download the app today. QuizliAI makes flashcards and quizzes from any lesson.", cta: "Download the app", bear: "think" }
+  return { head: `${right} out of ${total}. Seems like you need more help.`, body: "Look at what you missed, then try again.", bear: "think" }
 }
 
 // Pick an option, see the result and the reason. When every question is answered, a card shows the score and a matching call to action.
@@ -29,9 +30,14 @@ export function Quiz({ items, storeUrl }: { items: Q[]; storeUrl: string }) {
   const done = answered === items.length
   const right = picked.filter((p, i) => p === items[i].answer).length
   const r = done ? result(right, items.length) : null
+  const [review, setReview] = useState(false)
+  const missed = items.map((it, i) => ({ it, i, p: picked[i] })).filter((m) => m.p !== null && m.p !== m.it.answer)
 
   return (
     <div>
+      <p className="sr-only" role="status">
+        {r ? r.head : ""}
+      </p>
       <ol ref={list} className="space-y-4">
         {items.map((item, i) => {
           const p = picked[i]
@@ -77,20 +83,27 @@ export function Quiz({ items, storeUrl }: { items: Q[]; storeUrl: string }) {
       </ol>
 
       {r && (
-        <div role="status" className="ds-card mt-4 flex items-center gap-5 p-5 md:gap-6 md:p-6 motion-safe:animate-[fadeUp_220ms_cubic-bezier(0.2,0,0,1)]">
+        <div className="ds-card mt-4 p-5 md:p-6 motion-safe:animate-[fadeUp_220ms_cubic-bezier(0.2,0,0,1)]">
+          <div className="flex items-center gap-5 md:gap-6">
           <Image src={`/mascot/quizliai_mascot_${r.bear}.webp`} alt="" width={69} height={128} className="h-28 w-auto shrink-0" />
           <div className="min-w-0">
             <p className="text-title3 font-semibold text-label">{r.head}</p>
             <p className="mt-1 text-callout text-supporting">{r.body}</p>
             <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2">
-              <a href={storeUrl} target="_blank" rel="noopener noreferrer" className={primary}>
-                {r.cta}
-                <span className="sr-only"> (opens the App Store)</span>
-              </a>
+              {missed.length > 0 ? (
+                <button type="button" aria-expanded={review} aria-controls="missed-list" onClick={() => setReview((v) => !v)} className={primary}>
+                  {review ? "Hide answers" : "See what you missed"}
+                </button>
+              ) : (
+                <Link href="/study" className={primary}>
+                  More free sets
+                </Link>
+              )}
               <button
                 type="button"
                 onClick={() => {
                   setPicked(items.map(() => null))
+                  setReview(false)
                   // The result card disappears, so move keyboard focus to the first answer instead of losing it.
                   requestAnimationFrame(() => list.current?.querySelector<HTMLButtonElement>("button:not([disabled])")?.focus())
                 }}
@@ -100,6 +113,26 @@ export function Quiz({ items, storeUrl }: { items: Q[]; storeUrl: string }) {
               </button>
             </div>
           </div>
+          </div>
+            {missed.length > 0 && review && (
+              <ul id="missed-list" className="mt-5 space-y-3">
+                {missed.map(({ it, i }) => (
+                  <li key={it.q} className="rounded-xl border border-divider p-4">
+                    <p className="text-subheadline font-semibold text-label">
+                      Question {i + 1}. {it.q}
+                    </p>
+                    <p className="mt-1 text-subheadline text-label">Right answer: {it.options[it.answer]}</p>
+                    <p className="mt-1 text-subheadline text-supporting">{it.why}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="mt-4 text-subheadline text-supporting">
+              Want this for your own notes?{" "}
+              <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-rust underline underline-offset-4">
+                Get the QuizliAI app<span className="sr-only"> (opens the App Store)</span>
+              </a>
+            </p>
         </div>
       )}
     </div>
