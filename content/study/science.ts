@@ -156,6 +156,7 @@ export const sciencePages: StudyPage[] = [
   {
     slug: "plate-tectonics",
     alias: "tectonics",
+    video: { id: "krXXSCb_P9Y", title: "What is Plate Tectonics: Crash Course Geology #10", channel: "CrashCourse" },
     status: "live",
     title: "Plate tectonics",
     subject: "Earth science",
